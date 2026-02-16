@@ -6,6 +6,7 @@ import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.views.decorators.http import require_POST
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView
 from django.contrib import messages
 from django.http import JsonResponse
@@ -268,6 +269,8 @@ class LeadDetailView(LoginRequiredMixin, CRMAccessMixin, DetailView):
         # Available statuses for quick update
         context['statuses'] = Lead.STATUS_CHOICES
         context['priorities'] = Lead.PRIORITY_CHOICES
+        context['lead_types'] = Lead.LEAD_TYPE_CHOICES
+        context['sources'] = LeadSource.objects.filter(is_active=True).order_by('name')
         
         # Document upload requests
         context['document_requests'] = lead.document_requests.order_by('-created_at')[:10]
@@ -496,6 +499,196 @@ def lead_add_activity(request, pk):
         'description': activity.description,
         'created_at': activity.created_at.strftime('%Y-%m-%d %H:%M'),
         'performed_by': request.user.get_full_name() or request.user.username
+    })
+
+
+@login_required
+@require_POST
+def lead_quick_edit(request, pk):
+    """
+    Quick edit lead fields via AJAX modal
+    Allows editing key fields without leaving the lead detail page
+    """
+    lead = get_object_or_404(Lead, pk=pk)
+    
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    
+    changed_fields = []
+    
+    # Contact fields
+    if 'first_name' in data:
+        lead.first_name = data['first_name'].strip()
+        changed_fields.append('first_name')
+    if 'last_name' in data:
+        lead.last_name = data['last_name'].strip()
+        changed_fields.append('last_name')
+    if 'email' in data:
+        lead.email = data['email'].strip()
+        changed_fields.append('email')
+    if 'phone' in data:
+        lead.phone = data['phone'].strip()
+        changed_fields.append('phone')
+    if 'phone_secondary' in data:
+        lead.phone_secondary = data['phone_secondary'].strip()
+        changed_fields.append('phone_secondary')
+    if 'whatsapp_number' in data:
+        lead.whatsapp_number = data['whatsapp_number'].strip()
+        changed_fields.append('whatsapp_number')
+    if 'prefers_whatsapp' in data:
+        lead.prefers_whatsapp = bool(data['prefers_whatsapp'])
+        changed_fields.append('prefers_whatsapp')
+    
+    # Status fields
+    old_status = lead.status
+    if 'status' in data:
+        lead.status = data['status']
+        changed_fields.append('status')
+    if 'priority' in data:
+        lead.priority = data['priority']
+        changed_fields.append('priority')
+    if 'lead_type' in data:
+        lead.lead_type = data['lead_type']
+        changed_fields.append('lead_type')
+    
+    # Source and interest
+    if 'source_id' in data and data['source_id']:
+        try:
+            lead.source = LeadSource.objects.get(pk=data['source_id'])
+            changed_fields.append('source')
+        except LeadSource.DoesNotExist:
+            pass
+    if 'qualification_interest_id' in data:
+        from academics.models import Qualification
+        if data['qualification_interest_id']:
+            try:
+                lead.qualification_interest = Qualification.objects.get(pk=data['qualification_interest_id'])
+                changed_fields.append('qualification_interest')
+            except Qualification.DoesNotExist:
+                pass
+        else:
+            lead.qualification_interest = None
+            changed_fields.append('qualification_interest')
+    
+    # Date of birth
+    if 'date_of_birth' in data:
+        if data['date_of_birth']:
+            from datetime import datetime
+            try:
+                lead.date_of_birth = datetime.strptime(data['date_of_birth'], '%Y-%m-%d').date()
+                changed_fields.append('date_of_birth')
+            except ValueError:
+                pass
+        else:
+            lead.date_of_birth = None
+            changed_fields.append('date_of_birth')
+    
+    # School Leaver fields
+    if 'school_name' in data:
+        lead.school_name = data['school_name'].strip()
+        changed_fields.append('school_name')
+    if 'grade' in data:
+        lead.grade = data['grade'].strip()
+        changed_fields.append('grade')
+    if 'expected_matric_year' in data:
+        if data['expected_matric_year']:
+            lead.expected_matric_year = int(data['expected_matric_year'])
+        else:
+            lead.expected_matric_year = None
+        changed_fields.append('expected_matric_year')
+    
+    # Parent/Guardian fields
+    if 'parent_name' in data:
+        lead.parent_name = data['parent_name'].strip()
+        changed_fields.append('parent_name')
+    if 'parent_phone' in data:
+        lead.parent_phone = data['parent_phone'].strip()
+        changed_fields.append('parent_phone')
+    if 'parent_email' in data:
+        lead.parent_email = data['parent_email'].strip()
+        changed_fields.append('parent_email')
+    if 'parent_relationship' in data:
+        lead.parent_relationship = data['parent_relationship'].strip()
+        changed_fields.append('parent_relationship')
+    
+    # Follow-up fields
+    if 'next_follow_up' in data:
+        if data['next_follow_up']:
+            from datetime import datetime
+            try:
+                lead.next_follow_up = datetime.strptime(data['next_follow_up'], '%Y-%m-%dT%H:%M')
+                changed_fields.append('next_follow_up')
+            except ValueError:
+                try:
+                    lead.next_follow_up = datetime.strptime(data['next_follow_up'], '%Y-%m-%d')
+                    changed_fields.append('next_follow_up')
+                except ValueError:
+                    pass
+        else:
+            lead.next_follow_up = None
+            changed_fields.append('next_follow_up')
+    if 'follow_up_notes' in data:
+        lead.follow_up_notes = data['follow_up_notes'].strip()
+        changed_fields.append('follow_up_notes')
+    
+    # Notes field
+    if 'notes' in data:
+        lead.notes = data['notes'].strip()
+        changed_fields.append('notes')
+    
+    # Assignment
+    if 'assigned_to_id' in data:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        if data['assigned_to_id']:
+            try:
+                lead.assigned_to = User.objects.get(pk=data['assigned_to_id'])
+                changed_fields.append('assigned_to')
+            except User.DoesNotExist:
+                pass
+        else:
+            lead.assigned_to = None
+            changed_fields.append('assigned_to')
+    
+    lead.save()
+    
+    # Log activity if status changed
+    if 'status' in changed_fields and old_status != lead.status:
+        LeadActivity.objects.create(
+            lead=lead,
+            activity_type='STATUS_CHANGE',
+            description=f'Status changed from {old_status} to {lead.status}',
+            created_by=request.user,
+            brand=lead.brand,
+            campus=lead.campus
+        )
+    
+    # Log other changes as a note
+    if changed_fields:
+        other_changes = [f for f in changed_fields if f != 'status']
+        if other_changes:
+            LeadActivity.objects.create(
+                lead=lead,
+                activity_type='NOTE',
+                description=f'Lead updated via quick edit: {", ".join(other_changes)}',
+                created_by=request.user,
+                brand=lead.brand,
+                campus=lead.campus
+            )
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'Lead updated successfully ({len(changed_fields)} fields)',
+        'changed_fields': changed_fields,
+        'lead': {
+            'full_name': lead.get_full_name(),
+            'status': lead.status,
+            'status_display': lead.get_status_display(),
+            'priority': lead.priority,
+            'priority_display': lead.get_priority_display(),
+        }
     })
 
 

@@ -75,6 +75,7 @@ urlpatterns = [
     path('leads/<int:pk>/edit/', views.LeadUpdateView.as_view(), name='lead_update'),
     
     # Lead Actions (AJAX)
+    path('leads/<int:pk>/quick-edit/', views.lead_quick_edit, name='lead_quick_edit'),
     path('leads/<int:pk>/status/', views.lead_quick_status, name='lead_quick_status'),
     path('leads/<int:pk>/activity/', views.lead_add_activity, name='lead_add_activity'),
     path('leads/<int:pk>/assign/', views.lead_assign, name='lead_assign'),

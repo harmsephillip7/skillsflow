@@ -34,11 +34,16 @@
         </svg>
         Create Quote
     </a>
-    <a href="{% url 'crm:lead_update' lead.pk %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
+    <button onclick="openQuickEditModal()" class="inline-flex items-center px-4 py-2 border border-primary-300 shadow-sm text-sm font-medium rounded-md text-primary-700 bg-primary-50 hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
         </svg>
-        Edit Lead
+        Quick Edit
+    </button>
+    <a href="{% url 'crm:lead_update' lead.pk %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-500 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200" title="Full Edit Page">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
     </a>
 </div>
 {% endblock %}
@@ -2732,4 +2737,383 @@ function createApplication() {
         </div>
     </div>
 </div>
+
+<!-- Quick Edit Modal -->
+<div id="quick-edit-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-0 border w-11/12 max-w-2xl shadow-xl rounded-xl bg-white">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900">Quick Edit Lead</h3>
+                <p class="text-sm text-gray-500">Edit {{ lead.get_full_name }}</p>
+            </div>
+            <button onclick="closeQuickEditModal()" class="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <div class="border-b border-gray-200 bg-white">
+            <nav class="flex -mb-px px-6" aria-label="Tabs">
+                <button type="button" onclick="switchQuickEditTab('contact')" id="tab-contact"
+                        class="quick-edit-tab active py-3 px-4 text-sm font-medium border-b-2 border-primary-500 text-primary-600">
+                    Contact Info
+                </button>
+                <button type="button" onclick="switchQuickEditTab('status')" id="tab-status"
+                        class="quick-edit-tab py-3 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    Status & Type
+                </button>
+                <button type="button" onclick="switchQuickEditTab('school')" id="tab-school"
+                        class="quick-edit-tab py-3 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    School Info
+                </button>
+                <button type="button" onclick="switchQuickEditTab('parent')" id="tab-parent"
+                        class="quick-edit-tab py-3 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    Parent/Guardian
+                </button>
+                <button type="button" onclick="switchQuickEditTab('followup')" id="tab-followup"
+                        class="quick-edit-tab py-3 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    Follow-up
+                </button>
+            </nav>
+        </div>
+        
+        <!-- Tab Content -->
+        <div class="p-6 max-h-96 overflow-y-auto">
+            <!-- Contact Info Tab -->
+            <div id="panel-contact" class="quick-edit-panel">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                        <input type="text" id="qe-first_name" value="{{ lead.first_name }}" 
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                        <input type="text" id="qe-last_name" value="{{ lead.last_name }}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="qe-email" value="{{ lead.email }}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                        <input type="tel" id="qe-phone" value="{{ lead.phone }}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Secondary Phone</label>
+                        <input type="tel" id="qe-phone_secondary" value="{{ lead.phone_secondary }}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
+                        <input type="tel" id="qe-whatsapp_number" value="{{ lead.whatsapp_number }}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" id="qe-prefers_whatsapp" {% if lead.prefers_whatsapp %}checked{% endif %}
+                                   class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                            <span class="ml-2 text-sm text-gray-600">Prefers WhatsApp for communication</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status & Type Tab -->
+            <div id="panel-status" class="quick-edit-panel hidden">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="qe-status" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            {% for value, label in statuses %}
+                            <option value="{{ value }}" {% if lead.status == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                        <select id="qe-priority" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            {% for value, label in priorities %}
+                            <option value="{{ value }}" {% if lead.priority == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Lead Type</label>
+                        <select id="qe-lead_type" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            {% for value, label in lead_types %}
+                            <option value="{{ value }}" {% if lead.lead_type == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Lead Source</label>
+                        <select id="qe-source_id" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            <option value="">-- Select Source --</option>
+                            {% for source in sources %}
+                            <option value="{{ source.id }}" {% if lead.source_id == source.id %}selected{% endif %}>{{ source.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Qualification Interest</label>
+                        <select id="qe-qualification_interest_id" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            <option value="">-- Select Qualification --</option>
+                            {% for qual in qualifications %}
+                            <option value="{{ qual.id }}" {% if lead.qualification_interest_id == qual.id %}selected{% endif %}>{{ qual.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                        <input type="date" id="qe-date_of_birth" value="{{ lead.date_of_birth|date:'Y-m-d' }}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea id="qe-notes" rows="3"
+                                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">{{ lead.notes }}</textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- School Info Tab -->
+            <div id="panel-school" class="quick-edit-panel hidden">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">School Name</label>
+                        <input type="text" id="qe-school_name" value="{{ lead.school_name }}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Grade</label>
+                        <input type="text" id="qe-grade" value="{{ lead.grade }}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                               placeholder="e.g., 11, 12">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Expected Matric Year</label>
+                        <input type="number" id="qe-expected_matric_year" value="{{ lead.expected_matric_year }}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                               min="2024" max="2035" placeholder="e.g., 2026">
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
+                    <strong>💡 Tip:</strong> School leaver details help track progression from school to enrollment.
+                </div>
+            </div>
+            
+            <!-- Parent/Guardian Tab -->
+            <div id="panel-parent" class="quick-edit-panel hidden">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Parent/Guardian Name</label>
+                        <input type="text" id="qe-parent_name" value="{{ lead.parent_name }}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Parent Phone</label>
+                        <input type="tel" id="qe-parent_phone" value="{{ lead.parent_phone }}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Parent Email</label>
+                        <input type="email" id="qe-parent_email" value="{{ lead.parent_email }}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
+                        <input type="text" id="qe-parent_relationship" value="{{ lead.parent_relationship }}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                               placeholder="e.g., Mother, Father, Guardian">
+                    </div>
+                </div>
+                {% if lead.is_minor %}
+                <div class="mt-4 p-3 bg-yellow-50 rounded-lg text-sm text-yellow-700">
+                    <strong>⚠️ Minor:</strong> This lead is under 18. Parent/guardian details are required for enrollment.
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Follow-up Tab -->
+            <div id="panel-followup" class="quick-edit-panel hidden">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Next Follow-up Date & Time</label>
+                        <input type="datetime-local" id="qe-next_follow_up" 
+                               value="{% if lead.next_follow_up %}{{ lead.next_follow_up|date:'Y-m-d' }}T{{ lead.next_follow_up|time:'H:i' }}{% endif %}"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Follow-up Notes</label>
+                        <textarea id="qe-follow_up_notes" rows="4"
+                                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                                  placeholder="What should be discussed or actioned in the follow-up?">{{ lead.follow_up_notes }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="flex justify-between items-center px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+            <a href="{% url 'crm:lead_update' lead.pk %}" class="text-sm text-gray-500 hover:text-primary-600 flex items-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+                Open Full Edit Page
+            </a>
+            <div class="flex space-x-3">
+                <button type="button" onclick="closeQuickEditModal()" 
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="button" onclick="saveQuickEdit()" id="save-quick-edit-btn"
+                        class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 flex items-center">
+                    <svg class="w-4 h-4 mr-2 hidden" id="save-spinner" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Quick Edit Modal Functions
+function openQuickEditModal() {
+    document.getElementById('quick-edit-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeQuickEditModal() {
+    document.getElementById('quick-edit-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function switchQuickEditTab(tabName) {
+    // Hide all panels and deactivate all tabs
+    document.querySelectorAll('.quick-edit-panel').forEach(panel => panel.classList.add('hidden'));
+    document.querySelectorAll('.quick-edit-tab').forEach(tab => {
+        tab.classList.remove('border-primary-500', 'text-primary-600');
+        tab.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected panel and activate tab
+    document.getElementById('panel-' + tabName).classList.remove('hidden');
+    const activeTab = document.getElementById('tab-' + tabName);
+    activeTab.classList.remove('border-transparent', 'text-gray-500');
+    activeTab.classList.add('border-primary-500', 'text-primary-600');
+}
+
+function saveQuickEdit() {
+    const btn = document.getElementById('save-quick-edit-btn');
+    const spinner = document.getElementById('save-spinner');
+    
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+    
+    // Collect all form data
+    const data = {
+        // Contact
+        first_name: document.getElementById('qe-first_name').value,
+        last_name: document.getElementById('qe-last_name').value,
+        email: document.getElementById('qe-email').value,
+        phone: document.getElementById('qe-phone').value,
+        phone_secondary: document.getElementById('qe-phone_secondary').value,
+        whatsapp_number: document.getElementById('qe-whatsapp_number').value,
+        prefers_whatsapp: document.getElementById('qe-prefers_whatsapp').checked,
+        // Status
+        status: document.getElementById('qe-status').value,
+        priority: document.getElementById('qe-priority').value,
+        lead_type: document.getElementById('qe-lead_type').value,
+        source_id: document.getElementById('qe-source_id').value,
+        qualification_interest_id: document.getElementById('qe-qualification_interest_id').value,
+        date_of_birth: document.getElementById('qe-date_of_birth').value,
+        notes: document.getElementById('qe-notes').value,
+        // School
+        school_name: document.getElementById('qe-school_name').value,
+        grade: document.getElementById('qe-grade').value,
+        expected_matric_year: document.getElementById('qe-expected_matric_year').value,
+        // Parent
+        parent_name: document.getElementById('qe-parent_name').value,
+        parent_phone: document.getElementById('qe-parent_phone').value,
+        parent_email: document.getElementById('qe-parent_email').value,
+        parent_relationship: document.getElementById('qe-parent_relationship').value,
+        // Follow-up
+        next_follow_up: document.getElementById('qe-next_follow_up').value,
+        follow_up_notes: document.getElementById('qe-follow_up_notes').value
+    };
+    
+    fetch('/crm/leads/{{ lead.pk }}/quick-edit/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+        
+        if (data.success) {
+            // Show success message
+            closeQuickEditModal();
+            
+            // Show a toast notification
+            showToast('Lead updated successfully!', 'success');
+            
+            // Refresh the page to show updated data
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast('Error: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+        showToast('Error saving changes', 'error');
+    });
+}
+
+// Simple toast notification function
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 ${
+        type === 'success' ? 'bg-green-600 text-white' : 
+        type === 'error' ? 'bg-red-600 text-white' : 
+        'bg-gray-800 text-white'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeQuickEditModal();
+    }
+});
+
+// Close modal when clicking outside
+document.getElementById('quick-edit-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeQuickEditModal();
+    }
+});
+</script>
 {% endblock %}
