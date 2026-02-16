@@ -14,7 +14,7 @@ from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from django.urls import reverse_lazy
 from datetime import timedelta, date
-from .models import Lead, LeadSource, LeadActivity
+from .models import Lead, LeadSource, LeadActivity, Pipeline, Application
 from core.context_processors import get_selected_campus
 from core.mixins import CampusFilterMixin
 
