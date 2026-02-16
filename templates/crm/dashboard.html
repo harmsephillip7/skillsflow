@@ -204,7 +204,7 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold text-gray-900">Leads by Source</h3>
-                <a href="{% url 'crm:source_list' %}" class="text-sm text-primary-600 hover:text-primary-700">Manage Sources →</a>
+                <a href="{% url 'crm:crm_settings' %}" class="text-sm text-primary-600 hover:text-primary-700">Manage Sources →</a>
             </div>
             <div class="space-y-3">
                 {% for source in leads_by_source %}
