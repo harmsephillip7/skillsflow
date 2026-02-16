@@ -279,6 +279,34 @@ class LeadDetailView(LoginRequiredMixin, CRMAccessMixin, DetailView):
         from .models import LeadDocument
         context['document_types'] = LeadDocument.DOCUMENT_TYPES
         
+        # Pipeline Memberships
+        context['pipeline_memberships'] = lead.pipeline_memberships.select_related(
+            'pipeline', 'current_stage'
+        ).order_by('-joined_at')
+        
+        # Available pipelines (not already enrolled)
+        enrolled_pipeline_ids = lead.pipeline_memberships.values_list('pipeline_id', flat=True)
+        context['available_pipelines'] = Pipeline.objects.filter(
+            is_active=True
+        ).exclude(id__in=enrolled_pipeline_ids)
+        
+        # Active applications (non-archived)
+        context['active_applications'] = Application.objects.filter(
+            opportunity__lead=lead,
+            is_archived=False
+        ).exclude(
+            status__in=['ENROLLED', 'REJECTED', 'WITHDRAWN']
+        ).select_related('opportunity', 'intake').order_by('-created_at')
+        
+        # Qualifications and intakes for application creation
+        from academics.models import Qualification
+        from intakes.models import Intake
+        context['qualifications'] = Qualification.objects.filter(is_active=True).order_by('name')
+        context['intakes'] = Intake.objects.filter(
+            is_open_for_applications=True,
+            start_date__gte=date.today()
+        ).order_by('start_date')[:20]
+        
         return context
 
 
@@ -782,6 +810,139 @@ def lead_delete_document(request, pk, doc_id):
     return JsonResponse({
         'success': True,
         'message': f'Document "{doc_title}" deleted'
+    })
+
+
+@login_required
+def lead_add_to_pipeline(request, pk):
+    """Add lead to a pipeline"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    
+    lead = get_object_or_404(Lead, pk=pk)
+    
+    import json
+    try:
+        data = json.loads(request.body)
+        pipeline_id = data.get('pipeline_id')
+    except json.JSONDecodeError:
+        pipeline_id = request.POST.get('pipeline_id')
+    
+    if not pipeline_id:
+        return JsonResponse({'error': 'Pipeline ID required'}, status=400)
+    
+    pipeline = get_object_or_404(Pipeline, pk=pipeline_id)
+    
+    membership = lead.add_to_pipeline(pipeline, user=request.user)
+    
+    return JsonResponse({
+        'success': True,
+        'membership_id': membership.id,
+        'pipeline_name': pipeline.name,
+        'message': f'Lead added to pipeline "{pipeline.name}"'
+    })
+
+
+@login_required
+def lead_pipeline_membership_action(request, pk, membership_id, action):
+    """Pause, resume, or remove a pipeline membership"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    
+    lead = get_object_or_404(Lead, pk=pk)
+    
+    from .models import LeadPipelineMembership
+    membership = get_object_or_404(LeadPipelineMembership, pk=membership_id, lead=lead)
+    
+    if action == 'pause':
+        membership.pause()
+        return JsonResponse({'success': True, 'message': 'Pipeline membership paused'})
+    elif action == 'resume':
+        membership.resume()
+        return JsonResponse({'success': True, 'message': 'Pipeline membership resumed'})
+    elif action == 'remove':
+        pipeline_name = membership.pipeline.name
+        membership.exit(request.user)
+        return JsonResponse({'success': True, 'message': f'Removed from pipeline "{pipeline_name}"'})
+    else:
+        return JsonResponse({'error': 'Invalid action'}, status=400)
+
+
+@login_required
+def lead_create_application(request, pk):
+    """Create an application for a lead"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    
+    lead = get_object_or_404(Lead, pk=pk)
+    
+    import json
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        data = request.POST
+    
+    qualification_id = data.get('qualification_id')
+    intake_id = data.get('intake_id')
+    bypass_eligibility = data.get('bypass_eligibility', False)
+    
+    if not qualification_id:
+        return JsonResponse({'error': 'Qualification required'}, status=400)
+    
+    from academics.models import Qualification
+    from intakes.models import Intake
+    
+    qualification = get_object_or_404(Qualification, pk=qualification_id)
+    intake = None
+    if intake_id:
+        intake = get_object_or_404(Intake, pk=intake_id)
+    
+    # Check eligibility if not bypassing
+    if not bypass_eligibility and lead.pipeline:
+        is_eligible, reason = lead.application_eligible_for_pipeline(lead.pipeline, bypass_check=False)
+        if not is_eligible:
+            return JsonResponse({'error': reason, 'eligibility_failed': True}, status=400)
+    
+    # Create opportunity first
+    from .models import Opportunity
+    opportunity, created = Opportunity.objects.get_or_create(
+        lead=lead,
+        qualification=qualification,
+        defaults={
+            'name': f"{lead.get_full_name()} - {qualification.name}",
+            'value': 0,
+            'stage': 'PROPOSAL',
+            'brand': lead.brand,
+            'campus': lead.campus,
+        }
+    )
+    
+    # Create application
+    from .models import Application
+    application = Application.objects.create(
+        opportunity=opportunity,
+        intake=intake,
+        status='DRAFT',
+        brand=lead.brand,
+        campus=lead.campus,
+        created_by=request.user,
+    )
+    
+    # Log activity
+    from .models import LeadActivity
+    LeadActivity.objects.create(
+        lead=lead,
+        activity_type='STATUS_CHANGE',
+        description=f'Application created for {qualification.name}' + (f' ({intake.name})' if intake else ''),
+        created_by=request.user,
+        brand=lead.brand,
+        campus=lead.campus
+    )
+    
+    return JsonResponse({
+        'success': True,
+        'application_id': str(application.id),
+        'message': f'Application created for {qualification.name}'
     })
 
 

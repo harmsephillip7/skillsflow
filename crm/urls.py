@@ -83,6 +83,21 @@ urlpatterns = [
     path('leads/<int:pk>/upload-document/', views.lead_upload_document, name='lead_upload_document'),
     path('leads/<int:pk>/delete-document/<str:doc_id>/', views.lead_delete_document, name='lead_delete_document'),
     
+    # Pipeline membership actions
+    path('leads/<int:pk>/add-to-pipeline/', views.lead_add_to_pipeline, name='lead_add_to_pipeline'),
+    path('leads/<int:pk>/pipeline-membership/<int:membership_id>/pause/', 
+         lambda request, pk, membership_id: views.lead_pipeline_membership_action(request, pk, membership_id, 'pause'),
+         name='lead_pipeline_membership_pause'),
+    path('leads/<int:pk>/pipeline-membership/<int:membership_id>/resume/', 
+         lambda request, pk, membership_id: views.lead_pipeline_membership_action(request, pk, membership_id, 'resume'),
+         name='lead_pipeline_membership_resume'),
+    path('leads/<int:pk>/pipeline-membership/<int:membership_id>/remove/', 
+         lambda request, pk, membership_id: views.lead_pipeline_membership_action(request, pk, membership_id, 'remove'),
+         name='lead_pipeline_membership_remove'),
+    
+    # Application creation
+    path('leads/<int:pk>/create-application/', views.lead_create_application, name='lead_create_application'),
+    
     # API endpoints
     path('api/validate-id-number/', views.validate_id_number_api, name='validate_id_number'),
     

@@ -53,6 +53,25 @@ class Pipeline(TenantAwareModel):
     is_default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     
+    # Application eligibility rules (configurable per pipeline)
+    min_grade_for_application = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Minimum grade for application eligibility (e.g., 'GRADE_12', 'GRADE_11')"
+    )
+    min_age_for_application = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Minimum age in years for application eligibility"
+    )
+    requires_pre_approval = models.BooleanField(
+        default=False,
+        help_text="If True, pre-approval letter required before application can be created"
+    )
+    auto_create_application_on_ready = models.BooleanField(
+        default=False,
+        help_text="Automatically create application when lead meets eligibility criteria"
+    )
+    
     # Pipeline color for UI
     color = models.CharField(max_length=7, default='#3B82F6')
     icon = models.CharField(max_length=50, default='fa-user-graduate')
@@ -277,6 +296,125 @@ class CommunicationCycle(AuditedModel):
     
     def __str__(self):
         return f"{self.lead} - {self.scheduled_at.strftime('%Y-%m-%d')} ({self.status})"
+
+
+class LeadPipelineMembership(AuditedModel):
+    """
+    Tracks a lead's membership in a pipeline for automated communication schedules.
+    A lead can be in multiple pipelines simultaneously (e.g., nurture campaigns).
+    This replaces the single Lead.pipeline FK with a many-to-many relationship.
+    """
+    MEMBERSHIP_STATUS_CHOICES = [
+        ('ACTIVE', 'Active'),
+        ('PAUSED', 'Paused'),
+        ('COMPLETED', 'Completed'),
+        ('EXITED', 'Exited'),
+    ]
+    
+    lead = models.ForeignKey(
+        'crm.Lead',
+        on_delete=models.CASCADE,
+        related_name='pipeline_memberships'
+    )
+    pipeline = models.ForeignKey(
+        'crm.Pipeline',
+        on_delete=models.CASCADE,
+        related_name='memberships'
+    )
+    current_stage = models.ForeignKey(
+        'crm.PipelineStage',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='memberships'
+    )
+    
+    status = models.CharField(
+        max_length=20,
+        choices=MEMBERSHIP_STATUS_CHOICES,
+        default='ACTIVE'
+    )
+    
+    # Timing
+    joined_at = models.DateTimeField(auto_now_add=True)
+    stage_entered_at = models.DateTimeField(null=True, blank=True)
+    last_stage_change = models.DateTimeField(null=True, blank=True)
+    exited_at = models.DateTimeField(null=True, blank=True)
+    
+    # Communication scheduling
+    next_communication_at = models.DateTimeField(null=True, blank=True)
+    last_communication_at = models.DateTimeField(null=True, blank=True)
+    communications_paused = models.BooleanField(default=False)
+    pause_reason = models.CharField(max_length=200, blank=True)
+    
+    # Notes
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-joined_at']
+        verbose_name = 'Lead Pipeline Membership'
+        verbose_name_plural = 'Lead Pipeline Memberships'
+        unique_together = ['lead', 'pipeline']  # Lead can only be in a pipeline once
+        indexes = [
+            models.Index(fields=['status', 'next_communication_at']),
+            models.Index(fields=['lead', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.lead} in {self.pipeline.name} ({self.status})"
+    
+    def move_to_stage(self, new_stage, user=None):
+        """Move lead to a new stage within this pipeline membership."""
+        old_stage = self.current_stage
+        self.current_stage = new_stage
+        self.stage_entered_at = timezone.now()
+        self.last_stage_change = timezone.now()
+        
+        # Calculate next communication time based on stage frequency
+        if new_stage and hasattr(new_stage, 'communication_frequency_days') and new_stage.communication_frequency_days:
+            from datetime import timedelta
+            self.next_communication_at = timezone.now() + timedelta(days=new_stage.communication_frequency_days)
+        elif self.pipeline.default_communication_frequency_days:
+            from datetime import timedelta
+            self.next_communication_at = timezone.now() + timedelta(days=self.pipeline.default_communication_frequency_days)
+        
+        self.save()
+        
+        # Log activity
+        from crm.models import LeadActivity
+        LeadActivity.objects.create(
+            lead=self.lead,
+            activity_type='STATUS_CHANGE',
+            description=f'Pipeline stage changed in {self.pipeline.name}: {old_stage.name if old_stage else "Entry"} → {new_stage.name}',
+            from_status=old_stage.code if old_stage else '',
+            to_status=new_stage.code,
+            created_by=user
+        )
+    
+    def pause(self, reason=''):
+        """Pause communications for this pipeline membership."""
+        self.status = 'PAUSED'
+        self.communications_paused = True
+        self.pause_reason = reason
+        self.save()
+    
+    def resume(self):
+        """Resume communications for this pipeline membership."""
+        self.status = 'ACTIVE'
+        self.communications_paused = False
+        self.pause_reason = ''
+        self.save()
+    
+    def complete(self, user=None):
+        """Mark membership as completed (e.g., lead converted)."""
+        self.status = 'COMPLETED'
+        self.exited_at = timezone.now()
+        self.save()
+    
+    def exit(self, user=None):
+        """Exit lead from this pipeline (e.g., lost, unsubscribed)."""
+        self.status = 'EXITED'
+        self.exited_at = timezone.now()
+        self.save()
 
 
 class PreApprovalLetter(AuditedModel):
@@ -1114,6 +1252,131 @@ class Lead(TenantAwareModel):
             return True
         return age is not None and age >= 18
     
+    @property
+    def active_pipeline_memberships(self):
+        """Get all active pipeline memberships for this lead."""
+        return self.pipeline_memberships.filter(status='ACTIVE')
+    
+    @property
+    def active_applications(self):
+        """Get all non-archived applications for this lead."""
+        return Application.objects.filter(
+            opportunity__lead=self,
+            is_archived=False
+        ).exclude(status__in=['ENROLLED', 'REJECTED', 'WITHDRAWN'])
+    
+    def has_pre_approval_for_qualification(self, qualification):
+        """Check if lead has valid pre-approval for a qualification."""
+        from django.utils import timezone
+        return self.pre_approval_letters.filter(
+            qualification=qualification,
+            status__in=['SENT', 'VIEWED', 'ACCEPTED'],
+            valid_until__gte=timezone.now().date()
+        ).exists()
+    
+    def application_eligible_for_pipeline(self, pipeline, bypass_check=False):
+        """
+        Check if lead is eligible to create an application for a given pipeline.
+        Returns (is_eligible: bool, reason: str or None)
+        
+        If bypass_check=True, staff can bypass eligibility (returns True with note).
+        """
+        if bypass_check:
+            return True, "Eligibility bypassed by staff"
+        
+        # Check age requirement
+        if pipeline.min_age_for_application:
+            if self.age is None:
+                return False, "Date of birth required to verify age eligibility"
+            if self.age < pipeline.min_age_for_application:
+                return False, f"Must be at least {pipeline.min_age_for_application} years old (current age: {self.age})"
+        
+        # Check grade requirement
+        if pipeline.min_grade_for_application and self.highest_qualification:
+            # Simple check - can be enhanced with grade comparison logic
+            grade_order = ['GRADE_9', 'GRADE_10', 'GRADE_11', 'GRADE_12', 'MATRIC', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'DIPLOMA', 'DEGREE']
+            try:
+                required_index = grade_order.index(pipeline.min_grade_for_application.upper())
+                current_index = grade_order.index(self.highest_qualification.upper())
+                if current_index < required_index:
+                    return False, f"Minimum qualification required: {pipeline.min_grade_for_application}"
+            except ValueError:
+                pass  # Grade not in list, skip check
+        
+        # Check pre-approval requirement (for school leavers/minors)
+        if pipeline.requires_pre_approval:
+            # For school leavers, check if they have any valid pre-approval
+            if self.is_minor or self.lead_type == 'SCHOOL_LEAVER':
+                valid_pre_approvals = self.pre_approval_letters.filter(
+                    status__in=['SENT', 'VIEWED', 'ACCEPTED'],
+                    valid_until__gte=timezone.now().date()
+                )
+                if not valid_pre_approvals.exists():
+                    return False, "Pre-approval letter required before application"
+        
+        return True, None
+    
+    def add_to_pipeline(self, pipeline, user=None, move_to_entry_stage=True):
+        """
+        Add lead to a pipeline, creating a LeadPipelineMembership.
+        Returns the membership object.
+        """
+        from crm.models import LeadPipelineMembership
+        
+        # Check if already in this pipeline
+        existing = self.pipeline_memberships.filter(pipeline=pipeline).first()
+        if existing:
+            if existing.status in ['COMPLETED', 'EXITED']:
+                # Reactivate if previously exited
+                existing.status = 'ACTIVE'
+                existing.exited_at = None
+                existing.save()
+            return existing
+        
+        # Create new membership
+        entry_stage = None
+        if move_to_entry_stage:
+            entry_stage = pipeline.stages.filter(is_entry_stage=True).first()
+        
+        membership = LeadPipelineMembership.objects.create(
+            lead=self,
+            pipeline=pipeline,
+            current_stage=entry_stage,
+            stage_entered_at=timezone.now() if entry_stage else None
+        )
+        
+        # Also update the legacy single pipeline FK for backward compatibility
+        if not self.pipeline:
+            self.pipeline = pipeline
+            self.current_stage = entry_stage
+            self.stage_entered_at = timezone.now() if entry_stage else None
+            self.save()
+        
+        # Log activity
+        LeadActivity.objects.create(
+            lead=self,
+            activity_type='STATUS_CHANGE',
+            description=f'Added to pipeline: {pipeline.name}',
+            created_by=user
+        )
+        
+        return membership
+    
+    def remove_from_pipeline(self, pipeline, user=None, reason=''):
+        """Remove lead from a pipeline by marking membership as EXITED."""
+        membership = self.pipeline_memberships.filter(pipeline=pipeline, status='ACTIVE').first()
+        if membership:
+            membership.exit(user)
+            
+            # Log activity
+            LeadActivity.objects.create(
+                lead=self,
+                activity_type='STATUS_CHANGE',
+                description=f'Removed from pipeline: {pipeline.name}' + (f' - {reason}' if reason else ''),
+                created_by=user
+            )
+        return membership
+
     def move_to_stage(self, new_stage, user=None):
         """Move lead to a new pipeline stage with activity logging."""
         old_stage = self.current_stage
@@ -1981,12 +2244,35 @@ class Application(TenantAwareModel):
     last_communication_at = models.DateTimeField(null=True, blank=True)
     next_follow_up = models.DateTimeField(null=True, blank=True)
     
+    # Archiving (when learner starts studying/induction)
+    is_archived = models.BooleanField(
+        default=False,
+        help_text="Application is archived once learner starts studying"
+    )
+    archived_at = models.DateTimeField(null=True, blank=True)
+    archived_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='archived_applications'
+    )
+    
+    # Link to pre-approval (if application was created from pre-approval)
+    created_from_pre_approval = models.ForeignKey(
+        'crm.PreApprovalLetter',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='spawned_applications',
+        help_text="The pre-approval letter that triggered this application"
+    )
+    
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'Application'
         verbose_name_plural = 'Applications'
         indexes = [
             models.Index(fields=['status', 'campus']),
+            models.Index(fields=['is_archived', 'status']),
         ]
     
     def __str__(self):
@@ -2076,6 +2362,24 @@ class Application(TenantAwareModel):
         lead.converted_learner = self.learner
         lead.converted_at = timezone.now()
         lead.save()
+        
+        # Auto-archive the application (learner starts induction/studying)
+        self.archive(user)
+    
+    def archive(self, user=None):
+        """Archive application when learner starts studying/induction."""
+        self.is_archived = True
+        self.archived_at = timezone.now()
+        self.archived_by = user
+        self.save(update_fields=['is_archived', 'archived_at', 'archived_by'])
+        return self
+    
+    @property
+    def is_active(self):
+        """Check if application is in an active (non-terminal, non-archived) state."""
+        if self.is_archived:
+            return False
+        return self.status in ['DRAFT', 'SUBMITTED', 'DOCUMENTS_PENDING', 'UNDER_REVIEW', 'ACCEPTED', 'WAITLIST']
 
 
 class ApplicationDocument(AuditedModel):

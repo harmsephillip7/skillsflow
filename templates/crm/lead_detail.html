@@ -1199,6 +1199,140 @@
             </div>
         </div>
         
+        <!-- Pipeline Memberships Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center justify-between">
+                <span class="flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Pipelines ({{ lead.pipeline_memberships.count }})
+                </span>
+                <button type="button" onclick="openAddPipelineModal()" 
+                        class="text-primary-600 hover:text-primary-800 transition-colors" title="Add to Pipeline">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                </button>
+            </h3>
+            
+            <!-- Pipeline Memberships List -->
+            <div class="space-y-2" id="pipeline-memberships-list">
+                {% for membership in pipeline_memberships %}
+                <div class="p-3 bg-gray-50 rounded-lg border border-gray-200" id="membership-{{ membership.id }}">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 rounded-full mr-2" style="background-color: {{ membership.pipeline.color }}"></span>
+                            <span class="font-medium text-sm text-gray-900">{{ membership.pipeline.name }}</span>
+                        </div>
+                        <span class="px-2 py-0.5 text-xs font-semibold rounded-full 
+                            {% if membership.status == 'ACTIVE' %}bg-green-100 text-green-800
+                            {% elif membership.status == 'PAUSED' %}bg-yellow-100 text-yellow-800
+                            {% elif membership.status == 'COMPLETED' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ membership.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    {% if membership.current_stage %}
+                    <div class="text-xs text-gray-500 mb-2">
+                        <span class="font-medium">Stage:</span> {{ membership.current_stage.name }}
+                        {% if membership.stage_entered_at %}
+                        <span class="ml-2 text-gray-400">({{ membership.stage_entered_at|timesince }} ago)</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-gray-400">Joined {{ membership.joined_at|date:"d M Y" }}</span>
+                        <div class="flex items-center space-x-2">
+                            {% if membership.status == 'ACTIVE' %}
+                            <button type="button" onclick="pausePipelineMembership({{ membership.id }})" 
+                                    class="text-yellow-600 hover:text-yellow-800" title="Pause">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </button>
+                            {% elif membership.status == 'PAUSED' %}
+                            <button type="button" onclick="resumePipelineMembership({{ membership.id }})" 
+                                    class="text-green-600 hover:text-green-800" title="Resume">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </button>
+                            {% endif %}
+                            <button type="button" onclick="removePipelineMembership({{ membership.id }}, '{{ membership.pipeline.name }}')" 
+                                    class="text-red-600 hover:text-red-800" title="Remove from Pipeline">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500 text-center py-4" id="no-pipelines-msg">Not enrolled in any pipelines</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Applications Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center justify-between">
+                <span class="flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Applications ({{ active_applications.count }})
+                </span>
+                <button type="button" onclick="openCreateApplicationModal()" 
+                        class="text-primary-600 hover:text-primary-800 transition-colors" title="Create Application">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                </button>
+            </h3>
+            
+            <!-- Active Applications List -->
+            <div class="space-y-2" id="applications-list">
+                {% for app in active_applications %}
+                <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-medium text-sm text-gray-900">{{ app.opportunity.qualification.name|default:"Application" }}</span>
+                        <span class="px-2 py-0.5 text-xs font-semibold rounded-full 
+                            {% if app.status == 'DRAFT' %}bg-gray-100 text-gray-800
+                            {% elif app.status == 'SUBMITTED' %}bg-blue-100 text-blue-800
+                            {% elif app.status == 'DOCUMENTS_PENDING' %}bg-yellow-100 text-yellow-800
+                            {% elif app.status == 'UNDER_REVIEW' %}bg-indigo-100 text-indigo-800
+                            {% elif app.status == 'ACCEPTED' %}bg-green-100 text-green-800
+                            {% elif app.status == 'WAITLIST' %}bg-orange-100 text-orange-800
+                            {% elif app.status == 'REJECTED' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ app.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    {% if app.intake %}
+                    <div class="text-xs text-gray-500 mb-1">
+                        <span class="font-medium">Intake:</span> {{ app.intake.name }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-gray-400">Created {{ app.created_at|date:"d M Y" }}</span>
+                        <a href="{% url 'crm:application_detail' app.pk %}" 
+                           class="text-primary-600 hover:text-primary-800 font-medium">
+                            View Details →
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500 text-center py-4">No active applications</p>
+                {% endfor %}
+            </div>
+        </div>
+        
         <!-- Document Upload Links -->
         <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-200 p-6">
             <h3 class="text-sm font-semibold text-blue-800 uppercase tracking-wider mb-4 flex items-center">
@@ -2354,5 +2488,248 @@ function deleteDocument(docId) {
         alert('Error deleting document');
     });
 }
+
+// Pipeline Membership Functions
+function openAddPipelineModal() {
+    document.getElementById('add-pipeline-modal').classList.remove('hidden');
+}
+
+function closeAddPipelineModal() {
+    document.getElementById('add-pipeline-modal').classList.add('hidden');
+}
+
+function addToPipeline(pipelineId) {
+    fetch('/crm/leads/{{ lead.pk }}/add-to-pipeline/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ pipeline_id: pipelineId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeAddPipelineModal();
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error adding to pipeline');
+    });
+}
+
+function pausePipelineMembership(membershipId) {
+    fetch('/crm/leads/{{ lead.pk }}/pipeline-membership/' + membershipId + '/pause/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    });
+}
+
+function resumePipelineMembership(membershipId) {
+    fetch('/crm/leads/{{ lead.pk }}/pipeline-membership/' + membershipId + '/resume/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    });
+}
+
+function removePipelineMembership(membershipId, pipelineName) {
+    if (!confirm('Remove lead from pipeline "' + pipelineName + '"?')) {
+        return;
+    }
+    
+    fetch('/crm/leads/{{ lead.pk }}/pipeline-membership/' + membershipId + '/remove/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('membership-' + membershipId).remove();
+            // Check if list empty
+            const list = document.getElementById('pipeline-memberships-list');
+            if (list && list.children.length === 0) {
+                list.innerHTML = '<p class="text-sm text-gray-500 text-center py-4" id="no-pipelines-msg">Not enrolled in any pipelines</p>';
+            }
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    });
+}
+
+// Application Functions
+function openCreateApplicationModal() {
+    document.getElementById('create-application-modal').classList.remove('hidden');
+}
+
+function closeCreateApplicationModal() {
+    document.getElementById('create-application-modal').classList.add('hidden');
+}
+
+function createApplication() {
+    const qualificationSelect = document.getElementById('application-qualification');
+    const intakeSelect = document.getElementById('application-intake');
+    const bypassCheckbox = document.getElementById('bypass-eligibility');
+    
+    if (!qualificationSelect.value) {
+        alert('Please select a qualification');
+        return;
+    }
+    
+    const data = {
+        qualification_id: qualificationSelect.value,
+        intake_id: intakeSelect.value || null,
+        bypass_eligibility: bypassCheckbox ? bypassCheckbox.checked : false
+    };
+    
+    fetch('/crm/leads/{{ lead.pk }}/create-application/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeCreateApplicationModal();
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error creating application');
+    });
+}
 </script>
+
+<!-- Add Pipeline Modal -->
+<div id="add-pipeline-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-6 border w-11/12 max-w-md shadow-lg rounded-xl bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Add to Pipeline</h3>
+            <button onclick="closeAddPipelineModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <p class="text-sm text-gray-500 mb-4">Select a pipeline to add this lead to for automated communications.</p>
+        
+        <div class="space-y-2 max-h-64 overflow-y-auto">
+            {% for pipeline in available_pipelines %}
+            <button onclick="addToPipeline({{ pipeline.id }})"
+                    class="w-full p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-between transition-colors">
+                <div class="flex items-center">
+                    <span class="w-3 h-3 rounded-full mr-3" style="background-color: {{ pipeline.color }}"></span>
+                    <div>
+                        <span class="font-medium text-gray-900">{{ pipeline.name }}</span>
+                        <span class="block text-xs text-gray-500">{{ pipeline.get_learner_type_display }}</span>
+                    </div>
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+            {% empty %}
+            <p class="text-sm text-gray-500 text-center py-4">No available pipelines</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Create Application Modal -->
+<div id="create-application-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-6 border w-11/12 max-w-md shadow-lg rounded-xl bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Create Application</h3>
+            <button onclick="closeCreateApplicationModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Qualification *</label>
+                <select id="application-qualification" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    <option value="">Select a qualification...</option>
+                    {% for qual in qualifications %}
+                    <option value="{{ qual.id }}">{{ qual.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Intake (Optional)</label>
+                <select id="application-intake" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    <option value="">Select an intake...</option>
+                    {% for intake in intakes %}
+                    <option value="{{ intake.id }}">{{ intake.name }} - {{ intake.start_date|date:"d M Y" }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            {% if lead.is_minor %}
+            <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div class="flex items-center text-sm text-yellow-800">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    This lead is a minor. Pre-approval may be required.
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="flex items-center">
+                <input type="checkbox" id="bypass-eligibility" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                <label for="bypass-eligibility" class="ml-2 text-sm text-gray-600">
+                    Bypass eligibility checks (staff override)
+                </label>
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" onclick="closeCreateApplicationModal()" 
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="button" onclick="createApplication()"
+                        class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700">
+                    Create Application
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
