@@ -363,9 +363,7 @@ class LeadCreateView(LoginRequiredMixin, CRMAccessMixin, CreateView):
             lead=lead,
             activity_type='STATUS_CHANGE',
             description=f'Lead created with status: {lead.get_status_display()}',
-            created_by=user,
-            brand=lead.brand,
-            campus=lead.campus
+            created_by=user
         )
         
         messages.success(self.request, f'Lead "{lead.get_full_name()}" created successfully.')
@@ -419,18 +417,14 @@ class LeadUpdateView(LoginRequiredMixin, CRMAccessMixin, UpdateView):
                     lead=lead,
                     activity_type='STATUS_CHANGE',
                     description=f'Status changed to: {lead.get_status_display()}',
-                    created_by=user,
-                    brand=lead.brand,
-                    campus=lead.campus
+                    created_by=user
                 )
             else:
                 LeadActivity.objects.create(
                     lead=lead,
                     activity_type='NOTE',
                     description=f'Lead updated. Changed: {", ".join(changed_fields)}',
-                    created_by=user,
-                    brand=lead.brand,
-                    campus=lead.campus
+                    created_by=user
                 )
         
         messages.success(self.request, f'Lead "{lead.get_full_name()}" updated successfully.')
@@ -458,9 +452,7 @@ def lead_quick_status(request, pk):
         lead=lead,
         activity_type='STATUS_CHANGE',
         description=f'Status changed from {old_status} to {new_status}',
-        created_by=request.user,
-        brand=lead.brand,
-        campus=lead.campus
+        created_by=request.user
     )
     
     return JsonResponse({
@@ -487,9 +479,7 @@ def lead_add_activity(request, pk):
         lead=lead,
         activity_type=activity_type,
         description=description,
-        created_by=request.user,
-        brand=lead.brand,
-        campus=lead.campus
+        created_by=request.user
     )
     
     return JsonResponse({
@@ -660,9 +650,7 @@ def lead_quick_edit(request, pk):
             lead=lead,
             activity_type='STATUS_CHANGE',
             description=f'Status changed from {old_status} to {lead.status}',
-            created_by=request.user,
-            brand=lead.brand,
-            campus=lead.campus
+            created_by=request.user
         )
     
     # Log other changes as a note
@@ -673,9 +661,7 @@ def lead_quick_edit(request, pk):
                 lead=lead,
                 activity_type='NOTE',
                 description=f'Lead updated via quick edit: {", ".join(other_changes)}',
-                created_by=request.user,
-                brand=lead.brand,
-                campus=lead.campus
+                created_by=request.user
             )
     
     return JsonResponse({
@@ -837,9 +823,7 @@ def lead_save_profile(request, pk):
             lead=lead,
             activity_type='NOTE',
             description=f'Updated learner profile: {section.replace("_", " ").title()} section',
-            created_by=request.user,
-            brand=lead.brand,
-            campus=lead.campus
+            created_by=request.user
         )
         
         return JsonResponse({
@@ -944,9 +928,7 @@ def lead_upload_document(request, pk):
         status='VERIFIED',  # Staff uploads are auto-verified
         verified_by=request.user,
         verified_at=timezone.now(),
-        created_by=request.user,
-        brand=lead.brand,
-        campus=lead.campus
+        created_by=request.user
     )
     
     # Log activity
@@ -954,9 +936,7 @@ def lead_upload_document(request, pk):
         lead=lead,
         activity_type='NOTE',
         description=f'Document uploaded: {doc.get_document_type_display()} - {doc.title}',
-        created_by=request.user,
-        brand=lead.brand,
-        campus=lead.campus
+        created_by=request.user
     )
     
     return JsonResponse({
@@ -995,9 +975,7 @@ def lead_delete_document(request, pk, doc_id):
         lead=lead,
         activity_type='NOTE',
         description=f'Document deleted: {doc_type} - {doc_title}',
-        created_by=request.user,
-        brand=lead.brand,
-        campus=lead.campus
+        created_by=request.user
     )
     
     return JsonResponse({
@@ -1116,7 +1094,6 @@ def lead_create_application(request, pk):
         opportunity=opportunity,
         intake=intake,
         status='DRAFT',
-        brand=lead.brand,
         campus=lead.campus,
         created_by=request.user,
     )
@@ -1127,9 +1104,7 @@ def lead_create_application(request, pk):
         lead=lead,
         activity_type='STATUS_CHANGE',
         description=f'Application created for {qualification.title}' + (f' ({intake.name})' if intake else ''),
-        created_by=request.user,
-        brand=lead.brand,
-        campus=lead.campus
+        created_by=request.user
     )
     
     return JsonResponse({
@@ -1170,9 +1145,7 @@ def lead_assign(request, pk):
         lead=lead,
         activity_type='ASSIGNMENT',
         description=msg,
-        created_by=request.user,
-        brand=lead.brand,
-        campus=lead.campus
+        created_by=request.user
     )
     
     return JsonResponse({
@@ -1208,9 +1181,7 @@ def lead_set_follow_up(request, pk):
         lead=lead,
         activity_type='FOLLOW_UP',
         description=f'Follow-up scheduled: {follow_up_date}. {follow_up_notes}',
-        created_by=request.user,
-        brand=lead.brand,
-        campus=lead.campus
+        created_by=request.user
     )
     
     return JsonResponse({
