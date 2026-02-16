@@ -272,6 +272,9 @@ class LeadDetailView(LoginRequiredMixin, CRMAccessMixin, DetailView):
         # Document upload requests
         context['document_requests'] = lead.document_requests.order_by('-created_at')[:10]
         
+        # Uploaded documents
+        context['lead_documents'] = lead.documents.order_by('-created_at')
+        
         # Document types for request modal
         from .models import LeadDocument
         context['document_types'] = LeadDocument.DOCUMENT_TYPES
@@ -686,6 +689,99 @@ def validate_id_number_api(request):
         'valid': True,
         'date_of_birth': dob.strftime('%Y-%m-%d'),
         'gender': gender
+    })
+
+
+@login_required
+def lead_upload_document(request, pk):
+    """Staff endpoint to upload documents for a lead"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    
+    lead = get_object_or_404(Lead, pk=pk)
+    
+    if 'file' not in request.FILES:
+        return JsonResponse({'error': 'No file provided'}, status=400)
+    
+    file = request.FILES['file']
+    document_type = request.POST.get('document_type', 'OTHER')
+    title = request.POST.get('title', '')
+    description = request.POST.get('description', '')
+    
+    from .models import LeadDocument, LeadActivity
+    
+    # Create the document
+    doc = LeadDocument.objects.create(
+        lead=lead,
+        document_type=document_type,
+        title=title or file.name,
+        description=description,
+        file=file,
+        original_filename=file.name,
+        file_size=file.size,
+        content_type=file.content_type or 'application/octet-stream',
+        status='VERIFIED',  # Staff uploads are auto-verified
+        verified_by=request.user,
+        verified_at=timezone.now(),
+        created_by=request.user,
+        brand=lead.brand,
+        campus=lead.campus
+    )
+    
+    # Log activity
+    LeadActivity.objects.create(
+        lead=lead,
+        activity_type='NOTE',
+        description=f'Document uploaded: {doc.get_document_type_display()} - {doc.title}',
+        created_by=request.user,
+        brand=lead.brand,
+        campus=lead.campus
+    )
+    
+    return JsonResponse({
+        'success': True,
+        'document_id': str(doc.id),
+        'document_type': doc.get_document_type_display(),
+        'title': doc.title,
+        'file_size': doc.file_size,
+        'file_url': doc.file.url
+    })
+
+
+@login_required
+def lead_delete_document(request, pk, doc_id):
+    """Delete a document from a lead"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    
+    lead = get_object_or_404(Lead, pk=pk)
+    
+    from .models import LeadDocument, LeadActivity
+    import uuid
+    
+    try:
+        doc_uuid = uuid.UUID(doc_id)
+        doc = get_object_or_404(LeadDocument, id=doc_uuid, lead=lead)
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Invalid document ID'}, status=400)
+    
+    doc_title = doc.title
+    doc_type = doc.get_document_type_display()
+    doc.delete()
+    
+    # Log activity
+    LeadActivity.objects.create(
+        lead=lead,
+        activity_type='NOTE',
+        description=f'Document deleted: {doc_type} - {doc_title}',
+        created_by=request.user,
+        brand=lead.brand,
+        campus=lead.campus
+    )
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'Document "{doc_title}" deleted'
     })
 
 

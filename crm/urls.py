@@ -80,6 +80,8 @@ urlpatterns = [
     path('leads/<int:pk>/assign/', views.lead_assign, name='lead_assign'),
     path('leads/<int:pk>/follow-up/', views.lead_set_follow_up, name='lead_set_follow_up'),
     path('leads/<int:pk>/save-profile/', views.lead_save_profile, name='lead_save_profile'),
+    path('leads/<int:pk>/upload-document/', views.lead_upload_document, name='lead_upload_document'),
+    path('leads/<int:pk>/delete-document/<str:doc_id>/', views.lead_delete_document, name='lead_delete_document'),
     
     # API endpoints
     path('api/validate-id-number/', views.validate_id_number_api, name='validate_id_number'),
