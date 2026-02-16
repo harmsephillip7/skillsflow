@@ -1299,7 +1299,7 @@
                 {% for app in active_applications %}
                 <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="font-medium text-sm text-gray-900">{{ app.opportunity.qualification.name|default:"Application" }}</span>
+                        <span class="font-medium text-sm text-gray-900">{{ app.opportunity.qualification.title|default:"Application" }}</span>
                         <span class="px-2 py-0.5 text-xs font-semibold rounded-full 
                             {% if app.status == 'DRAFT' %}bg-gray-100 text-gray-800
                             {% elif app.status == 'SUBMITTED' %}bg-blue-100 text-blue-800
@@ -2686,7 +2686,7 @@ function createApplication() {
                 <select id="application-qualification" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                     <option value="">Select a qualification...</option>
                     {% for qual in qualifications %}
-                    <option value="{{ qual.id }}">{{ qual.name }}</option>
+                    <option value="{{ qual.id }}">{{ qual.title }}</option>
                     {% endfor %}
                 </select>
             </div>

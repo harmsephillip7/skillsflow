@@ -301,7 +301,7 @@ class LeadDetailView(LoginRequiredMixin, CRMAccessMixin, DetailView):
         # Qualifications and intakes for application creation
         from academics.models import Qualification
         from intakes.models import Intake
-        context['qualifications'] = Qualification.objects.filter(is_active=True).order_by('name')
+        context['qualifications'] = Qualification.objects.filter(is_active=True).order_by('title')
         context['intakes'] = Intake.objects.filter(
             is_open_for_applications=True,
             start_date__gte=date.today()
@@ -909,7 +909,7 @@ def lead_create_application(request, pk):
         lead=lead,
         qualification=qualification,
         defaults={
-            'name': f"{lead.get_full_name()} - {qualification.name}",
+            'name': f"{lead.get_full_name()} - {qualification.title}",
             'value': 0,
             'stage': 'PROPOSAL',
             'brand': lead.brand,
@@ -933,7 +933,7 @@ def lead_create_application(request, pk):
     LeadActivity.objects.create(
         lead=lead,
         activity_type='STATUS_CHANGE',
-        description=f'Application created for {qualification.name}' + (f' ({intake.name})' if intake else ''),
+        description=f'Application created for {qualification.title}' + (f' ({intake.name})' if intake else ''),
         created_by=request.user,
         brand=lead.brand,
         campus=lead.campus
@@ -942,7 +942,7 @@ def lead_create_application(request, pk):
     return JsonResponse({
         'success': True,
         'application_id': str(application.id),
-        'message': f'Application created for {qualification.name}'
+        'message': f'Application created for {qualification.title}'
     })
 
 
