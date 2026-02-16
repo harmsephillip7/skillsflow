@@ -188,6 +188,7 @@ urlpatterns = [
     path('api/scan-card/', scanner_views.scan_card_api, name='scan_card_api'),
     path('api/create-lead-from-scan/', scanner_views.create_lead_from_scan, name='create_lead_from_scan'),
     path('api/create-leads-batch/', scanner_views.create_leads_batch, name='create_leads_batch'),
+    path('api/check-duplicate-lead/', scanner_views.check_duplicate_lead, name='check_duplicate_lead'),
     
     # Compliance Alerts Dashboard
     path('compliance-alerts/', views.ComplianceAlertsDashboardView.as_view(), name='compliance_alerts'),

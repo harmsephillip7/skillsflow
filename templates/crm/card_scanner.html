@@ -16,6 +16,7 @@
     .scanned-card.error { border: 2px solid #ef4444; }
     .scanned-card.ready { border: 2px solid #22c55e; }
     .scanned-card.saved { border: 2px solid #3b82f6; opacity: 0.6; }
+    .scanned-card.has-duplicates { border: 2px solid #f59e0b; }
     .card-thumbnail { width: 100%; height: 150px; object-fit: cover; background: #f3f4f6; }
     .confidence-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; }
     .confidence-high { background: #dcfce7; color: #166534; }
@@ -25,6 +26,15 @@
     .field-row label { width: 90px; font-size: 0.75rem; color: #6b7280; flex-shrink: 0; }
     .field-row input { flex: 1; font-size: 0.875rem; padding: 4px 8px; border: 1px solid #e5e7eb; border-radius: 4px; }
     .field-row input:focus { outline: none; border-color: #3b82f6; }
+    /* Field confidence indicators */
+    .field-row input.confidence-high-field { border-color: #22c55e; background-color: #f0fdf4; }
+    .field-row input.confidence-medium-field { border-color: #f59e0b; background-color: #fffbeb; }
+    .field-row input.confidence-low-field { border-color: #ef4444; background-color: #fef2f2; }
+    .field-row input.empty-field { border-color: #d1d5db; background-color: #f9fafb; }
+    /* Required field indicator */
+    .field-row label.required::after { content: '*'; color: #ef4444; margin-left: 2px; }
+    .field-row input.invalid { border-color: #ef4444 !important; animation: shake 0.3s ease-in-out; }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
     .drop-zone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 2rem; text-align: center; transition: all 0.2s; cursor: pointer; }
     .drop-zone:hover { border-color: #94a3b8; background: #f8fafc; }
     .drop-zone.dragover { border-color: #3b82f6; background: #eff6ff; }
@@ -38,6 +48,16 @@
     .toast-warning { background: #ca8a04; }
     .collapsible-fields { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
     .collapsible-fields.expanded { max-height: 500px; }
+    /* Duplicate warning */
+    .duplicate-warning { background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; padding: 8px; margin-top: 8px; }
+    .duplicate-item { font-size: 0.75rem; padding: 4px 8px; background: white; border-radius: 4px; margin-top: 4px; border: 1px solid #fcd34d; }
+    /* Confirmation modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9998; display: flex; align-items: center; justify-content: center; }
+    .modal-content { background: white; border-radius: 16px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+    .verification-status { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; }
+    .verification-status.pass { background: #dcfce7; color: #166534; }
+    .verification-status.warning { background: #fef9c3; color: #854d0e; }
+    .verification-status.fail { background: #fee2e2; color: #991b1b; }
 </style>
 {% endblock %}
 
@@ -183,7 +203,7 @@
 
 <!-- Card Template -->
 <template id="cardTemplate">
-    <div class="scanned-card" data-card-id="">
+    <div class="scanned-card" data-card-id="" data-duplicates="[]">
         <img class="card-thumbnail" src="" alt="Scanned card">
         <div class="p-3">
             <div class="flex items-center justify-between mb-2">
@@ -191,23 +211,26 @@
                 <span class="confidence-badge">--</span>
             </div>
             
+            <!-- Verification Status -->
+            <div class="verification-status-container hidden"></div>
+            
             <!-- Primary fields (always visible) -->
             <div class="card-fields text-sm space-y-1">
                 <div class="field-row">
-                    <label>First Name</label>
-                    <input type="text" name="first_name" placeholder="First name">
+                    <label class="required">First Name</label>
+                    <input type="text" name="first_name" placeholder="First name" data-required="true">
                 </div>
                 <div class="field-row">
-                    <label>Last Name</label>
-                    <input type="text" name="last_name" placeholder="Last name">
+                    <label class="required">Last Name</label>
+                    <input type="text" name="last_name" placeholder="Last name" data-required="true">
                 </div>
                 <div class="field-row">
-                    <label>Phone</label>
-                    <input type="tel" name="phone" placeholder="e.g. 082 123 4567">
+                    <label class="required">Phone</label>
+                    <input type="tel" name="phone" placeholder="e.g. 082 123 4567" data-contact="true">
                 </div>
                 <div class="field-row">
                     <label>Email</label>
-                    <input type="email" name="email" placeholder="email@example.com">
+                    <input type="email" name="email" placeholder="email@example.com" data-contact="true">
                 </div>
             </div>
             
@@ -220,7 +243,7 @@
             <div class="collapsible-fields card-fields-extra text-sm space-y-1">
                 <div class="field-row">
                     <label>WhatsApp</label>
-                    <input type="tel" name="whatsapp_number" placeholder="If different from phone">
+                    <input type="tel" name="whatsapp_number" placeholder="If different from phone" data-contact="true">
                 </div>
                 <div class="field-row">
                     <label>School</label>
@@ -252,9 +275,18 @@
                 </div>
             </div>
             
+            <!-- Duplicate Warning -->
+            <div class="duplicate-warning hidden">
+                <div class="flex items-center gap-2 text-sm font-medium text-amber-700">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Potential duplicates found</span>
+                </div>
+                <div class="duplicates-list mt-1"></div>
+            </div>
+            
             <div class="flex gap-2 mt-3">
-                <button class="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 save-single-btn transition-colors">
-                    <i class="fas fa-check mr-1"></i>Save Lead
+                <button class="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 verify-btn transition-colors">
+                    <i class="fas fa-check-circle mr-1"></i>Verify & Save
                 </button>
                 <button class="px-3 py-2 bg-red-100 text-red-600 text-sm rounded-lg hover:bg-red-200 remove-btn transition-colors" title="Remove">
                     <i class="fas fa-times"></i>
@@ -263,6 +295,29 @@
         </div>
     </div>
 </template>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="p-6 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-clipboard-check mr-2 text-blue-600"></i>Confirm Lead Details
+            </h3>
+            <p class="text-sm text-gray-500 mt-1">Please review the extracted information before saving</p>
+        </div>
+        <div class="p-6" id="confirmModalBody">
+            <!-- Dynamic content -->
+        </div>
+        <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+            <button id="cancelConfirmBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Cancel
+            </button>
+            <button id="confirmSaveBtn" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
+                <i class="fas fa-check mr-1"></i>Confirm & Save Lead
+            </button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -379,7 +434,7 @@ function addCardToQueue(cardId, imageUrl) {
     card.querySelector('.card-name').innerHTML = '<i class="fas fa-spinner spinner mr-2"></i>Scanning...';
     
     // Event listeners
-    card.querySelector('.save-single-btn').addEventListener('click', () => saveSingleCard(cardId));
+    card.querySelector('.verify-btn').addEventListener('click', () => verifyAndSaveCard(cardId));
     card.querySelector('.remove-btn').addEventListener('click', () => removeCard(cardId));
     card.querySelector('.toggle-fields-btn').addEventListener('click', function() {
         const extraFields = card.querySelector('.collapsible-fields');
@@ -389,12 +444,20 @@ function addCardToQueue(cardId, imageUrl) {
             : '<i class="fas fa-chevron-down mr-1"></i>Show more fields';
     });
     
+    // Add input change listeners for real-time validation
+    card.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', () => {
+            input.classList.remove('invalid');
+            validateCardFields(cardId);
+        });
+    });
+    
     document.getElementById('cardQueue').prepend(card);
     document.getElementById('cardQueue').classList.remove('hidden');
     document.getElementById('emptyState').classList.add('hidden');
     document.getElementById('clearAllBtn').classList.remove('hidden');
     
-    scannedCards.push({ id: cardId, imageUrl, data: null, status: 'processing' });
+    scannedCards.push({ id: cardId, imageUrl, data: null, status: 'processing', fieldConfidence: {}, duplicates: [] });
     updateStats();
 }
 
@@ -415,11 +478,32 @@ function updateCardWithData(cardId, data, imageUrl) {
     badge.textContent = `${Math.round(confidence * 100)}%`;
     badge.className = 'confidence-badge ' + (confidence >= 0.8 ? 'confidence-high' : confidence >= 0.5 ? 'confidence-medium' : 'confidence-low');
     
-    // Fill form fields
+    // Fill form fields with confidence-based styling
     const fields = ['first_name', 'last_name', 'phone', 'email', 'whatsapp_number', 'school_name', 'grade', 'qualification_interest', 'parent_name', 'parent_phone', 'employer_name', 'notes'];
+    const fieldConfidence = data.field_confidence || {};
+    
     fields.forEach(field => {
         const input = card.querySelector(`input[name="${field}"]`);
-        if (input && data[field]) input.value = data[field];
+        if (input) {
+            // Set value
+            if (data[field]) {
+                input.value = data[field];
+            }
+            
+            // Apply confidence styling
+            const conf = fieldConfidence[field] || (data[field] ? confidence : 0);
+            input.classList.remove('confidence-high-field', 'confidence-medium-field', 'confidence-low-field', 'empty-field');
+            
+            if (!input.value) {
+                input.classList.add('empty-field');
+            } else if (conf >= 0.8) {
+                input.classList.add('confidence-high-field');
+            } else if (conf >= 0.5) {
+                input.classList.add('confidence-medium-field');
+            } else {
+                input.classList.add('confidence-low-field');
+            }
+        }
     });
     
     // Update stored data
@@ -427,7 +511,17 @@ function updateCardWithData(cardId, data, imageUrl) {
     if (cardData) {
         cardData.data = data;
         cardData.status = 'ready';
+        cardData.fieldConfidence = fieldConfidence;
     }
+    
+    // Show verification status
+    showVerificationStatus(cardId);
+    
+    // Validate required fields
+    validateCardFields(cardId);
+    
+    // Check for duplicates
+    checkForDuplicates(cardId);
     
     updateStats();
     updateSubmitButton();
@@ -487,11 +581,308 @@ function clearAllCards() {
 }
 
 // Save Functions
+let pendingCardId = null;
+
+// Validation Functions
+function validateCardFields(cardId) {
+    const card = document.querySelector(`[data-card-id="${cardId}"]`);
+    if (!card) return false;
+    
+    let isValid = true;
+    
+    // Check required name fields (at least one)
+    const firstName = card.querySelector('input[name="first_name"]').value.trim();
+    const lastName = card.querySelector('input[name="last_name"]').value.trim();
+    if (!firstName && !lastName) {
+        isValid = false;
+    }
+    
+    // Check contact fields (at least one)
+    const phone = card.querySelector('input[name="phone"]').value.trim();
+    const email = card.querySelector('input[name="email"]').value.trim();
+    const whatsapp = card.querySelector('input[name="whatsapp_number"]').value.trim();
+    if (!phone && !email && !whatsapp) {
+        isValid = false;
+    }
+    
+    // Update button state
+    const btn = card.querySelector('.verify-btn');
+    btn.classList.toggle('opacity-50', !isValid);
+    
+    return isValid;
+}
+
+function showVerificationStatus(cardId) {
+    const card = document.querySelector(`[data-card-id="${cardId}"]`);
+    const cardData = scannedCards.find(c => c.id === cardId);
+    if (!card || !cardData) return;
+    
+    const container = card.querySelector('.verification-status-container');
+    container.classList.remove('hidden');
+    
+    const confidence = cardData.data?.confidence_score || 0;
+    let html = '';
+    
+    if (confidence >= 0.8) {
+        html = `<div class="verification-status pass"><i class="fas fa-check-circle"></i><span>High confidence scan - please verify</span></div>`;
+    } else if (confidence >= 0.5) {
+        html = `<div class="verification-status warning"><i class="fas fa-exclamation-circle"></i><span>Medium confidence - review carefully</span></div>`;
+    } else {
+        html = `<div class="verification-status fail"><i class="fas fa-times-circle"></i><span>Low confidence - manual entry may be needed</span></div>`;
+    }
+    
+    container.innerHTML = html;
+}
+
+async function checkForDuplicates(cardId) {
+    const card = document.querySelector(`[data-card-id="${cardId}"]`);
+    const cardData = scannedCards.find(c => c.id === cardId);
+    if (!card || !cardData) return;
+    
+    const data = getCardFormData(card);
+    if (!data.email && !data.phone && !data.whatsapp_number && (!data.first_name || !data.last_name)) {
+        return; // Not enough data to check
+    }
+    
+    try {
+        const response = await fetch('{% url "crm:check_duplicate_lead" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.has_duplicates) {
+            cardData.duplicates = result.duplicates;
+            card.classList.add('has-duplicates');
+            
+            // Show duplicate warning
+            const warningDiv = card.querySelector('.duplicate-warning');
+            const listDiv = card.querySelector('.duplicates-list');
+            warningDiv.classList.remove('hidden');
+            
+            listDiv.innerHTML = result.duplicates.slice(0, 3).map(d => `
+                <div class="duplicate-item">
+                    <strong>${d.name}</strong> (${d.match_type} match)
+                    <br><span class="text-gray-500">${d.phone || d.email} • ${d.campus} • ${d.status}</span>
+                </div>
+            `).join('');
+            
+            if (result.duplicates.length > 3) {
+                listDiv.innerHTML += `<div class="text-xs text-amber-600 mt-1">+${result.duplicates.length - 3} more potential matches</div>`;
+            }
+        } else {
+            cardData.duplicates = [];
+            card.classList.remove('has-duplicates');
+            card.querySelector('.duplicate-warning').classList.add('hidden');
+        }
+    } catch (err) {
+        console.error('Duplicate check error:', err);
+    }
+}
+
+function verifyAndSaveCard(cardId) {
+    const card = document.querySelector(`[data-card-id="${cardId}"]`);
+    const cardData = scannedCards.find(c => c.id === cardId);
+    if (!card || !cardData) return;
+    
+    // Validate fields
+    if (!validateCardFields(cardId)) {
+        // Highlight invalid fields
+        const firstName = card.querySelector('input[name="first_name"]');
+        const lastName = card.querySelector('input[name="last_name"]');
+        const phone = card.querySelector('input[name="phone"]');
+        const email = card.querySelector('input[name="email"]');
+        
+        if (!firstName.value.trim() && !lastName.value.trim()) {
+            firstName.classList.add('invalid');
+            lastName.classList.add('invalid');
+        }
+        if (!phone.value.trim() && !email.value.trim() && !card.querySelector('input[name="whatsapp_number"]').value.trim()) {
+            phone.classList.add('invalid');
+        }
+        
+        showToast('Please fill in required fields (name and at least one contact method)', 'warning');
+        return;
+    }
+    
+    // Show confirmation modal
+    pendingCardId = cardId;
+    showConfirmationModal(cardId);
+}
+
+function showConfirmationModal(cardId) {
+    const card = document.querySelector(`[data-card-id="${cardId}"]`);
+    const cardData = scannedCards.find(c => c.id === cardId);
+    if (!card || !cardData) return;
+    
+    const data = getCardFormData(card);
+    const confidence = cardData.data?.confidence_score || 0;
+    const duplicates = cardData.duplicates || [];
+    
+    let html = '';
+    
+    // Overall confidence
+    html += `<div class="mb-4">
+        <h4 class="text-sm font-medium text-gray-700 mb-2">AI Scan Confidence</h4>
+        <div class="flex items-center gap-3">
+            <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="h-3 rounded-full ${confidence >= 0.8 ? 'bg-green-500' : confidence >= 0.5 ? 'bg-yellow-500' : 'bg-red-500'}" style="width: ${Math.round(confidence * 100)}%"></div>
+            </div>
+            <span class="text-sm font-medium ${confidence >= 0.8 ? 'text-green-600' : confidence >= 0.5 ? 'text-yellow-600' : 'text-red-600'}">${Math.round(confidence * 100)}%</span>
+        </div>
+    </div>`;
+    
+    // Extracted data summary
+    html += `<div class="mb-4">
+        <h4 class="text-sm font-medium text-gray-700 mb-2">Lead Information</h4>
+        <div class="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+            <div class="grid grid-cols-2 gap-2">
+                <div><span class="text-gray-500">Name:</span> <strong>${data.first_name || ''} ${data.last_name || ''}</strong></div>
+                <div><span class="text-gray-500">Phone:</span> <strong>${data.phone || '-'}</strong></div>
+                <div><span class="text-gray-500">Email:</span> <strong>${data.email || '-'}</strong></div>
+                <div><span class="text-gray-500">WhatsApp:</span> <strong>${data.whatsapp_number || '-'}</strong></div>
+                ${data.school_name ? `<div><span class="text-gray-500">School:</span> <strong>${data.school_name}</strong></div>` : ''}
+                ${data.employer_name ? `<div><span class="text-gray-500">Employer:</span> <strong>${data.employer_name}</strong></div>` : ''}
+            </div>
+        </div>
+    </div>`;
+    
+    // Duplicate warning
+    if (duplicates.length > 0) {
+        html += `<div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <h4 class="text-sm font-medium text-amber-800 mb-2 flex items-center gap-2">
+                <i class="fas fa-exclamation-triangle"></i>
+                Potential Duplicates Found (${duplicates.length})
+            </h4>
+            <p class="text-xs text-amber-700 mb-2">The following existing leads may be duplicates:</p>
+            <div class="space-y-2">
+                ${duplicates.slice(0, 5).map(d => `
+                    <div class="bg-white rounded p-2 text-xs border border-amber-200">
+                        <div class="font-medium">${d.name}</div>
+                        <div class="text-gray-500">${d.phone || d.email} • ${d.campus} • ${d.status} • Created: ${d.created}</div>
+                        <div class="text-amber-600">Match: ${d.match_type} (${d.match_confidence} confidence)</div>
+                    </div>
+                `).join('')}
+            </div>
+            <p class="text-xs text-amber-700 mt-2"><strong>Proceed with caution:</strong> Creating this lead may result in duplicate entries.</p>
+        </div>`;
+    } else {
+        html += `<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-sm text-green-700">
+            <i class="fas fa-check-circle"></i>
+            No duplicate leads detected
+        </div>`;
+    }
+    
+    // Verification checklist
+    html += `<div class="mb-4">
+        <h4 class="text-sm font-medium text-gray-700 mb-2">Verification Checklist</h4>
+        <div class="space-y-2 text-sm">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="checkName" class="rounded text-green-600">
+                <span>Name is spelled correctly</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="checkContact" class="rounded text-green-600">
+                <span>Contact details are accurate</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="checkDuplicates" class="rounded text-green-600" ${duplicates.length === 0 ? 'checked' : ''}>
+                <span>${duplicates.length > 0 ? 'Reviewed duplicates - this is a new lead' : 'No duplicates to review'}</span>
+            </label>
+        </div>
+    </div>`;
+    
+    document.getElementById('confirmModalBody').innerHTML = html;
+    document.getElementById('confirmModal').classList.remove('hidden');
+    
+    // Update confirm button based on checkboxes
+    updateConfirmButton();
+    document.querySelectorAll('#confirmModalBody input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', updateConfirmButton);
+    });
+}
+
+function updateConfirmButton() {
+    const checkboxes = document.querySelectorAll('#confirmModalBody input[type="checkbox"]');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    const btn = document.getElementById('confirmSaveBtn');
+    btn.disabled = !allChecked;
+    btn.classList.toggle('opacity-50', !allChecked);
+    btn.classList.toggle('cursor-not-allowed', !allChecked);
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.add('hidden');
+    pendingCardId = null;
+}
+
+async function confirmAndSaveLead() {
+    if (!pendingCardId) return;
+    
+    const cardId = pendingCardId;
+    const card = document.querySelector(`[data-card-id="${cardId}"]`);
+    if (!card) {
+        closeConfirmModal();
+        return;
+    }
+    
+    const btn = document.getElementById('confirmSaveBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner spinner mr-1"></i>Saving...';
+    btn.disabled = true;
+    
+    const data = getCardFormData(card);
+    data.campus_id = document.getElementById('defaultCampus').value;
+    
+    try {
+        const response = await fetch('{% url "crm:create_lead_from_scan" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            closeConfirmModal();
+            
+            card.classList.remove('ready', 'error', 'has-duplicates');
+            card.classList.add('saved');
+            const cardBtn = card.querySelector('.verify-btn');
+            cardBtn.innerHTML = '<i class="fas fa-check mr-1"></i>Saved!';
+            cardBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            cardBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            
+            showToast(`Lead created: ${data.first_name} ${data.last_name}`, 'success');
+            
+            // Remove after short delay
+            setTimeout(() => removeCard(cardId), 1500);
+        } else {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            showToast(result.error || 'Failed to save lead', 'error');
+        }
+    } catch (err) {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        showToast('Network error - please try again', 'error');
+    }
+}
+
+// Legacy function for batch save (keep for Save All button)
 async function saveSingleCard(cardId) {
     const card = document.querySelector(`[data-card-id="${cardId}"]`);
     if (!card) return;
     
-    const btn = card.querySelector('.save-single-btn');
+    const btn = card.querySelector('.verify-btn');
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner spinner mr-1"></i>Saving...';
     btn.disabled = true;
@@ -640,6 +1031,13 @@ document.getElementById('switchCameraBtn')?.addEventListener('click', switchCame
 document.getElementById('stopCameraBtn')?.addEventListener('click', stopCamera);
 document.getElementById('clearAllBtn')?.addEventListener('click', clearAllCards);
 document.getElementById('submitAllBtn')?.addEventListener('click', saveAllCards);
+
+// Confirmation modal events
+document.getElementById('cancelConfirmBtn')?.addEventListener('click', closeConfirmModal);
+document.getElementById('confirmSaveBtn')?.addEventListener('click', confirmAndSaveLead);
+document.getElementById('confirmModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'confirmModal') closeConfirmModal();
+});
 
 // File upload
 document.getElementById('fileInput')?.addEventListener('change', (e) => {

@@ -330,3 +330,107 @@ def create_leads_batch(request):
         'errors': error_count,
         'results': results
     })
+
+
+@login_required
+@require_POST
+def check_duplicate_lead(request):
+    """
+    Check if a lead with similar phone/email already exists.
+    Returns potential duplicates for user verification.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+    
+    email = data.get('email', '').strip().lower()
+    phone = data.get('phone', '').replace(' ', '').replace('-', '')
+    whatsapp = data.get('whatsapp_number', '').replace(' ', '').replace('-', '')
+    first_name = data.get('first_name', '').strip()
+    last_name = data.get('last_name', '').strip()
+    
+    duplicates = []
+    
+    # Check by email (exact match)
+    if email:
+        email_matches = Lead.objects.filter(email__iexact=email).select_related('campus', 'assigned_to')[:5]
+        for lead in email_matches:
+            duplicates.append({
+                'id': lead.id,
+                'name': f"{lead.first_name} {lead.last_name}",
+                'email': lead.email,
+                'phone': lead.phone,
+                'campus': lead.campus.name if lead.campus else 'N/A',
+                'status': lead.get_status_display(),
+                'match_type': 'email',
+                'match_confidence': 'high',
+                'created': lead.created_at.strftime('%Y-%m-%d') if lead.created_at else 'N/A',
+                'assigned_to': lead.assigned_to.get_full_name() if lead.assigned_to else 'Unassigned'
+            })
+    
+    # Check by phone (normalize and match)
+    if phone:
+        # Remove common prefixes for matching
+        phone_normalized = phone[-10:] if len(phone) >= 10 else phone
+        phone_matches = Lead.objects.filter(phone__icontains=phone_normalized).select_related('campus', 'assigned_to')[:5]
+        for lead in phone_matches:
+            if lead.id not in [d['id'] for d in duplicates]:
+                duplicates.append({
+                    'id': lead.id,
+                    'name': f"{lead.first_name} {lead.last_name}",
+                    'email': lead.email,
+                    'phone': lead.phone,
+                    'campus': lead.campus.name if lead.campus else 'N/A',
+                    'status': lead.get_status_display(),
+                    'match_type': 'phone',
+                    'match_confidence': 'high',
+                    'created': lead.created_at.strftime('%Y-%m-%d') if lead.created_at else 'N/A',
+                    'assigned_to': lead.assigned_to.get_full_name() if lead.assigned_to else 'Unassigned'
+                })
+    
+    # Check by WhatsApp
+    if whatsapp:
+        whatsapp_normalized = whatsapp[-10:] if len(whatsapp) >= 10 else whatsapp
+        whatsapp_matches = Lead.objects.filter(whatsapp_number__icontains=whatsapp_normalized).select_related('campus', 'assigned_to')[:5]
+        for lead in whatsapp_matches:
+            if lead.id not in [d['id'] for d in duplicates]:
+                duplicates.append({
+                    'id': lead.id,
+                    'name': f"{lead.first_name} {lead.last_name}",
+                    'email': lead.email,
+                    'phone': lead.phone,
+                    'campus': lead.campus.name if lead.campus else 'N/A',
+                    'status': lead.get_status_display(),
+                    'match_type': 'whatsapp',
+                    'match_confidence': 'high',
+                    'created': lead.created_at.strftime('%Y-%m-%d') if lead.created_at else 'N/A',
+                    'assigned_to': lead.assigned_to.get_full_name() if lead.assigned_to else 'Unassigned'
+                })
+    
+    # Check by name (fuzzy match - lower confidence)
+    if first_name and last_name:
+        name_matches = Lead.objects.filter(
+            first_name__iexact=first_name,
+            last_name__iexact=last_name
+        ).select_related('campus', 'assigned_to')[:3]
+        for lead in name_matches:
+            if lead.id not in [d['id'] for d in duplicates]:
+                duplicates.append({
+                    'id': lead.id,
+                    'name': f"{lead.first_name} {lead.last_name}",
+                    'email': lead.email,
+                    'phone': lead.phone,
+                    'campus': lead.campus.name if lead.campus else 'N/A',
+                    'status': lead.get_status_display(),
+                    'match_type': 'name',
+                    'match_confidence': 'medium',
+                    'created': lead.created_at.strftime('%Y-%m-%d') if lead.created_at else 'N/A',
+                    'assigned_to': lead.assigned_to.get_full_name() if lead.assigned_to else 'Unassigned'
+                })
+    
+    return JsonResponse({
+        'success': True,
+        'has_duplicates': len(duplicates) > 0,
+        'duplicates': duplicates[:10]  # Limit to 10 results
+    })
