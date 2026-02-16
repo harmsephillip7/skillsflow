@@ -296,7 +296,7 @@ class LeadDetailView(LoginRequiredMixin, CRMAccessMixin, DetailView):
             is_archived=False
         ).exclude(
             status__in=['ENROLLED', 'REJECTED', 'WITHDRAWN']
-        ).select_related('opportunity', 'intake').order_by('-created_at')
+        ).select_related('opportunity', 'opportunity__qualification', 'opportunity__intake').order_by('-created_at')
         
         # Qualifications and intakes for application creation
         from academics.models import Qualification
