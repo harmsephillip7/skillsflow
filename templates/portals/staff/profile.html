@@ -1,0 +1,198 @@
+{% extends 'portals/staff/base_staff.html' %}
+{% load static %}
+
+{% block title %}My Profile | SkillsFlow{% endblock %}
+
+{% block page_title %}Staff Profile{% endblock %}
+
+{% block main_content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6" x-data="{ activeTab: 'role' }">
+    <!-- Profile Sidebar -->
+    <div class="space-y-6">
+        <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-center">
+            <div class="relative inline-block mb-6">
+                <img src="https://ui-avatars.com/api/?name={{ user.get_full_name|urlencode }}&background=0284c7&color=fff&size=256"
+                    class="w-40 h-40 rounded-3xl object-cover shadow-2xl border-4 border-white">
+                <div
+                    class="absolute -bottom-3 -right-3 bg-green-500 border-4 border-white w-10 h-10 rounded-full shadow-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </div>
+            <h2 class="text-2xl font-black text-gray-900">{{ user.get_full_name|default:user.email }}</h2>
+            <p class="text-blue-600 font-bold text-sm tracking-wide mt-1">
+                {% if profile and profile.position %}
+                    {{ profile.position.title }}
+                {% else %}
+                    Staff Member
+                {% endif %}
+            </p>
+            <p class="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-2">
+                {% if profile and profile.department %}
+                    {{ profile.department.name }} Department
+                {% else %}
+                    General Department
+                {% endif %}
+            </p>
+
+            <div class="mt-8 flex flex-wrap gap-2 justify-center">
+                <span class="px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-black uppercase">
+                    {% if profile %}{{ profile.get_employment_type_display }}{% else %}Permanent{% endif %}
+                </span>
+                <span class="px-4 py-1.5 bg-green-50 text-green-700 rounded-full text-[10px] font-black uppercase">
+                    {% if profile %}{{ profile.get_employment_status_display }}{% else %}Active{% endif %}
+                </span>
+            </div>
+
+            <div class="mt-6">
+                {% if profile %}
+                <a href="{% url 'hr_admin:staff_edit' pk=profile.pk %}"
+                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-xs font-black uppercase tracking-wider rounded-xl hover:bg-blue-700 transition">
+                    Edit Profile
+                </a>
+                {% else %}
+                <a href="{% url 'core:profile' %}"
+                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-xs font-black uppercase tracking-wider rounded-xl hover:bg-blue-700 transition">
+                    Edit Profile
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <h3 class="font-black text-gray-900 mb-6 text-sm uppercase tracking-wider">Contact Information</h3>
+            <div class="space-y-4">
+                <div class="flex items-center space-x-4 p-3 rounded-2xl bg-gray-50/50">
+                    <div class="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-blue-600">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <span class="text-sm font-bold text-gray-700 truncate">{{ user.email }}</span>
+                </div>
+                <div class="flex items-center space-x-4 p-3 rounded-2xl bg-gray-50/50">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-green-600">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                    </div>
+                    <span class="text-sm font-bold text-gray-700">{{ user.phone|default:"+27 (0) -- --- ----" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Tabs -->
+    <div class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="flex border-b border-gray-100 bg-gray-50/30">
+                <button @click="activeTab = 'role'"
+                    :class="activeTab === 'role' ? 'text-blue-600 border-blue-600' : 'text-gray-400 border-transparent hover:text-gray-600'"
+                    class="px-8 py-5 text-sm font-black uppercase tracking-widest border-b-2 transition-all">
+                    Role Details
+                </button>
+            </div>
+
+            <div class="p-8 space-y-10">
+                <!-- Tab: Role Details -->
+                <div x-show="activeTab === 'role'" class="space-y-10">
+                    <div>
+                        <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Contractual
+                            Background</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="p-4 rounded-2xl bg-gray-50/50 border border-gray-50">
+                                <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Employee Reference</p>
+                                <p class="font-black text-gray-900 text-lg">
+                                    {% if profile %}
+                                        {{ profile.employee_number|default:"SF-NEW-001" }}
+                                    {% else %}
+                                        SF-NEW-001
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-gray-50/50 border border-gray-50">
+                                <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Commencement Date</p>
+                                <p class="font-black text-gray-900 text-lg">
+                                    {% if profile and profile.date_joined %}
+                                        {{ profile.date_joined|date:"d F Y" }}
+                                    {% else %}
+                                        01 January 2024
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-gray-50/50 border border-gray-50">
+                                <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Direct Supervisor</p>
+                                <p class="font-black text-gray-900 text-lg">
+                                    {% if profile and profile.reports_to %}
+                                        {{ profile.reports_to.user.get_full_name|default:profile.reports_to.user.email }}
+                                    {% else %}
+                                        Executive Office
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-gray-50/50 border border-gray-50">
+                                <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Work Location</p>
+                                <p class="font-black text-gray-900 text-lg">
+                                    {% if profile and profile.primary_work_location %}
+                                        {{ profile.primary_work_location.name }}
+                                    {% else %}
+                                        Main Campus
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Position Responsibilities -->
+                    <div>
+                        <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Key
+                            Responsibilities (KPIs)</h3>
+                        <div class="space-y-4">
+                            {% for task in position_tasks %}
+                            <div
+                                class="flex items-start space-x-5 p-6 rounded-2xl bg-white border border-gray-100 hover:border-blue-200 hover:shadow-xl transition group">
+                                <div class="mt-1 flex-shrink-0">
+                                    <span
+                                        class="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 text-xs font-black shadow-inner group-hover:bg-blue-600 group-hover:text-white transition">
+                                        {{ forloop.counter }}
+                                    </span>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="text-md font-black text-gray-900">{{ task.title }}</h4>
+                                    <p class="text-sm text-gray-500 mt-2 leading-relaxed font-medium">
+                                        {{ task.description|default:"Detailed KPI description pending management
+                                        upload." }}
+                                    </p>
+                                    <div class="mt-4 flex items-center gap-3">
+                                        <span
+                                            class="text-[9px] font-black px-3 py-1 rounded-full bg-gray-100 text-gray-500 uppercase tracking-tighter italic border border-gray-200">
+                                            {{ task.get_frequency_display }}
+                                        </span>
+                                        <span
+                                            class="text-[9px] font-black px-3 py-1 rounded-full bg-blue-600 text-white uppercase tracking-tighter">
+                                            Impact: {{ task.weight }}%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div
+                                class="text-center py-12 rounded-3xl border-4 border-dashed border-gray-100 italic text-gray-400 font-bold">
+                                Position responsibilities are currently being mapped.
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'portals/staff/base_staff.html' %}
+{% load static %}
+
+{% block title %}My Personnel File | SkillsFlow{% endblock %}
+
+{% block page_title %}Personnel Documents{% endblock %}
+
+{% block main_content %}
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Left: Upload Section -->
+    <div class="lg:col-span-1 space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Upload Document</h3>
+            <form method="POST" enctype="multipart/form-data" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Document Type</label>
+                    <select name="document_type"
+                        class="w-full rounded-lg border-gray-200 focus:ring-blue-500 focus:border-blue-500">
+                        {% for code, label in doc_types %}
+                        <option value="{{ code }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Display Name</label>
+                    <input type="text" name="name"
+                        class="w-full rounded-lg border-gray-200 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="e.g. Identity Document">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">File</label>
+                    <div
+                        class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-blue-400 transition cursor-pointer bg-gray-50/50">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none"
+                                viewBox="0 0 48 48" aria-hidden="true">
+                                <path
+                                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="flex text-sm text-gray-600">
+                                <label for="file-upload"
+                                    class="relative cursor-pointer bg-white rounded-md font-bold text-blue-600 hover:text-blue-500">
+                                    <span>Upload a file</span>
+                                    <input id="file-upload" name="file" type="file" class="sr-only">
+                                </label>
+                            </div>
+                            <p class="text-[10px] text-gray-500 font-medium">PDF, PNG, JPG up to 10MB</p>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit"
+                    class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-100">
+                    Add to Personnel File
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right: File List -->
+    <div class="lg:col-span-3">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 class="text-lg font-bold text-gray-900">Document Vault</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-6">
+                {% for doc in documents %}
+                <div
+                    class="p-5 rounded-2xl border border-gray-100 hover:shadow-xl hover:border-blue-200 transition group bg-white shadow-sm">
+                    <div class="flex items-center space-x-4">
+                        <div
+                            class="flex-shrink-0 w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 group-hover:bg-blue-50 transition">
+                            {% if '.pdf' in doc.file.name|lower %}
+                            <svg class="w-7 h-7 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 4h3a3 3 0 006 0h3a2 2 0 012 2v9a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm10 1a1 1 0 100 2 1 1 0 000-2zM8 8a1 1 0 000 2h1a1 1 0 100-2H8zM10 12a1 1 0 100 2h3a1 1 0 100-2h-3z" />
+                            </svg>
+                            {% else %}
+                            <svg class="w-7 h-7 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
+                            </svg>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-sm font-bold text-gray-900 truncate">{{ doc.name }}</h4>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{{
+                                doc.get_document_type_display }}</p>
+                        </div>
+                        <div class="{% if doc.is_verified %}text-green-500{% else %}text-yellow-500{% endif %}">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex items-center justify-between border-t border-gray-50 pt-4">
+                        <span class="text-[10px] text-gray-400 font-medium">Uploaded {{ doc.created_at|date:"j M Y"
+                            }}</span>
+                        <a href="{{ doc.file.url }}" target="_blank"
+                            class="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center">
+                            Preview
+                            <svg class="w-3 h-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-full py-20 text-center">
+                    <svg class="mx-auto h-16 w-16 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0a2 2 0 01-2 2H6a2 2 0 01-2-2m16 0l-8 8-8-8" />
+                    </svg>
+                    <p class="mt-4 text-gray-400 font-medium">Your personnel file is empty.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

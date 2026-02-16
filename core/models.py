@@ -2,6 +2,7 @@
 Core models for SkillsFlow ERP
 Contains base classes, User model, Role, and Permission models
 """
+import uuid
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils import timezone
@@ -3706,3 +3707,56 @@ from .project_templates import (
     NOTScheduledTask,
     NOTTemplateSetApplication
 )
+
+
+class UserAuthSession(models.Model):
+    """Server-side session backing for refresh tokens.
+
+    Access tokens are short-lived JWTs that reference this session via `sid`.
+    Refresh tokens are opaque strings that are stored hashed via
+    `refresh_token_hash`.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='auth_sessions')
+    
+    refresh_token_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    revoke_reason = models.CharField(max_length=64, blank=True)
+    
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=500, blank=True)
+    
+    rotated_from = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='rotations',
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', 'revoked_at']),
+            models.Index(fields=['expires_at']),
+        ]
+
+    @property
+    def is_active(self) -> bool:
+        if self.revoked_at is not None:
+            return False
+        if self.expires_at and timezone.now() >= self.expires_at:
+            return False
+        return True
+
+    def revoke(self, *, reason: str = '') -> None:
+        if self.revoked_at is not None:
+            return
+        self.revoked_at = timezone.now()
+        self.revoke_reason = reason[:64]
+        self.save(update_fields=['revoked_at', 'revoke_reason'])

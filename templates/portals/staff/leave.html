@@ -1,0 +1,149 @@
+{% extends 'portals/staff/base_staff.html' %}
+{% load static %}
+
+{% block title %}Leave Management | SkillsFlow{% endblock %}
+
+{% block page_title %}Leave Management{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Leave Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">Annual Leave Balance</h3>
+            <div class="flex items-end space-x-2">
+                <span class="text-3xl font-bold text-gray-900">{{ leave_summary.annual_remaining }}</span>
+                <span class="text-gray-400 mb-1">days remaining</span>
+            </div>
+            <div class="mt-4 w-full bg-gray-100 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full" style="width: 70%"></div>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">Sick Leave Balance</h3>
+            <div class="flex items-end space-x-2">
+                <span class="text-3xl font-bold text-gray-900">{{ leave_summary.sick_remaining }}</span>
+                <span class="text-gray-400 mb-1">days remaining</span>
+            </div>
+            <div class="mt-4 w-full bg-gray-100 rounded-full h-2">
+                <div class="bg-green-600 h-2 rounded-full" style="width: 80%"></div>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">Pending Requests</h3>
+            <div class="flex items-end space-x-2">
+                <span class="text-3xl font-bold text-gray-900">{{ leave_summary.pending_requests }}</span>
+                <span class="text-gray-400 mb-1">awaiting approval</span>
+            </div>
+            <div class="mt-4">
+                <button onclick="document.getElementById('leaveModal').classList.remove('hidden')"
+                    class="w-full py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition">
+                    Request New Leave
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave History -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h3 class="text-lg font-bold text-gray-900">Request History</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Leave Type
+                        </th>
+                        <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Dates</th>
+                        <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Days</th>
+                        <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Request Date
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for request in leave_requests %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 font-medium text-gray-900">{{ request.leave_type.name }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {{ request.start_date|date:"j M" }} - {{ request.end_date|date:"j M Y" }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ request.days_requested }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase 
+                                {% if request.status == 'APPROVED' %}bg-green-100 text-green-800
+                                {% elif request.status == 'REJECTED' %}bg-red-100 text-red-800
+                                {% elif request.status == 'PENDING' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ request.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ request.created_at|date:"j M Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                            No leave requests found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Logic -->
+<div id="leaveModal"
+    class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all duration-300">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <h3 class="text-xl font-bold text-gray-900">Request Leave</h3>
+            <button onclick="document.getElementById('leaveModal').classList.add('hidden')"
+                class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form method="POST" action="#" class="p-6 space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">Leave Type</label>
+                <select name="leave_type"
+                    class="w-full rounded-lg border-gray-200 focus:ring-blue-500 focus:border-blue-500">
+                    {% for type in leave_types %}
+                    <option value="{{ type.id }}">{{ type.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Start Date</label>
+                    <input type="date" name="start_date"
+                        class="w-full rounded-lg border-gray-200 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">End Date</label>
+                    <input type="date" name="end_date"
+                        class="w-full rounded-lg border-gray-200 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">Reason (Internal Only)</label>
+                <textarea name="reason" rows="3"
+                    class="w-full rounded-lg border-gray-200 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g. Vacation with family"></textarea>
+            </div>
+            <div class="pt-4 flex space-x-3">
+                <button type="button" onclick="document.getElementById('leaveModal').classList.add('hidden')"
+                    class="flex-1 py-3 text-sm font-bold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition">Cancel</button>
+                <button type="submit"
+                    class="flex-1 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200">Submit
+                    Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
