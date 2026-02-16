@@ -79,6 +79,10 @@ urlpatterns = [
     path('leads/<int:pk>/activity/', views.lead_add_activity, name='lead_add_activity'),
     path('leads/<int:pk>/assign/', views.lead_assign, name='lead_assign'),
     path('leads/<int:pk>/follow-up/', views.lead_set_follow_up, name='lead_set_follow_up'),
+    path('leads/<int:pk>/save-profile/', views.lead_save_profile, name='lead_save_profile'),
+    
+    # API endpoints
+    path('api/validate-id-number/', views.validate_id_number_api, name='validate_id_number'),
     
     # Quotes
     path('quotes/', quote_views.QuoteListView.as_view(), name='quote_list'),

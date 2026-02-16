@@ -769,7 +769,141 @@ class Lead(TenantAwareModel):
     date_of_birth = models.DateField(null=True, blank=True, help_text="For school leavers - track age progression")
     lead_type = models.CharField(max_length=20, choices=LEAD_TYPE_CHOICES, default='ADULT')
     
-    # Parent/Guardian (for school leavers under 18)
+    # ==========================================================================
+    # LEARNER PROFILE FIELDS - Progressive capture for onboarding
+    # ==========================================================================
+    
+    # Demographics
+    GENDER_CHOICES = [
+        ('M', 'Male'),
+        ('F', 'Female'),
+        ('O', 'Other'),
+    ]
+    
+    TITLE_CHOICES = [
+        ('MR', 'Mr'),
+        ('MS', 'Ms'),
+        ('MRS', 'Mrs'),
+        ('DR', 'Dr'),
+        ('PROF', 'Prof'),
+    ]
+    
+    RACE_CHOICES = [
+        ('B', 'Black'),
+        ('W', 'White'),
+        ('C', 'Coloured'),
+        ('I', 'Indian/Asian'),
+        ('O', 'Other'),
+    ]
+    
+    title = models.CharField(max_length=10, choices=TITLE_CHOICES, blank=True)
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True)
+    id_number = models.CharField(max_length=13, blank=True, help_text="SA ID Number (13 digits)")
+    race = models.CharField(max_length=1, choices=RACE_CHOICES, blank=True)
+    
+    # Languages
+    LANGUAGE_CHOICES = [
+        ('ENGLISH', 'English'),
+        ('AFRIKAANS', 'Afrikaans'),
+        ('ZULU', 'isiZulu'),
+        ('XHOSA', 'isiXhosa'),
+        ('SOTHO', 'Sesotho'),
+        ('TSWANA', 'Setswana'),
+        ('PEDI', 'Sepedi'),
+        ('VENDA', 'Tshivenda'),
+        ('TSONGA', 'Xitsonga'),
+        ('SWATI', 'siSwati'),
+        ('NDEBELE', 'isiNdebele'),
+        ('OTHER', 'Other'),
+    ]
+    
+    first_language = models.CharField(max_length=20, choices=LANGUAGE_CHOICES, blank=True)
+    second_language = models.CharField(max_length=20, choices=LANGUAGE_CHOICES, blank=True)
+    
+    # English Proficiency
+    PROFICIENCY_CHOICES = [
+        ('POOR', 'Poor'),
+        ('GOOD', 'Good'),
+        ('EXCELLENT', 'Excellent'),
+    ]
+    
+    english_speaking = models.CharField(max_length=10, choices=PROFICIENCY_CHOICES, blank=True)
+    english_reading = models.CharField(max_length=10, choices=PROFICIENCY_CHOICES, blank=True)
+    english_writing = models.CharField(max_length=10, choices=PROFICIENCY_CHOICES, blank=True)
+    
+    # Work & Employment
+    WORK_STATUS_CHOICES = [
+        ('EMPLOYED', 'Employed'),
+        ('UNEMPLOYED', 'Unemployed'),
+        ('STUDENT', 'Student'),
+        ('SELF_EMPLOYED', 'Self-Employed'),
+    ]
+    
+    work_status = models.CharField(max_length=20, choices=WORK_STATUS_CHOICES, blank=True)
+    years_experience = models.PositiveIntegerField(null=True, blank=True, help_text="Years of work experience")
+    
+    # Education
+    GRADE_CHOICES = [
+        ('9', 'Grade 9'),
+        ('10', 'Grade 10'),
+        ('11', 'Grade 11'),
+        ('12', 'Grade 12 / Matric'),
+    ]
+    
+    highest_grade_passed = models.CharField(max_length=2, choices=GRADE_CHOICES, blank=True)
+    last_school_attended = models.CharField(max_length=200, blank=True)
+    tertiary_qualification = models.CharField(max_length=200, blank=True, help_text="Tertiary or other qualification")
+    subjects_completed = models.TextField(blank=True, help_text="List of subjects completed")
+    
+    # Health & Medical
+    has_disability = models.BooleanField(default=False)
+    disability_description = models.TextField(blank=True)
+    has_medical_conditions = models.BooleanField(default=False)
+    medical_conditions = models.TextField(blank=True, help_text="Allergies, Epilepsy, etc.")
+    
+    # Personal
+    MARITAL_STATUS_CHOICES = [
+        ('SINGLE', 'Single'),
+        ('MARRIED', 'Married'),
+        ('DIVORCED', 'Divorced'),
+        ('WIDOWED', 'Widowed'),
+    ]
+    
+    marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True)
+    number_of_dependents = models.PositiveIntegerField(null=True, blank=True)
+    
+    # Payment Responsibility
+    PAYMENT_RESPONSIBILITY_CHOICES = [
+        ('SELF', 'Self'),
+        ('EMPLOYER', 'Employer'),
+        ('SPONSOR', 'Sponsor/Family'),
+        ('BURSARY', 'Bursary/SETA'),
+        ('NSFAS', 'NSFAS'),
+        ('LOAN', 'Student Loan'),
+    ]
+    
+    payment_responsibility = models.CharField(max_length=20, choices=PAYMENT_RESPONSIBILITY_CHOICES, blank=True)
+    
+    # Addresses (ForeignKey to reusable Address model)
+    physical_address = models.ForeignKey(
+        'learners.Address',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='leads_physical'
+    )
+    postal_address = models.ForeignKey(
+        'learners.Address',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='leads_postal'
+    )
+    postal_same_as_physical = models.BooleanField(default=False)
+    
+    # ==========================================================================
+    # END LEARNER PROFILE FIELDS
+    # ==========================================================================
+    
+    # Parent/Guardian (for school leavers under 18) - LEGACY, use SecondaryContact
     parent_name = models.CharField(max_length=100, blank=True)
     parent_phone = models.CharField(max_length=20, blank=True)
     parent_email = models.EmailField(blank=True)
@@ -1007,6 +1141,168 @@ class Lead(TenantAwareModel):
             to_status=new_stage.code,
             created_by=user
         )
+    
+    def validate_and_extract_id_number(self):
+        """Validate SA ID and auto-populate DOB and gender."""
+        from learners.models import validate_sa_id
+        
+        if not self.id_number or len(self.id_number) != 13:
+            return False
+        
+        if not validate_sa_id(self.id_number):
+            return False
+        
+        # Extract DOB
+        year = int(self.id_number[0:2])
+        month = int(self.id_number[2:4])
+        day = int(self.id_number[4:6])
+        
+        # Determine century (if year > current 2-digit year, assume 1900s, else 2000s)
+        from datetime import date
+        current_year = date.today().year % 100
+        if year > current_year:
+            full_year = 1900 + year
+        else:
+            full_year = 2000 + year
+        
+        try:
+            self.date_of_birth = date(full_year, month, day)
+        except ValueError:
+            return False
+        
+        # Extract gender (7th digit: 0-4 = female, 5-9 = male)
+        gender_digit = int(self.id_number[6])
+        self.gender = 'F' if gender_digit < 5 else 'M'
+        
+        return True
+    
+    @property
+    def profile_completion_percentage(self):
+        """Calculate profile completion percentage for onboarding readiness."""
+        total_fields = 0
+        completed_fields = 0
+        
+        # Core fields (most important)
+        core_fields = [
+            ('first_name', self.first_name),
+            ('last_name', self.last_name),
+            ('phone', self.phone or self.whatsapp_number),
+            ('email', self.email),
+            ('date_of_birth', self.date_of_birth),
+            ('id_number', self.id_number),
+            ('gender', self.gender),
+        ]
+        
+        # Demographics
+        demo_fields = [
+            ('race', self.race),
+            ('marital_status', self.marital_status),
+            ('first_language', self.first_language),
+        ]
+        
+        # Education
+        edu_fields = [
+            ('highest_grade_passed', self.highest_grade_passed),
+            ('last_school_attended', self.last_school_attended or self.school_name),
+        ]
+        
+        # Work
+        work_fields = [
+            ('work_status', self.work_status),
+        ]
+        
+        # Contact & Address
+        contact_fields = [
+            ('physical_address', self.physical_address),
+        ]
+        
+        # Health (counted as complete if either NO or YES with description)
+        health_complete = (not self.has_disability or bool(self.disability_description))
+        medical_complete = (not self.has_medical_conditions or bool(self.medical_conditions))
+        
+        all_fields = core_fields + demo_fields + edu_fields + work_fields + contact_fields
+        
+        for name, value in all_fields:
+            total_fields += 1
+            if value:
+                completed_fields += 1
+        
+        # Add health fields
+        total_fields += 2
+        if health_complete:
+            completed_fields += 1
+        if medical_complete:
+            completed_fields += 1
+        
+        return int((completed_fields / total_fields) * 100) if total_fields > 0 else 0
+    
+    @property
+    def profile_completion_status(self):
+        """Get profile completion status with details."""
+        percentage = self.profile_completion_percentage
+        
+        missing = []
+        if not self.id_number:
+            missing.append('ID Number')
+        if not self.date_of_birth:
+            missing.append('Date of Birth')
+        if not self.gender:
+            missing.append('Gender')
+        if not self.race:
+            missing.append('Race')
+        if not self.physical_address:
+            missing.append('Physical Address')
+        if not self.highest_grade_passed:
+            missing.append('Highest Grade')
+        if not self.work_status:
+            missing.append('Work Status')
+        if not self.first_language:
+            missing.append('First Language')
+        if not (self.email):
+            missing.append('Email')
+        
+        return {
+            'percentage': percentage,
+            'missing_fields': missing,
+            'is_complete': percentage >= 80,
+            'status': 'Complete' if percentage >= 80 else ('Partial' if percentage >= 50 else 'Incomplete')
+        }
+    
+    def copy_profile_to_learner(self, learner):
+        """Copy all profile data to a Learner instance when converting."""
+        # Basic info
+        learner.first_name = self.first_name
+        learner.last_name = self.last_name
+        learner.email = self.email
+        learner.mobile_number = self.phone or self.whatsapp_number
+        learner.date_of_birth = self.date_of_birth
+        
+        # ID
+        if self.id_number:
+            learner.sa_id_number = self.id_number
+        
+        # Demographics
+        if self.gender:
+            learner.gender = self.gender
+        if self.race:
+            learner.population_group = self.race
+        if self.first_language:
+            learner.home_language = self.first_language
+        
+        # Disability
+        learner.has_disability = self.has_disability
+        if self.has_disability and self.disability_description:
+            learner.disability_status = '9'  # Disabled but unspecified
+        
+        # Addresses
+        if self.physical_address:
+            learner.physical_address = self.physical_address
+        if self.postal_address:
+            learner.postal_address = self.postal_address
+        elif self.postal_same_as_physical and self.physical_address:
+            learner.postal_address = self.physical_address
+        
+        return learner
 
 
 class LeadActivity(AuditedModel):
@@ -2623,7 +2919,7 @@ class ContentPost(models.Model):
 
 class SecondaryContact(AuditedModel):
     """
-    Secondary contacts for leads - parents, employers, spouses, etc.
+    Secondary contacts for leads - parents, employers, spouses, next of kin, etc.
     Migrated to Learner upon conversion.
     """
     RELATIONSHIP_TYPES = [
@@ -2635,6 +2931,7 @@ class SecondaryContact(AuditedModel):
         ('BOYFRIEND', 'Boyfriend'),
         ('GUARDIAN', 'Guardian'),
         ('SIBLING', 'Sibling'),
+        ('NEXT_OF_KIN', 'Next of Kin'),
         ('OTHER', 'Other'),
     ]
     
@@ -2650,8 +2947,9 @@ class SecondaryContact(AuditedModel):
     phone = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
     
-    # Additional info
+    # Additional info for employer contacts
     company_name = models.CharField(max_length=200, blank=True, help_text="For employer contacts")
+    company_vat_number = models.CharField(max_length=50, blank=True, help_text="Company VAT number")
     job_title = models.CharField(max_length=100, blank=True, help_text="Contact's job title")
     notes = models.TextField(blank=True)
     

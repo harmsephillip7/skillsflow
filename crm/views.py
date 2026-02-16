@@ -2,6 +2,7 @@
 CRM Views
 Sales leads, pipeline management, WhatsApp integration
 """
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -464,6 +465,227 @@ def lead_add_activity(request, pk):
         'description': activity.description,
         'created_at': activity.created_at.strftime('%Y-%m-%d %H:%M'),
         'performed_by': request.user.get_full_name() or request.user.username
+    })
+
+
+@login_required
+def lead_save_profile(request, pk):
+    """Save learner profile section data for a lead"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    
+    lead = get_object_or_404(Lead, pk=pk)
+    
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    
+    section = data.get('section')
+    
+    if not section:
+        return JsonResponse({'error': 'Section required'}, status=400)
+    
+    # Import Address model for address sections
+    from learners.models import Address
+    
+    try:
+        if section == 'personal':
+            # Personal information fields
+            if data.get('title'):
+                lead.title = data['title']
+            if data.get('id_number'):
+                lead.id_number = data['id_number']
+                # Validate and extract date of birth & gender from ID
+                validation = lead.validate_and_extract_id_number()
+                if validation['valid']:
+                    lead.date_of_birth = validation['date_of_birth']
+                    lead.gender = validation['gender']
+            if data.get('gender'):
+                lead.gender = data['gender']
+            if data.get('date_of_birth'):
+                from datetime import datetime
+                lead.date_of_birth = datetime.strptime(data['date_of_birth'], '%Y-%m-%d').date()
+            if data.get('race'):
+                lead.race = data['race']
+            if data.get('marital_status'):
+                lead.marital_status = data['marital_status']
+            if data.get('number_of_dependents'):
+                lead.number_of_dependents = int(data['number_of_dependents'])
+            
+        elif section == 'languages':
+            # Language fields
+            if data.get('first_language'):
+                lead.first_language = data['first_language']
+            if data.get('second_language'):
+                lead.second_language = data['second_language']
+            if data.get('english_speaking'):
+                lead.english_speaking = data['english_speaking']
+            if data.get('english_reading'):
+                lead.english_reading = data['english_reading']
+            if data.get('english_writing'):
+                lead.english_writing = data['english_writing']
+            
+        elif section == 'education':
+            # Education fields
+            if data.get('highest_grade_passed'):
+                lead.highest_grade_passed = data['highest_grade_passed']
+            lead.last_school_attended = data.get('last_school_attended', '')
+            lead.tertiary_qualification = data.get('tertiary_qualification', '')
+            lead.subjects_completed = data.get('subjects_completed', '')
+            
+        elif section == 'work':
+            # Work experience fields
+            if data.get('work_status'):
+                lead.work_status = data['work_status']
+            if data.get('years_experience'):
+                lead.years_experience = int(data['years_experience'])
+            
+        elif section == 'health':
+            # Health fields
+            lead.has_disability = data.get('has_disability', False)
+            if lead.has_disability:
+                lead.disability_description = data.get('disability_description', '')
+            else:
+                lead.disability_description = ''
+            lead.has_medical_conditions = data.get('has_medical_conditions', False)
+            if lead.has_medical_conditions:
+                lead.medical_conditions = data.get('medical_conditions', '')
+            else:
+                lead.medical_conditions = ''
+            
+        elif section == 'payment':
+            # Payment responsibility
+            if data.get('payment_responsibility'):
+                lead.payment_responsibility = data['payment_responsibility']
+            
+        elif section == 'physical_address':
+            # Physical address - create or update
+            address_data = {
+                'line_1': data.get('physical_line_1', ''),
+                'line_2': data.get('physical_line_2', ''),
+                'suburb': data.get('physical_suburb', ''),
+                'city': data.get('physical_city', ''),
+                'province': data.get('physical_province', ''),
+                'postal_code': data.get('physical_postal_code', ''),
+                'country': 'South Africa'
+            }
+            
+            if lead.physical_address:
+                # Update existing address
+                for key, value in address_data.items():
+                    setattr(lead.physical_address, key, value)
+                lead.physical_address.save()
+            else:
+                # Create new address
+                address = Address.objects.create(**address_data)
+                lead.physical_address = address
+            
+        elif section == 'postal_address':
+            # Postal address
+            lead.postal_same_as_physical = data.get('postal_same_as_physical', False)
+            
+            if not lead.postal_same_as_physical:
+                address_data = {
+                    'line_1': data.get('postal_line_1', ''),
+                    'line_2': data.get('postal_line_2', ''),
+                    'suburb': data.get('postal_suburb', ''),
+                    'city': data.get('postal_city', ''),
+                    'province': data.get('postal_province', ''),
+                    'postal_code': data.get('postal_postal_code', ''),
+                    'country': 'South Africa'
+                }
+                
+                if lead.postal_address:
+                    # Update existing address
+                    for key, value in address_data.items():
+                        setattr(lead.postal_address, key, value)
+                    lead.postal_address.save()
+                else:
+                    # Create new address
+                    address = Address.objects.create(**address_data)
+                    lead.postal_address = address
+        
+        lead.save()
+        
+        # Log activity
+        LeadActivity.objects.create(
+            lead=lead,
+            activity_type='NOTE',
+            description=f'Updated learner profile: {section.replace("_", " ").title()} section',
+            created_by=request.user,
+            brand=lead.brand,
+            campus=lead.campus
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'{section.replace("_", " ").title()} saved successfully',
+            'profile_completion': lead.profile_completion_status
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def validate_id_number_api(request):
+    """API endpoint to validate SA ID number and extract DOB/gender"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    
+    id_number = data.get('id_number', '')
+    
+    if len(id_number) != 13 or not id_number.isdigit():
+        return JsonResponse({
+            'valid': False,
+            'error': 'ID number must be exactly 13 digits'
+        })
+    
+    # Import validation function from learners
+    from learners.models import validate_sa_id_number
+    
+    if not validate_sa_id_number(id_number):
+        return JsonResponse({
+            'valid': False,
+            'error': 'Invalid ID number (checksum failed)'
+        })
+    
+    # Extract date of birth
+    year_part = int(id_number[0:2])
+    month = int(id_number[2:4])
+    day = int(id_number[4:6])
+    
+    # Determine century (assume 1900s for year > 25, else 2000s)
+    current_year = timezone.now().year % 100
+    if year_part > current_year:
+        year = 1900 + year_part
+    else:
+        year = 2000 + year_part
+    
+    # Validate date
+    try:
+        from datetime import date as date_type
+        dob = date_type(year, month, day)
+    except ValueError:
+        return JsonResponse({
+            'valid': False,
+            'error': 'Invalid date in ID number'
+        })
+    
+    # Extract gender (digit 7: 0-4 = female, 5-9 = male)
+    gender_digit = int(id_number[6])
+    gender = 'MALE' if gender_digit >= 5 else 'FEMALE'
+    
+    return JsonResponse({
+        'valid': True,
+        'date_of_birth': dob.strftime('%Y-%m-%d'),
+        'gender': gender
     })
 
 
