@@ -1,0 +1,129 @@
+{% extends 'base/app_layout.html' %}
+{% load static admin_tags %}
+
+{% block title %}Generate Tranches - {{ notification.reference_number }}{% endblock %}
+
+{% block page_title %}Generate Tranches from Template{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'not_detail' notification.pk %}" class="text-primary-600 hover:text-primary-800">{{ notification.reference_number }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Generate Tranches</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    
+    <!-- Project Info -->
+    <div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-xl shadow-lg p-6 text-white">
+        <h2 class="text-xl font-bold">{{ notification.title }}</h2>
+        <p class="mt-1 text-emerald-100">{{ notification.reference_number }} • {{ notification.get_project_type_display }}</p>
+        <div class="mt-3 flex items-center space-x-4 text-sm text-emerald-200">
+            <span>{{ notification.get_funder_display }}</span>
+            {% if notification.expected_learner_count %}
+            <span>•</span>
+            <span>{{ notification.expected_learner_count }} learners</span>
+            {% endif %}
+            {% if notification.contract_value %}
+            <span>•</span>
+            <span>R{{ notification.contract_value|floatformat:0 }}</span>
+            {% endif %}
+        </div>
+        {% if existing_tranches > 0 %}
+        <div class="mt-4 p-3 bg-white/10 rounded-lg">
+            <p class="text-sm text-yellow-200">
+                <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                This project already has {{ existing_tranches }} tranche(s). Adding more will append to existing tranches.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if templates %}
+    <!-- Template Selection -->
+    <form method="post" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">Select a Tranche Template</h3>
+            <p class="text-sm text-gray-500 mt-1">Choose a template that matches your project type and funder requirements</p>
+        </div>
+        
+        <div class="p-6 space-y-4">
+            {% for template in templates %}
+            <label class="relative flex items-start p-4 border-2 rounded-lg cursor-pointer hover:border-primary-300 transition-colors
+                          {% if forloop.first %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
+                <input type="radio" name="template" value="{{ template.pk }}" class="mt-1 h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                       {% if forloop.first %}checked{% endif %}>
+                <div class="ml-4 flex-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-900">{{ template.name }}</span>
+                        <span class="text-xs text-gray-500">{{ template.items.count }} tranches</span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">{{ template.description }}</p>
+                    
+                    <!-- Template Preview -->
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        {% for item in template.items.all %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                            {{ item.sequence_number }}. {{ item.get_tranche_type_display }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </label>
+            {% endfor %}
+        </div>
+        
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+            <p class="text-sm text-gray-500">
+                Tranches will be scheduled based on the project start date{% if notification.planned_start_date %} ({{ notification.planned_start_date|date:"d M Y" }}){% endif %}
+            </p>
+            <div class="flex space-x-3">
+                <a href="{% url 'not_detail' notification.pk %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                    Generate Tranches
+                </button>
+            </div>
+        </div>
+    </form>
+    
+    {% else %}
+    <!-- No Templates Available -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-6 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">No Templates Available</h3>
+            <p class="mt-2 text-sm text-gray-500">
+                There are no tranche templates configured for 
+                {{ notification.get_project_type_display }} projects with {{ notification.get_funder_display }} funding.
+            </p>
+            <div class="mt-6 flex justify-center space-x-3">
+                <a href="{% url 'not_detail' notification.pk %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    Go Back
+                </a>
+                <a href="{% url 'tranches:tranche_create' notification.pk %}" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                    Create Manually
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+</div>
+{% endblock %}

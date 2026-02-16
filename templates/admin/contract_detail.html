@@ -1,0 +1,515 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+{% load admin_tags %}
+
+{% block page_title %}{{ contract.name }}{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="flex items-center text-sm text-gray-500 mb-2">
+                <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <a href="{% url 'admin:contract_list' %}" class="hover:text-primary-600">Contracts</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="text-gray-700">{{ contract.contract_number }}</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">{{ contract.name }}</h1>
+            <p class="text-sm text-gray-500 mt-1">{{ contract.contract_number }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url edit_url pk=contract.pk %}" 
+               class="inline-flex items-center px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Edit
+            </a>
+            <a href="{% url 'admin:contract_add_learner' contract_pk=contract.pk %}" 
+               class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition shadow-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                </svg>
+                Add Learner
+            </a>
+        </div>
+    </div>
+    
+    <!-- KPI Dashboard - Dropout Metrics -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900">Dropout Rate Monitor</h2>
+            <p class="text-sm text-gray-500 mt-1">Track learner retention against the maximum {{ contract.max_dropout_percentage }}% dropout limit</p>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <!-- Large Dropout Percentage Indicator -->
+                <div class="lg:col-span-2 flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="relative inline-flex items-center justify-center w-40 h-40 rounded-full 
+                            {% if contract.is_dropout_exceeded %}bg-red-100{% elif contract.is_dropout_warning %}bg-amber-100{% else %}bg-green-100{% endif %}">
+                            <div class="text-center">
+                                <span class="text-4xl font-bold 
+                                    {% if contract.is_dropout_exceeded %}text-red-600{% elif contract.is_dropout_warning %}text-amber-600{% else %}text-green-600{% endif %}">
+                                    {{ contract.dropout_percentage }}%
+                                </span>
+                                <p class="text-sm 
+                                    {% if contract.is_dropout_exceeded %}text-red-500{% elif contract.is_dropout_warning %}text-amber-500{% else %}text-green-500{% endif %}">
+                                    Dropout Rate
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            {% if contract.is_dropout_exceeded %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                LIMIT EXCEEDED
+                            </span>
+                            {% elif contract.is_dropout_warning %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
+                                <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                APPROACHING LIMIT
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                ON TRACK
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Stats Cards -->
+                <div class="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <!-- Original Learners -->
+                    <div class="bg-blue-50 rounded-xl p-4 text-center">
+                        <p class="text-3xl font-bold text-blue-600">{{ contract.original_learner_count|default:contract.original_learners }}</p>
+                        <p class="text-sm text-blue-600 mt-1">Original</p>
+                    </div>
+                    
+                    <!-- Active Learners -->
+                    <div class="bg-green-50 rounded-xl p-4 text-center">
+                        <p class="text-3xl font-bold text-green-600">{{ contract.active_learners }}</p>
+                        <p class="text-sm text-green-600 mt-1">Active</p>
+                    </div>
+                    
+                    <!-- Terminated -->
+                    <div class="bg-red-50 rounded-xl p-4 text-center">
+                        <p class="text-3xl font-bold text-red-600">{{ contract.terminated_learners }}</p>
+                        <p class="text-sm text-red-600 mt-1">Terminated</p>
+                    </div>
+                    
+                    <!-- Replacements -->
+                    <div class="bg-purple-50 rounded-xl p-4 text-center">
+                        <p class="text-3xl font-bold text-purple-600">{{ contract.replacement_learners }}</p>
+                        <p class="text-sm text-purple-600 mt-1">Replacements</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dropout Progress Bar -->
+            <div class="mt-6">
+                <div class="flex items-center justify-between text-sm mb-2">
+                    <span class="text-gray-600">Dropout Progress</span>
+                    <span class="font-medium">{{ contract.dropout_percentage }}% of {{ contract.max_dropout_percentage }}% max</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                    {% widthratio contract.dropout_percentage contract.max_dropout_percentage 100 as progress_width %}
+                    <div class="h-4 rounded-full transition-all duration-300
+                        {% if contract.is_dropout_exceeded %}bg-red-500{% elif contract.is_dropout_warning %}bg-amber-500{% else %}bg-green-500{% endif %}"
+                        style="width: {% if progress_width > 100 %}100{% else %}{{ progress_width }}{% endif %}%">
+                    </div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>0%</span>
+                    <span class="text-amber-600">{{ contract.dropout_alert_threshold }}% Warning</span>
+                    <span class="text-red-600">{{ contract.max_dropout_percentage }}% Limit</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column - Contract Details and NOTs -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Contract Information -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                    <h2 class="text-lg font-semibold text-gray-900">Contract Information</h2>
+                </div>
+                <div class="p-6">
+                    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Contract Number</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ contract.contract_number }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Status</dt>
+                            <dd class="mt-1">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if contract.status == 'ACTIVE' %}bg-green-100 text-green-800
+                                    {% elif contract.status == 'DRAFT' %}bg-gray-100 text-gray-800
+                                    {% elif contract.status == 'COMPLETED' %}bg-blue-100 text-blue-800
+                                    {% elif contract.status == 'CANCELLED' %}bg-red-100 text-red-800
+                                    {% else %}bg-amber-100 text-amber-800{% endif %}">
+                                    {{ contract.get_status_display }}
+                                </span>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Client</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ contract.client.name|default:"—" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">SETA</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ contract.seta.name|default:"—" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Funder Type</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ contract.get_funder_type_display }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Contract Value</dt>
+                            <dd class="mt-1 text-sm text-gray-900">
+                                {% if contract.contract_value %}
+                                R {{ contract.contract_value|floatformat:2 }}
+                                {% else %}—{% endif %}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Start Date</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ contract.start_date|date:"d M Y"|default:"—" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">End Date</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ contract.end_date|date:"d M Y"|default:"—" }}</dd>
+                        </div>
+                    </dl>
+                    {% if contract.description %}
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <dt class="text-sm font-medium text-gray-500">Description</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ contract.description }}</dd>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Training Notifications (NOTs) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Training Notifications (NOTs)</h2>
+                        <p class="text-sm text-gray-500 mt-0.5">Projects linked to this contract</p>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                        {{ training_notifications.count }} NOT{{ training_notifications.count|pluralize }}
+                    </span>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for not in training_notifications %}
+                    <div class="p-4 hover:bg-gray-50 transition">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <a href="{% url 'not:detail' pk=not.pk %}" class="text-sm font-medium text-primary-600 hover:text-primary-800">
+                                    {{ not.reference_number }}
+                                </a>
+                                <p class="text-sm text-gray-900 mt-0.5">{{ not.title }}</p>
+                                <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                    {% if not.qualification %}
+                                    <span class="inline-flex items-center">
+                                        <svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                                        </svg>
+                                        {{ not.qualification.name|truncatechars:40 }}
+                                    </span>
+                                    {% endif %}
+                                    {% if not.delivery_campus %}
+                                    <span class="inline-flex items-center">
+                                        <svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                        </svg>
+                                        {{ not.delivery_campus.name }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if not.status == 'IN_PROGRESS' %}bg-green-100 text-green-800
+                                {% elif not.status == 'COMPLETED' %}bg-blue-100 text-blue-800
+                                {% elif not.status == 'CANCELLED' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ not.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 text-center text-gray-500">
+                        <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p>No Training Notifications linked to this contract yet.</p>
+                        <p class="text-sm mt-1">Link NOTs during the NOT creation process.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column - Sidebar -->
+        <div class="space-y-6">
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                    <h2 class="text-lg font-semibold text-gray-900">Quick Actions</h2>
+                </div>
+                <div class="p-4 space-y-2">
+                    <a href="{% url 'admin:contract_add_learner' contract_pk=contract.pk %}" 
+                       class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition">
+                        <svg class="w-5 h-5 mr-3 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                        </svg>
+                        Add Original Learner
+                    </a>
+                    <a href="{% url 'admin:contract_add_replacement' contract_pk=contract.pk %}" 
+                       class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition">
+                        <svg class="w-5 h-5 mr-3 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                        </svg>
+                        Add Replacement Learner
+                    </a>
+                    <a href="{% url edit_url pk=contract.pk %}" 
+                       class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition">
+                        <svg class="w-5 h-5 mr-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        Edit Contract
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Replacement Slots -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                    <h2 class="text-lg font-semibold text-gray-900">Replacement Slots</h2>
+                </div>
+                <div class="p-6 text-center">
+                    <p class="text-4xl font-bold text-purple-600">{{ contract.available_replacement_slots }}</p>
+                    <p class="text-sm text-gray-500 mt-1">Available slots for replacement learners</p>
+                    {% if contract.available_replacement_slots > 0 %}
+                    <a href="{% url 'admin:contract_add_replacement' contract_pk=contract.pk %}" 
+                       class="inline-flex items-center mt-4 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition">
+                        Add Replacement
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Learner Tabs -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" x-data="{ activeTab: 'active' }">
+        <!-- Tab Navigation -->
+        <div class="border-b border-gray-200">
+            <nav class="flex -mb-px px-6" aria-label="Tabs">
+                <button @click="activeTab = 'active'" 
+                    :class="activeTab === 'active' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="py-4 px-4 text-sm font-medium border-b-2 transition">
+                    Active Learners
+                    <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800">{{ active_enrollments.count }}</span>
+                </button>
+                <button @click="activeTab = 'terminated'" 
+                    :class="activeTab === 'terminated' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="py-4 px-4 text-sm font-medium border-b-2 transition">
+                    Terminated
+                    <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-800">{{ terminated_enrollments.count }}</span>
+                </button>
+                <button @click="activeTab = 'replacements'" 
+                    :class="activeTab === 'replacements' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="py-4 px-4 text-sm font-medium border-b-2 transition">
+                    Replacements
+                    <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-800">{{ replacement_enrollments.count }}</span>
+                </button>
+            </nav>
+        </div>
+        
+        <!-- Active Learners Tab -->
+        <div x-show="activeTab === 'active'" class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Learner</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Number</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NOT</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrolled</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for enrollment in active_enrollments %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{% url 'admin:learner_detail' pk=enrollment.learner.pk %}" class="text-sm font-medium text-primary-600 hover:text-primary-800">
+                                {{ enrollment.learner.surname }}, {{ enrollment.learner.first_name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ enrollment.learner.sa_id_number|default:enrollment.learner.passport_number|default:"—" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ enrollment.training_notification.reference_number|default:"—" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ enrollment.enrollment_date|date:"d M Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if enrollment.is_replacement %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                Replacement
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                Original
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                            <a href="{% url 'admin:contract_terminate_learner' contract_pk=contract.pk enrollment_pk=enrollment.pk %}" 
+                               class="text-red-600 hover:text-red-800 font-medium">
+                                Terminate
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                            No active learners enrolled in this contract.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Terminated Learners Tab -->
+        <div x-show="activeTab === 'terminated'" class="overflow-x-auto" style="display: none;">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Learner</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Terminated</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Terminated By</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Replaced By</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for enrollment in terminated_enrollments %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{% url 'admin:learner_detail' pk=enrollment.learner.pk %}" class="text-sm font-medium text-primary-600 hover:text-primary-800">
+                                {{ enrollment.learner.surname }}, {{ enrollment.learner.first_name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ enrollment.termination_date|date:"d M Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                {{ enrollment.get_termination_reason_display }}
+                            </span>
+                            {% if enrollment.termination_details %}
+                            <p class="text-xs text-gray-500 mt-1 max-w-xs truncate">{{ enrollment.termination_details }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ enrollment.terminated_by.get_full_name|default:enrollment.terminated_by.username|default:"—" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if enrollment.replaced_by.first %}
+                            <a href="{% url 'admin:learner_detail' pk=enrollment.replaced_by.first.learner.pk %}" class="text-primary-600 hover:text-primary-800">
+                                {{ enrollment.replaced_by.first.learner }}
+                            </a>
+                            {% else %}
+                            <span class="text-gray-400">Not replaced</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                            No terminated learners.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Replacements Tab -->
+        <div x-show="activeTab === 'replacements'" class="overflow-x-auto" style="display: none;">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Replacement Learner</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrolled</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Replaces</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for enrollment in replacement_enrollments %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{% url 'admin:learner_detail' pk=enrollment.learner.pk %}" class="text-sm font-medium text-primary-600 hover:text-primary-800">
+                                {{ enrollment.learner.surname }}, {{ enrollment.learner.first_name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ enrollment.enrollment_date|date:"d M Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if enrollment.replaces_learner %}
+                            {{ enrollment.replaces_learner.learner.surname }}, {{ enrollment.replaces_learner.learner.first_name }}
+                            {% else %}
+                            <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if enrollment.is_active %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                Active
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                Terminated
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                            No replacement learners enrolled yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

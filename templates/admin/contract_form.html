@@ -1,0 +1,294 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}{{ action }} Contract{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="flex items-center text-sm text-gray-500 mb-2">
+                <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <a href="{% url 'admin:contract_list' %}" class="hover:text-primary-600">Contracts</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="text-gray-700">{{ action }}</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">{{ action }} Contract</h1>
+        </div>
+    </div>
+    
+    <!-- Form -->
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Contract Details</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Name -->
+                    <div class="md:col-span-2">
+                        <label for="id_name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Contract Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="name" id="id_name" required maxlength="255"
+                               value="{{ form.name.value|default:object.name|default:'' }}"
+                               placeholder="e.g., SETA Learnership 2026"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                        {% if form.name.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="md:col-span-2">
+                        <label for="id_description" class="block text-sm font-medium text-gray-700 mb-1">
+                            Description
+                        </label>
+                        <textarea name="description" id="id_description" rows="3"
+                                  placeholder="Brief description of the contract..."
+                                  class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">{{ form.description.value|default:object.description|default:'' }}</textarea>
+                    </div>
+                    
+                    <!-- Client -->
+                    <div>
+                        <label for="id_client" class="block text-sm font-medium text-gray-700 mb-1">
+                            Client
+                        </label>
+                        <select name="client" id="id_client"
+                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Select Client</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}" {% if form.client.value == client.id|stringformat:"i" or object.client_id == client.id %}selected{% endif %}>
+                                {{ client.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- SETA -->
+                    <div>
+                        <label for="id_seta" class="block text-sm font-medium text-gray-700 mb-1">
+                            SETA
+                        </label>
+                        <select name="seta" id="id_seta"
+                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Select SETA</option>
+                            {% for seta in setas %}
+                            <option value="{{ seta.id }}" {% if form.seta.value == seta.id|stringformat:"i" or object.seta_id == seta.id %}selected{% endif %}>
+                                {{ seta.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Funder Type -->
+                    <div>
+                        <label for="id_funder_type" class="block text-sm font-medium text-gray-700 mb-1">
+                            Funder Type <span class="text-red-500">*</span>
+                        </label>
+                        <select name="funder_type" id="id_funder_type" required
+                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            {% for value, display in funder_types %}
+                            <option value="{{ value }}" {% if form.funder_type.value == value or object.funder_type == value %}selected{% endif %}>
+                                {{ display }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div>
+                        <label for="id_status" class="block text-sm font-medium text-gray-700 mb-1">
+                            Status <span class="text-red-500">*</span>
+                        </label>
+                        <select name="status" id="id_status" required
+                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            {% for value, display in status_choices %}
+                            <option value="{{ value }}" {% if form.status.value == value or object.status == value %}selected{% endif %}>
+                                {{ display }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Contract Value -->
+                    <div>
+                        <label for="id_contract_value" class="block text-sm font-medium text-gray-700 mb-1">
+                            Contract Value (R)
+                        </label>
+                        <input type="number" name="contract_value" id="id_contract_value" step="0.01" min="0"
+                               value="{{ form.contract_value.value|default:object.contract_value|default:'' }}"
+                               placeholder="0.00"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Timeline -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Timeline</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Signature Date -->
+                    <div>
+                        <label for="id_signature_date" class="block text-sm font-medium text-gray-700 mb-1">
+                            Signature Date
+                        </label>
+                        <input type="date" name="signature_date" id="id_signature_date"
+                               value="{{ form.signature_date.value|default:object.signature_date|date:'Y-m-d'|default:'' }}"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    
+                    <!-- Start Date -->
+                    <div>
+                        <label for="id_start_date" class="block text-sm font-medium text-gray-700 mb-1">
+                            Start Date
+                        </label>
+                        <input type="date" name="start_date" id="id_start_date"
+                               value="{{ form.start_date.value|default:object.start_date|date:'Y-m-d'|default:'' }}"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    
+                    <!-- End Date -->
+                    <div>
+                        <label for="id_end_date" class="block text-sm font-medium text-gray-700 mb-1">
+                            End Date
+                        </label>
+                        <input type="date" name="end_date" id="id_end_date"
+                               value="{{ form.end_date.value|default:object.end_date|date:'Y-m-d'|default:'' }}"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Learner Tracking -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Learner Tracking</h2>
+                <p class="text-sm text-gray-500 mt-1">Configure learner counts and dropout thresholds</p>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Original Learner Count -->
+                    <div>
+                        <label for="id_original_learner_count" class="block text-sm font-medium text-gray-700 mb-1">
+                            Original Learner Count <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="original_learner_count" id="id_original_learner_count" required min="0"
+                               value="{{ form.original_learner_count.value|default:object.original_learner_count|default:'0' }}"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                        <p class="mt-1 text-xs text-gray-500">Total learners contracted at the start</p>
+                    </div>
+                    
+                    <!-- Max Dropout Percentage -->
+                    <div>
+                        <label for="id_max_dropout_percentage" class="block text-sm font-medium text-gray-700 mb-1">
+                            Max Dropout % <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="max_dropout_percentage" id="id_max_dropout_percentage" required
+                               min="0" max="100" step="0.01"
+                               value="{{ form.max_dropout_percentage.value|default:object.max_dropout_percentage|default:'10.00' }}"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                        <p class="mt-1 text-xs text-gray-500">Maximum allowed dropout percentage</p>
+                    </div>
+                    
+                    <!-- Alert Threshold -->
+                    <div>
+                        <label for="id_dropout_alert_threshold" class="block text-sm font-medium text-gray-700 mb-1">
+                            Alert Threshold %
+                        </label>
+                        <input type="number" name="dropout_alert_threshold" id="id_dropout_alert_threshold"
+                               min="0" max="100" step="0.01"
+                               value="{{ form.dropout_alert_threshold.value|default:object.dropout_alert_threshold|default:'7.00' }}"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                        <p class="mt-1 text-xs text-gray-500">Warn when dropout reaches this %</p>
+                    </div>
+                </div>
+                
+                <!-- Info Box -->
+                <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div class="text-sm text-blue-700">
+                            <p class="font-medium">Dropout Rate Monitoring</p>
+                            <p class="mt-1">The system will track learner terminations and calculate the dropout rate as a percentage of original learners. You'll see visual warnings when approaching the threshold and alerts when the limit is exceeded.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Documents & Notes -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Documents & Notes</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 gap-6">
+                    <!-- Contract Document -->
+                    <div>
+                        <label for="id_contract_document" class="block text-sm font-medium text-gray-700 mb-1">
+                            Contract Document
+                        </label>
+                        {% if object.contract_document %}
+                        <div class="mb-2 p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                            <span class="text-sm text-gray-600">
+                                Current: {{ object.contract_document.name|cut:"contracts/documents/" }}
+                            </span>
+                            <a href="{{ object.contract_document.url }}" target="_blank" class="text-primary-600 text-sm hover:underline">
+                                View
+                            </a>
+                        </div>
+                        {% endif %}
+                        <input type="file" name="contract_document" id="id_contract_document"
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                    </div>
+                    
+                    <!-- Notes -->
+                    <div>
+                        <label for="id_notes" class="block text-sm font-medium text-gray-700 mb-1">
+                            Notes
+                        </label>
+                        <textarea name="notes" id="id_notes" rows="4"
+                                  placeholder="Additional notes about this contract..."
+                                  class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">{{ form.notes.value|default:object.notes|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="flex items-center justify-between pt-4">
+            <a href="{% url 'admin:contract_list' %}" 
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Cancel
+            </a>
+            <button type="submit" 
+                    class="inline-flex items-center px-6 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition shadow-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                {% if action == 'Create' %}Create Contract{% else %}Save Changes{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

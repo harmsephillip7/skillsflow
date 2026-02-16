@@ -1,0 +1,112 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}Positions{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="flex items-center text-sm text-gray-500 mb-2">
+                <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="text-gray-700">Positions</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">Positions</h1>
+            <p class="text-gray-500 mt-1">{{ total_count }} total position{{ total_count|pluralize }}</p>
+        </div>
+        <a href="{% url 'hr_admin:position_create' %}" 
+           class="inline-flex items-center px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-xl hover:bg-rose-700 transition shadow-sm">
+            <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add Position
+        </a>
+    </div>
+    
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <form method="get" class="flex flex-col sm:flex-row gap-4">
+            <div class="flex-1 relative">
+                <input type="text" name="search" value="{{ search }}" 
+                       placeholder="Search positions..." 
+                       class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+            <select name="department" class="px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500">
+                <option value="">All Departments</option>
+                {% for dept in departments %}
+                <option value="{{ dept.pk }}" {% if department_filter == dept.pk|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition">
+                Filter
+            </button>
+        </form>
+    </div>
+    
+    <!-- Data Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Code</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Title</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Salary Band</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Staff</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Active</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for pos in positions %}
+                    <tr class="hover:bg-rose-50/50 transition cursor-pointer" onclick="window.location='{% url 'hr_admin:position_detail' pk=pos.pk %}'">
+                        <td class="px-4 py-3.5 text-sm font-medium text-rose-600">{{ pos.code }}</td>
+                        <td class="px-4 py-3.5 text-sm text-gray-900">{{ pos.title }}</td>
+                        <td class="px-4 py-3.5 text-sm text-gray-500">{{ pos.department.name|default:"Company-wide" }}</td>
+                        <td class="px-4 py-3.5 text-sm text-gray-700">{{ pos.get_salary_band_display|default:"—" }}</td>
+                        <td class="px-4 py-3.5 text-sm text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                {{ pos.staff_count }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3.5 text-center">
+                            {% if pos.is_active %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3.5 text-right" onclick="event.stopPropagation()">
+                            <div class="flex items-center justify-end space-x-2">
+                                <a href="{% url 'hr_admin:position_edit' pk=pos.pk %}" class="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Edit">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                            <p>No positions found</p>
+                            <a href="{% url 'hr_admin:position_create' %}" class="mt-2 inline-block text-rose-600 hover:text-rose-700 font-medium">
+                                Create your first position
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

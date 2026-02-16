@@ -1,0 +1,128 @@
+<div class="space-y-6">
+    <!-- Document Upload -->
+    <div class="bg-white rounded-lg border border-gray-200 p-5">
+        <form method="post" enctype="multipart/form-data" action="{% url 'corporate:document_upload' client.pk %}"
+              class="flex items-center space-x-4">
+            {% csrf_token %}
+            <div class="flex-1">
+                <label class="flex items-center justify-center w-full h-24 px-4 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
+                    <div class="text-center">
+                        <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <p class="mt-1 text-sm text-gray-500">Click to upload or drag and drop</p>
+                    </div>
+                    <input type="file" name="file" class="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.png">
+                </label>
+            </div>
+            <div>
+                <select name="category" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+                    <option value="">Select Category</option>
+                    <option value="COMPANY">Company Documents</option>
+                    <option value="CONTRACT">Contracts</option>
+                    <option value="COMPLIANCE">Compliance</option>
+                    <option value="REPORT">Reports</option>
+                    <option value="OTHER">Other</option>
+                </select>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                Upload
+            </button>
+        </form>
+    </div>
+    
+    <!-- Document Filters -->
+    <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-2">
+            <button class="px-3 py-1.5 text-sm rounded-lg bg-primary-100 text-primary-700 font-medium" data-filter="all">All</button>
+            <button class="px-3 py-1.5 text-sm rounded-lg text-gray-600 hover:bg-gray-100" data-filter="company">Company</button>
+            <button class="px-3 py-1.5 text-sm rounded-lg text-gray-600 hover:bg-gray-100" data-filter="contract">Contracts</button>
+            <button class="px-3 py-1.5 text-sm rounded-lg text-gray-600 hover:bg-gray-100" data-filter="compliance">Compliance</button>
+            <button class="px-3 py-1.5 text-sm rounded-lg text-gray-600 hover:bg-gray-100" data-filter="report">Reports</button>
+        </div>
+        <div class="flex-1"></div>
+        <div class="relative">
+            <input type="text" placeholder="Search documents..." 
+                   class="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+        </div>
+    </div>
+    
+    <!-- Document Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for doc in documents %}
+        <div class="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+            <div class="flex items-start">
+                <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center
+                    {% if doc.file_type == 'pdf' %}bg-red-100 text-red-600
+                    {% elif doc.file_type == 'doc' or doc.file_type == 'docx' %}bg-blue-100 text-blue-600
+                    {% elif doc.file_type == 'xls' or doc.file_type == 'xlsx' %}bg-green-100 text-green-600
+                    {% else %}bg-gray-100 text-gray-600{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                    <a href="{{ doc.file.url }}" target="_blank" class="block text-sm font-medium text-gray-900 truncate hover:text-primary-600">
+                        {{ doc.name }}
+                    </a>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {{ doc.get_category_display }} • {{ doc.file_size|filesizeformat }}
+                    </p>
+                    <p class="text-xs text-gray-400 mt-1">
+                        Uploaded {{ doc.uploaded_at|date:"d M Y" }}
+                    </p>
+                </div>
+                <div class="ml-2">
+                    <button class="p-1 text-gray-400 hover:text-gray-600 rounded">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Expiry Warning -->
+            {% if doc.expires_at and doc.is_expiring_soon %}
+            <div class="mt-3 px-2 py-1 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
+                ⚠️ Expires {{ doc.expires_at|date:"d M Y" }}
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="col-span-3 text-center py-12 bg-white rounded-lg border border-gray-200">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No Documents</h3>
+            <p class="mt-1 text-sm text-gray-500">Upload documents to get started.</p>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Required Documents Checklist -->
+    {% if required_documents %}
+    <div class="bg-white rounded-lg border border-gray-200 p-5">
+        <h3 class="font-medium text-gray-900 mb-4">Required Documents</h3>
+        <div class="space-y-2">
+            {% for req in required_documents %}
+            <div class="flex items-center p-3 rounded-lg {% if req.uploaded %}bg-green-50{% else %}bg-gray-50{% endif %}">
+                {% if req.uploaded %}
+                <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                {% else %}
+                <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                {% endif %}
+                <span class="{% if req.uploaded %}text-green-700{% else %}text-gray-700{% endif %}">{{ req.name }}</span>
+                {% if req.required %}<span class="ml-2 text-xs text-red-500">Required</span>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>

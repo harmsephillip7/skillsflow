@@ -1,0 +1,79 @@
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.mypy_cache/
+
+# SQLite database (use external DB in production)
+*.sqlite3
+db.sqlite3
+
+# Local environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test files
+tests/
+pytest.ini
+.pytest_cache/
+test_*.py
+*_test.py
+conftest.py
+
+# Coverage
+htmlcov/
+.coverage
+coverage.xml
+
+# Logs
+logs/
+*.log
+
+# Media files (use external storage in production)
+media/
+uploads/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Git
+.git/
+.gitignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Development dependencies - exclude heavy dev packages
+node_modules/
+
+# Fixtures and test data
+fixtures/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Large static files that can be served from CDN
+static/fonts/
+static/images/
+
+# Celery (not needed on Vercel)
+celerybeat-schedule
+celerybeat.pid

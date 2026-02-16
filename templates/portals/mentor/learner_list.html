@@ -1,0 +1,141 @@
+{% extends "portals/mentor/base.html" %}
+{% load static %}
+
+{% block page_title %}My Learners - Mentor Portal{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="welcome-section">
+            <h1><i class="fas fa-user-graduate me-2"></i>My Learners</h1>
+            <p class="text-muted">Manage and view all learners assigned to you</p>
+        </div>
+        <div class="quick-actions">
+            <a href="{% url 'portals:mentor_dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="dashboard-card mb-4">
+        <div class="card-body">
+            <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="status" class="mb-0 text-muted"><i class="fas fa-filter"></i> Status:</label>
+                    <select name="status" id="status" class="form-select" onchange="this.form.submit()">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Learners</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="terminated" {% if status_filter == 'terminated' %}selected{% endif %}>Terminated</option>
+                    </select>
+                </div>
+                <span class="text-muted ms-auto">
+                    Showing {{ placements.count }} learner{% if placements.count != 1 %}s{% endif %}
+                </span>
+            </form>
+        </div>
+    </div>
+
+    <!-- Learner Cards -->
+    {% if placements %}
+    <div class="row g-4">
+        {% for placement in placements %}
+        <div class="col-md-6 col-lg-4">
+            <div class="dashboard-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-start gap-3">
+                        <!-- Avatar -->
+                        <div class="learner-avatar" style="width: 60px; height: 60px; min-width: 60px;">
+                            {% if placement.learner.profile_picture %}
+                            <img src="{{ placement.learner.profile_picture.url }}" alt="" 
+                                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            {% else %}
+                            <div class="avatar-placeholder" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; color: white; font-weight: 600; font-size: 1.25rem;">
+                                {{ placement.learner.first_name.0 }}{{ placement.learner.last_name.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Info -->
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1">{{ placement.learner.get_full_name }}</h5>
+                            <p class="text-muted mb-2 small">
+                                <i class="fas fa-id-card me-1"></i>{{ placement.learner.id_number|default:"No ID" }}
+                            </p>
+                            {% if placement.enrollment.qualification %}
+                            <p class="text-muted mb-2 small">
+                                <i class="fas fa-graduation-cap me-1"></i>{{ placement.enrollment.qualification.title|truncatechars:40 }}
+                            </p>
+                            {% endif %}
+                            
+                            <!-- Status Badge -->
+                            <div class="mt-2">
+                                {% if placement.status == 'ACTIVE' %}
+                                <span class="badge badge-success"><i class="fas fa-check-circle me-1"></i>Active</span>
+                                {% elif placement.status == 'COMPLETED' %}
+                                <span class="badge badge-info"><i class="fas fa-trophy me-1"></i>Completed</span>
+                                {% elif placement.status == 'TERMINATED' %}
+                                <span class="badge badge-danger"><i class="fas fa-times-circle me-1"></i>Terminated</span>
+                                {% else %}
+                                <span class="badge badge-secondary">{{ placement.get_status_display }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="d-flex justify-content-around mt-4 pt-3 border-top">
+                        <div class="text-center">
+                            <div class="fw-bold text-primary">{{ placement.attendance_rate|default:"--" }}%</div>
+                            <small class="text-muted">Attendance</small>
+                        </div>
+                        <div class="text-center">
+                            <div class="fw-bold text-success">{{ placement.progress|default:"0" }}%</div>
+                            <small class="text-muted">Progress</small>
+                        </div>
+                        <div class="text-center">
+                            <div class="fw-bold text-warning">{{ placement.pending_signoffs|default:"0" }}</div>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="d-flex gap-2 mt-4">
+                        <a href="{% url 'portals:mentor_learner_detail' placement.id %}" class="btn btn-primary btn-sm flex-grow-1">
+                            <i class="fas fa-eye me-1"></i>View Details
+                        </a>
+                        <a href="{% url 'portals:mentor_attendance_entry' placement.id %}" class="btn btn-outline-secondary btn-sm" title="Record Attendance">
+                            <i class="fas fa-clock"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="dashboard-card">
+        <div class="card-body text-center py-5">
+            <div class="empty-state">
+                <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                <h4>No Learners Found</h4>
+                <p class="text-muted mb-4">
+                    {% if status_filter != 'all' %}
+                    No learners match the selected filter. Try selecting "All Learners".
+                    {% else %}
+                    You don't have any learners assigned to you yet.
+                    {% endif %}
+                </p>
+                {% if status_filter != 'all' %}
+                <a href="?status=all" class="btn btn-primary">
+                    <i class="fas fa-users me-1"></i>View All Learners
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

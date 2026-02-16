@@ -1,0 +1,271 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{{ enrollment.learner.user.get_full_name }} - Progress{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                <li><a href="{% url 'portals:facilitator_dashboard' %}" class="hover:text-primary-600">Dashboard</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li><a href="{% url 'portals:facilitator_cohort_detail' enrollment.cohort.id %}" class="hover:text-primary-600">{{ enrollment.cohort.name }}</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li class="text-gray-900">{{ enrollment.learner.user.get_full_name }}</li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">Learner Progress</h1>
+        <p class="mt-1 text-sm text-gray-500">Detailed view of {{ enrollment.learner.user.first_name }}'s performance</p>
+    </div>
+    <div class="mt-4 sm:mt-0 flex gap-2">
+        <button onclick="window.print()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium">
+            <i class="fas fa-print mr-2"></i>Print
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Learner Summary -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-primary-500 to-primary-700 p-6">
+            <div class="flex items-center">
+                <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mr-6">
+                    <span class="text-3xl font-bold text-white">{{ enrollment.learner.user.first_name|slice:":1" }}{{ enrollment.learner.user.last_name|slice:":1" }}</span>
+                </div>
+                <div class="text-white">
+                    <h2 class="text-2xl font-bold">{{ enrollment.learner.user.get_full_name }}</h2>
+                    <p class="text-primary-100">{{ enrollment.learner.id_number|default:"-" }}</p>
+                    <p class="text-primary-100 text-sm mt-1">{{ enrollment.cohort.qualification.title }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase">Status</p>
+                    <p class="mt-1">
+                        {% if enrollment.status == 'ACTIVE' %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                        {% elif enrollment.status == 'COMPLETED' %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Completed</span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{{ enrollment.get_status_display }}</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase">Progress</p>
+                    <p class="text-2xl font-bold text-primary-600 mt-1">{{ enrollment.progress|default:0 }}%</p>
+                </div>
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase">Avg Score</p>
+                    <p class="text-2xl font-bold {% if avg_score >= 70 %}text-green-600{% elif avg_score >= 50 %}text-amber-600{% else %}text-red-600{% endif %} mt-1">{{ avg_score|floatformat:0|default:"-" }}{% if avg_score %}%{% endif %}</p>
+                </div>
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase">Competent</p>
+                    <p class="text-2xl font-bold text-green-600 mt-1">{{ competent_count }}</p>
+                </div>
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase">NYC</p>
+                    <p class="text-2xl font-bold text-red-600 mt-1">{{ nyc_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress by Module -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-900">
+                <i class="fas fa-layer-group text-primary-600 mr-2"></i>Progress by Module
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="space-y-6">
+                {% for module, data in module_progress.items %}
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h4 class="font-medium text-gray-900">{{ module.title }}</h4>
+                            <p class="text-sm text-gray-500">{{ module.code }}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-lg font-bold {% if data.progress >= 100 %}text-green-600{% elif data.progress >= 50 %}text-amber-600{% else %}text-gray-600{% endif %}">
+                                {{ data.progress|floatformat:0 }}%
+                            </span>
+                            <p class="text-xs text-gray-500">{{ data.completed }}/{{ data.total }} completed</p>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                        <div class="h-2 rounded-full {% if data.progress >= 100 %}bg-green-500{% elif data.progress >= 50 %}bg-amber-500{% else %}bg-gray-400{% endif %}" style="width: {{ data.progress }}%"></div>
+                    </div>
+                    
+                    <!-- Module Assessments -->
+                    {% if data.assessments %}
+                    <div class="mt-4 space-y-2">
+                        {% for assessment in data.assessments %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center">
+                                {% if assessment.activity.activity_type == 'TEST' %}
+                                <div class="w-8 h-8 bg-red-100 rounded flex items-center justify-center mr-3">
+                                    <i class="fas fa-file-alt text-red-600 text-sm"></i>
+                                </div>
+                                {% elif assessment.activity.activity_type == 'ASSIGNMENT' %}
+                                <div class="w-8 h-8 bg-blue-100 rounded flex items-center justify-center mr-3">
+                                    <i class="fas fa-tasks text-blue-600 text-sm"></i>
+                                </div>
+                                {% elif assessment.activity.activity_type == 'PRACTICAL' %}
+                                <div class="w-8 h-8 bg-green-100 rounded flex items-center justify-center mr-3">
+                                    <i class="fas fa-tools text-green-600 text-sm"></i>
+                                </div>
+                                {% else %}
+                                <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center mr-3">
+                                    <i class="fas fa-clipboard text-gray-600 text-sm"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <p class="font-medium text-gray-900 text-sm">{{ assessment.activity.title }}</p>
+                                    <p class="text-xs text-gray-500">{{ assessment.assessment_date|date:"d M Y" }} • Attempt {{ assessment.attempt_number }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                {% if assessment.percentage_score is not None %}
+                                <span class="text-lg font-bold {% if assessment.percentage_score >= 70 %}text-green-600{% elif assessment.percentage_score >= 50 %}text-amber-600{% else %}text-red-600{% endif %}">
+                                    {{ assessment.percentage_score|floatformat:0 }}%
+                                </span>
+                                {% endif %}
+                                {% if assessment.result == 'C' %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Competent
+                                </span>
+                                {% elif assessment.result == 'NYC' %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-times mr-1"></i>NYC
+                                </span>
+                                {% elif assessment.status == 'PENDING_MOD' %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                    <i class="fas fa-clock mr-1"></i>Pending Mod
+                                </span>
+                                {% elif assessment.status == 'DRAFT' %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                    <i class="fas fa-edit mr-1"></i>To Mark
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                    {{ assessment.get_result_display|default:"Pending" }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-layer-group text-4xl text-gray-300 mb-3"></i>
+                    <p>No module progress data available.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Results History -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-900">
+                <i class="fas fa-history text-gray-600 mr-2"></i>Assessment History
+            </h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assessment</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Module</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Attempt</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Score</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Result</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for result in all_results %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-gray-900">{{ result.activity.title }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ result.activity.module.title|truncatechars:25 }}</td>
+                        <td class="px-6 py-4">
+                            {% if result.activity.activity_type == 'TEST' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">Test</span>
+                            {% elif result.activity.activity_type == 'ASSIGNMENT' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">Assignment</span>
+                            {% elif result.activity.activity_type == 'PRACTICAL' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">Practical</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">{{ result.activity.get_activity_type_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center text-sm">{{ result.attempt_number }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ result.assessment_date|date:"d M Y" }}</td>
+                        <td class="px-6 py-4 text-center">
+                            {% if result.percentage_score is not None %}
+                            <span class="font-bold {% if result.percentage_score >= 70 %}text-green-600{% elif result.percentage_score >= 50 %}text-amber-600{% else %}text-red-600{% endif %}">
+                                {{ result.percentage_score|floatformat:0 }}%
+                            </span>
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if result.result == 'C' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">C</span>
+                            {% elif result.result == 'NYC' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">NYC</span>
+                            {% elif result.result == 'ABS' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-800">ABS</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if result.status == 'FINALIZED' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700">Final</span>
+                            {% elif result.status == 'MODERATED' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700">Moderated</span>
+                            {% elif result.status == 'PENDING_MOD' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-50 text-purple-700">Pending Mod</span>
+                            {% elif result.status == 'DRAFT' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-50 text-amber-700">Draft</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-50 text-gray-700">{{ result.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                            <i class="fas fa-clipboard-list text-4xl text-gray-300 mb-3"></i>
+                            <p>No assessment results yet.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="flex justify-between">
+        <a href="{% url 'portals:facilitator_cohort_detail' enrollment.cohort.id %}" class="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Class
+        </a>
+    </div>
+</div>
+{% endblock %}

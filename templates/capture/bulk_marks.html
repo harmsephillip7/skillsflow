@@ -1,0 +1,342 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}Bulk Mark Entry{% endblock %}
+
+{% block main_content %}
+<div x-data="bulkMarkEntry()" x-init="init()">
+    <!-- Header -->
+    <div class="mb-6">
+        <a href="{% url 'core:task_hub' %}" class="inline-flex items-center text-gray-500 hover:text-gray-700 mb-4">
+            <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Back to Task Hub
+        </a>
+        
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Bulk Mark Entry</h1>
+                <p class="text-gray-500">Quickly capture assessment marks for multiple learners</p>
+            </div>
+            
+            <!-- Save Status -->
+            <div x-show="saveStatus" class="flex items-center gap-2 text-sm" x-transition>
+                <template x-if="saveStatus === 'saving'">
+                    <span class="text-yellow-600 flex items-center">
+                        <svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                    </span>
+                </template>
+                <template x-if="saveStatus === 'saved'">
+                    <span class="text-green-600 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        All changes saved
+                    </span>
+                </template>
+                <template x-if="saveStatus === 'error'">
+                    <span class="text-red-600 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Error saving
+                    </span>
+                </template>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Selection Panel -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Cohort Selection -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Select Cohort</label>
+                <select x-model="selectedCohort" @change="loadLearners()"
+                        class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="">Choose cohort...</option>
+                    {% for cohort in cohorts %}
+                    <option value="{{ cohort.id }}">{{ cohort.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Assessment Selection -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Assessment</label>
+                <select x-model="selectedAssessment" @change="loadExistingMarks()"
+                        class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="">Choose assessment...</option>
+                    <template x-for="assessment in assessments" :key="assessment.id">
+                        <option :value="assessment.id" x-text="assessment.name"></option>
+                    </template>
+                </select>
+            </div>
+            
+            <!-- Assessment Date -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Assessment Date</label>
+                <input type="date" x-model="assessmentDate"
+                       class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mark Entry Grid -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" x-show="learners.length > 0">
+        <!-- Header -->
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-100">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <span class="text-sm font-medium text-gray-700" x-text="learners.length + ' learners'"></span>
+                    <span class="text-xs text-gray-500">Press Tab to move between fields</span>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <!-- Bulk Actions -->
+                    <button @click="setAllCompetent()" 
+                            class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                        Mark All Competent
+                    </button>
+                    <button @click="clearAll()" 
+                            class="text-sm text-gray-500 hover:text-gray-700">
+                        Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-12">#</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Learner</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-32">Mark</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-40">Result</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Comments</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <template x-for="(learner, index) in learners" :key="learner.id">
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-3 text-sm text-gray-500" x-text="index + 1"></td>
+                            <td class="px-6 py-3">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center mr-3">
+                                        <span class="text-xs font-medium text-primary-700" x-text="learner.initials"></span>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900" x-text="learner.name"></p>
+                                        <p class="text-xs text-gray-500" x-text="learner.id_number"></p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-3">
+                                <input type="number" 
+                                       x-model="marks[learner.id].score"
+                                       @input.debounce.500ms="saveMark(learner.id)"
+                                       min="0" max="100"
+                                       class="w-24 text-center border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                       placeholder="%">
+                            </td>
+                            <td class="px-6 py-3">
+                                <select x-model="marks[learner.id].result"
+                                        @change="saveMark(learner.id)"
+                                        class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        :class="{
+                                            'bg-green-50 border-green-200 text-green-700': marks[learner.id].result === 'competent',
+                                            'bg-red-50 border-red-200 text-red-700': marks[learner.id].result === 'not_competent',
+                                            'bg-yellow-50 border-yellow-200 text-yellow-700': marks[learner.id].result === 'absent'
+                                        }">
+                                    <option value="">Select...</option>
+                                    <option value="competent">Competent</option>
+                                    <option value="not_competent">Not Yet Competent</option>
+                                    <option value="absent">Absent</option>
+                                </select>
+                            </td>
+                            <td class="px-6 py-3">
+                                <input type="text" 
+                                       x-model="marks[learner.id].comments"
+                                       @input.debounce.500ms="saveMark(learner.id)"
+                                       class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                       placeholder="Optional comments...">
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Footer -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-100">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-500">
+                    <span x-text="Object.values(marks).filter(m => m.result).length"></span> of 
+                    <span x-text="learners.length"></span> captured
+                </div>
+                
+                <button @click="saveAllMarks()" 
+                        class="px-6 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition">
+                    Save All Changes
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Empty State -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center" x-show="!selectedCohort || learners.length === 0">
+        <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-1">No learners to display</h3>
+        <p class="text-gray-500">Select a cohort and assessment to begin capturing marks</p>
+    </div>
+</div>
+
+<script>
+function bulkMarkEntry() {
+    return {
+        selectedCohort: '',
+        selectedAssessment: '',
+        assessmentDate: new Date().toISOString().split('T')[0],
+        learners: [],
+        assessments: [],
+        marks: {},
+        saveStatus: null,
+        
+        init() {
+            // Load initial data if needed
+        },
+        
+        async loadLearners() {
+            if (!this.selectedCohort) return;
+            
+            try {
+                const response = await fetch(`/api/cohort/${this.selectedCohort}/learners/`);
+                const data = await response.json();
+                this.learners = data.learners || [];
+                this.assessments = data.assessments || [];
+                
+                // Initialize marks object
+                this.marks = {};
+                this.learners.forEach(l => {
+                    this.marks[l.id] = { score: '', result: '', comments: '' };
+                });
+            } catch (error) {
+                console.error('Failed to load learners:', error);
+            }
+        },
+        
+        async loadExistingMarks() {
+            if (!this.selectedCohort || !this.selectedAssessment) return;
+            
+            try {
+                const response = await fetch(`/api/marks/${this.selectedCohort}/${this.selectedAssessment}/`);
+                const data = await response.json();
+                
+                // Merge existing marks
+                data.marks?.forEach(m => {
+                    if (this.marks[m.learner_id]) {
+                        this.marks[m.learner_id] = {
+                            score: m.score,
+                            result: m.result,
+                            comments: m.comments
+                        };
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load existing marks:', error);
+            }
+        },
+        
+        async saveMark(learnerId) {
+            this.saveStatus = 'saving';
+            
+            try {
+                const mark = this.marks[learnerId];
+                const response = await fetch('/capture/marks/save/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        learner_id: learnerId,
+                        assessment_id: this.selectedAssessment,
+                        assessment_date: this.assessmentDate,
+                        score: mark.score,
+                        result: mark.result,
+                        comments: mark.comments
+                    })
+                });
+                
+                if (response.ok) {
+                    this.saveStatus = 'saved';
+                    setTimeout(() => this.saveStatus = null, 2000);
+                } else {
+                    this.saveStatus = 'error';
+                }
+            } catch (error) {
+                console.error('Failed to save mark:', error);
+                this.saveStatus = 'error';
+            }
+        },
+        
+        async saveAllMarks() {
+            this.saveStatus = 'saving';
+            
+            try {
+                const marksData = Object.entries(this.marks).map(([learnerId, mark]) => ({
+                    learner_id: learnerId,
+                    assessment_id: this.selectedAssessment,
+                    assessment_date: this.assessmentDate,
+                    score: mark.score,
+                    result: mark.result,
+                    comments: mark.comments
+                }));
+                
+                const response = await fetch('/capture/marks/bulk-save/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ marks: marksData })
+                });
+                
+                if (response.ok) {
+                    this.saveStatus = 'saved';
+                    setTimeout(() => this.saveStatus = null, 3000);
+                } else {
+                    this.saveStatus = 'error';
+                }
+            } catch (error) {
+                console.error('Failed to save marks:', error);
+                this.saveStatus = 'error';
+            }
+        },
+        
+        setAllCompetent() {
+            Object.keys(this.marks).forEach(id => {
+                this.marks[id].result = 'competent';
+            });
+        },
+        
+        clearAll() {
+            Object.keys(this.marks).forEach(id => {
+                this.marks[id] = { score: '', result: '', comments: '' };
+            });
+        }
+    };
+}
+</script>
+
+{% csrf_token %}
+{% endblock %}

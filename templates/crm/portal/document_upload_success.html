@@ -1,0 +1,97 @@
+{% extends "crm/portal/portal_base.html" %}
+
+{% block title %}Documents Uploaded - Success{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Success Card -->
+    <div class="bg-white rounded-2xl card-shadow p-8 text-center">
+        <div class="w-20 h-20 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
+            <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+        </div>
+        
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">
+            All Documents Uploaded! 🎉
+        </h2>
+        <p class="text-gray-600 max-w-md mx-auto">
+            Thank you, {{ lead.first_name }}! We have received all your documents.
+            Our admissions team will review them and be in touch shortly.
+        </p>
+    </div>
+
+    <!-- Uploaded Documents Summary -->
+    <div class="bg-white rounded-2xl card-shadow overflow-hidden">
+        <div class="p-6 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">Uploaded Documents</h3>
+        </div>
+        
+        <div class="divide-y divide-gray-100">
+            {% for doc in uploaded_documents %}
+            <div class="p-4 sm:p-6 flex items-center">
+                <div class="flex items-center space-x-4 flex-1">
+                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900">{{ doc.get_document_type_display }}</p>
+                        <p class="text-sm text-gray-500">{{ doc.original_filename|truncatechars:40 }}</p>
+                    </div>
+                </div>
+                <span class="text-sm text-gray-400">
+                    {{ doc.created_at|date:"d M Y, H:i" }}
+                </span>
+            </div>
+            {% empty %}
+            <div class="p-6 text-center text-gray-500">
+                No documents uploaded yet.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Next Steps Card -->
+    <div class="bg-blue-50 rounded-xl p-6">
+        <h4 class="font-semibold text-blue-900 mb-3">What happens next?</h4>
+        <ul class="space-y-2">
+            <li class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="text-blue-700">Our team will review your documents within 1-2 business days</span>
+            </li>
+            <li class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="text-blue-700">We'll contact you via {{ lead.preferred_contact_method|default:"WhatsApp" }} with next steps</span>
+            </li>
+            <li class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="text-blue-700">If we need any additional information, we'll let you know</span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Contact Info -->
+    {% if lead.assigned_to %}
+    <div class="bg-gray-50 rounded-xl p-6 text-center">
+        <p class="text-sm text-gray-600">
+            Questions? Contact your admissions consultant
+        </p>
+        {% if lead.assigned_to.email %}
+        <p class="mt-2">
+            <a href="mailto:{{ lead.assigned_to.email }}" class="text-blue-600 hover:underline">
+                {{ lead.assigned_to.email }}
+            </a>
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

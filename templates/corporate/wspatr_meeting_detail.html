@@ -1,0 +1,336 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}{{ meeting.title }} - {{ client.company_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:dashboard' %}" class="text-gray-700 hover:text-blue-600">Corporate</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:wspatr_management' client.pk %}" class="text-gray-700 hover:text-blue-600">WSP/ATR</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">{{ meeting.title }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex space-x-3">
+    {% if meeting.status != 'COMPLETED' and meeting.status != 'CANCELLED' %}
+    <a href="{% url 'corporate:wspatr_send_meeting_invite' client.pk meeting.pk %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+        </svg>
+        Send Invites
+    </a>
+    <button type="button" onclick="document.getElementById('edit-meeting-modal').classList.remove('hidden')" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+        </svg>
+        Edit Meeting
+    </button>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block main_content %}
+<!-- Meeting Header -->
+<div class="bg-white rounded-lg shadow mb-8 p-6">
+    <div class="flex items-start justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ meeting.title }}</h1>
+            <p class="text-gray-500 mt-1">{{ client.company_name }}</p>
+        </div>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+            {% if meeting.status == 'SCHEDULED' %}bg-blue-100 text-blue-800
+            {% elif meeting.status == 'CONFIRMED' %}bg-green-100 text-green-800
+            {% elif meeting.status == 'IN_PROGRESS' %}bg-yellow-100 text-yellow-800
+            {% elif meeting.status == 'COMPLETED' %}bg-gray-100 text-gray-800
+            {% elif meeting.status == 'CANCELLED' %}bg-red-100 text-red-800
+            {% else %}bg-gray-100 text-gray-800{% endif %}">
+            {{ meeting.get_status_display }}
+        </span>
+    </div>
+    
+    <!-- Meeting Details -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200">
+        <div>
+            <p class="text-sm text-gray-500">Date & Time</p>
+            <p class="font-medium text-gray-900">{{ meeting.scheduled_date|date:"D, d M Y" }}</p>
+            <p class="text-sm text-gray-600">{{ meeting.scheduled_time|time:"H:i" }}</p>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500">Duration</p>
+            <p class="font-medium text-gray-900">{{ meeting.duration_minutes }} minutes</p>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500">Meeting Type</p>
+            <p class="font-medium text-gray-900">{{ meeting.get_meeting_type_display }}</p>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500">Location</p>
+            <p class="font-medium text-gray-900">{{ meeting.location|default:"Not specified" }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+        
+        <!-- Agenda Section -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Agenda</h2>
+            </div>
+            <div class="divide-y divide-gray-200">
+                {% for item in agenda_items %}
+                <div class="p-4">
+                    <div class="flex items-start">
+                        <span class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-blue-100 text-blue-800 rounded-full text-sm font-medium mr-3">
+                            {{ item.order }}
+                        </span>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-900">{{ item.title }}</p>
+                            {% if item.description %}
+                            <p class="text-sm text-gray-500 mt-1">{{ item.description }}</p>
+                            {% endif %}
+                            {% if item.duration_minutes %}
+                            <p class="text-xs text-gray-400 mt-1">Duration: {{ item.duration_minutes }} min</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-6 text-center text-gray-500">
+                    <p>No agenda items</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Action Items Section -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900">Action Items</h2>
+                <button type="button" onclick="document.getElementById('add-action-modal').classList.remove('hidden')" class="text-blue-600 hover:text-blue-800 text-sm">+ Add Action</button>
+            </div>
+            <div class="divide-y divide-gray-200">
+                {% for action in action_items %}
+                <div class="p-4">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-900">{{ action.description }}</p>
+                            {% if action.assigned_to %}
+                            <p class="text-sm text-gray-500 mt-1">
+                                Assigned to: 
+                                {% if action.assigned_to.employee %}{{ action.assigned_to.employee.get_full_name }}{% else %}{{ action.assigned_to.contact.first_name }} {{ action.assigned_to.contact.last_name }}{% endif %}
+                            </p>
+                            {% endif %}
+                            {% if action.due_date %}
+                            <p class="text-xs text-gray-400 mt-1">Due: {{ action.due_date|date:"d M Y" }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if action.status == 'PENDING' %}bg-yellow-100 text-yellow-800
+                                {% elif action.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800
+                                {% elif action.status == 'COMPLETED' %}bg-green-100 text-green-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ action.get_status_display }}
+                            </span>
+                            {% if action.status != 'COMPLETED' %}
+                            <form method="post" action="{% url 'corporate:wspatr_update_action_item' client.pk action.pk %}" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="{% if action.status == 'PENDING' %}IN_PROGRESS{% else %}COMPLETED{% endif %}">
+                                <button type="submit" class="text-blue-600 hover:text-blue-800 text-sm">
+                                    {% if action.status == 'PENDING' %}Start{% else %}Complete{% endif %}
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-6 text-center text-gray-500">
+                    <p>No action items yet</p>
+                    <button type="button" onclick="document.getElementById('add-action-modal').classList.remove('hidden')" class="text-blue-600 hover:underline mt-2">Add action item</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        
+        <!-- Attendance Section -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Attendance</h2>
+            </div>
+            <form method="post" action="{% url 'corporate:wspatr_record_attendance' client.pk meeting.pk %}">
+                {% csrf_token %}
+                <div class="divide-y divide-gray-200">
+                    {% for record in attendance_records %}
+                    <div class="p-4 flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input type="checkbox" name="attendance" value="{{ record.pk }}" {% if record.attended %}checked{% endif %}
+                                class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">
+                                    {{ record.member.display_name }}
+                                </p>
+                                <p class="text-xs text-gray-500">{{ record.member.get_role_display }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-6 text-center text-gray-500">
+                        <p>No attendance records</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if attendance_records %}
+                <div class="p-4 border-t border-gray-200">
+                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Save Attendance
+                    </button>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+        
+        <!-- Meeting Notes -->
+        {% if meeting.notes %}
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Notes</h2>
+            </div>
+            <div class="p-4">
+                <p class="text-sm text-gray-700">{{ meeting.notes|linebreaks }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Quick Links -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Quick Links</h2>
+            </div>
+            <div class="p-4 space-y-2">
+                <a href="{% url 'corporate:wspatr_management' client.pk %}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">
+                    ← Back to WSP/ATR Management
+                </a>
+                <a href="{% url 'corporate:client_360' client.pk %}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">
+                    Client 360 View
+                </a>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<!-- Edit Meeting Modal -->
+<div id="edit-meeting-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-lg bg-white">
+        <div class="flex justify-between items-center border-b pb-3">
+            <h3 class="text-lg font-semibold text-gray-900">Edit Meeting</h3>
+            <button type="button" onclick="document.getElementById('edit-meeting-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form method="post" action="{% url 'corporate:wspatr_update_meeting' client.pk meeting.pk %}" class="mt-4 space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <input type="date" name="scheduled_date" value="{{ meeting.scheduled_date|date:'Y-m-d' }}" class="w-full border-gray-300 rounded-lg shadow-sm" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                <input type="time" name="scheduled_time" value="{{ meeting.scheduled_time|time:'H:i' }}" class="w-full border-gray-300 rounded-lg shadow-sm" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+                <input type="number" name="duration_minutes" value="{{ meeting.duration_minutes }}" class="w-full border-gray-300 rounded-lg shadow-sm" min="15" step="15">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Meeting Type</label>
+                <select name="meeting_type" class="w-full border-gray-300 rounded-lg shadow-sm">
+                    <option value="IN_PERSON" {% if meeting.meeting_type == 'IN_PERSON' %}selected{% endif %}>In Person</option>
+                    <option value="VIRTUAL" {% if meeting.meeting_type == 'VIRTUAL' %}selected{% endif %}>Virtual</option>
+                    <option value="HYBRID" {% if meeting.meeting_type == 'HYBRID' %}selected{% endif %}>Hybrid</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Location / Meeting Link</label>
+                <input type="text" name="location" value="{{ meeting.location|default:'' }}" class="w-full border-gray-300 rounded-lg shadow-sm" placeholder="Room name or meeting URL">
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+                <button type="button" onclick="document.getElementById('edit-meeting-modal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Action Item Modal -->
+<div id="add-action-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-lg bg-white">
+        <div class="flex justify-between items-center border-b pb-3">
+            <h3 class="text-lg font-semibold text-gray-900">Add Action Item</h3>
+            <button type="button" onclick="document.getElementById('add-action-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form method="post" action="{% url 'corporate:wspatr_add_action_item' client.pk meeting.pk %}" class="mt-4 space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea name="description" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm" required placeholder="What needs to be done?"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                <select name="assigned_to" class="w-full border-gray-300 rounded-lg shadow-sm">
+                    <option value="">Unassigned</option>
+                    {% for record in attendance_records %}
+                    <option value="{{ record.member.pk }}">
+                        {{ record.member.display_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                <input type="date" name="due_date" class="w-full border-gray-300 rounded-lg shadow-sm">
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+                <button type="button" onclick="document.getElementById('add-action-modal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Add Action
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

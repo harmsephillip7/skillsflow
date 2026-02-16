@@ -1,0 +1,372 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}My Schedule - Facilitator Portal{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">
+            <i class="fas fa-calendar-alt text-primary-600 mr-2"></i>My Schedule
+        </h1>
+        <p class="mt-1 text-sm text-gray-500">
+            {% if view_type == 'today' %}Today's sessions{% endif %}
+            {% if view_type == 'tomorrow' %}Tomorrow's sessions{% endif %}
+            {% if view_type == 'week' %}This week's sessions{% endif %}
+            {% if view_type == 'month' %}This month's sessions{% endif %}
+            {% if view_type == '3year' %}3-Year Teaching Overview{% endif %}
+        </p>
+    </div>
+    <div class="mt-4 sm:mt-0 flex gap-2">
+        <a href="{% url 'core:dashboard' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <i class="fas fa-home mr-2"></i>Main Dashboard
+        </a>
+        <a href="{% url 'portals:facilitator_dashboard' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <i class="fas fa-arrow-left mr-2"></i>Facilitator Portal
+        </a>
+        <a href="{% url 'portals:facilitator_assessments' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition">
+            <i class="fas fa-clipboard-check mr-2"></i>Pending Grades
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- View Toggle Tabs -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-2">
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'portals:facilitator_schedule' %}?view=today" 
+               class="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-medium text-center transition
+                      {% if view_type == 'today' %}bg-primary-600 text-white shadow{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                <i class="fas fa-sun mr-2"></i>Today
+            </a>
+            <a href="{% url 'portals:facilitator_schedule' %}?view=tomorrow" 
+               class="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-medium text-center transition
+                      {% if view_type == 'tomorrow' %}bg-primary-600 text-white shadow{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                <i class="fas fa-clock mr-2"></i>Tomorrow
+            </a>
+            <a href="{% url 'portals:facilitator_schedule' %}?view=week" 
+               class="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-medium text-center transition
+                      {% if view_type == 'week' %}bg-primary-600 text-white shadow{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                <i class="fas fa-calendar-week mr-2"></i>This Week
+            </a>
+            <a href="{% url 'portals:facilitator_schedule' %}?view=month" 
+               class="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-medium text-center transition
+                      {% if view_type == 'month' %}bg-primary-600 text-white shadow{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                <i class="fas fa-calendar mr-2"></i>This Month
+            </a>
+            <a href="{% url 'portals:facilitator_schedule' %}?view=3year" 
+               class="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-medium text-center transition
+                      {% if view_type == '3year' %}bg-purple-600 text-white shadow{% else %}bg-purple-100 text-purple-700 hover:bg-purple-200{% endif %}">
+                <i class="fas fa-graduation-cap mr-2"></i>Full Programs
+            </a>
+        </div>
+    </div>
+
+    <!-- Pending Work Alert -->
+    {% if pending_assessments_count > 0 %}
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-amber-600 text-xl"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-amber-800">Assessments Pending Grading</h3>
+                    <p class="mt-1 text-sm text-amber-700">
+                        You have <strong>{{ pending_assessments_count }}</strong> assessment{{ pending_assessments_count|pluralize }} waiting to be graded.
+                    </p>
+                </div>
+            </div>
+            <a href="{% url 'portals:facilitator_assessments' %}" class="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition">
+                Grade Now
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if view_type == '3year' %}
+    <!-- 3-Year Program Timeline View -->
+    <div class="space-y-6">
+        {% for cohort_info in cohort_timeline %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-5 py-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-lg">{{ cohort_info.cohort.qualification.title }}</h3>
+                        <p class="text-purple-100 text-sm">{{ cohort_info.cohort.name }} • {{ cohort_info.learner_count }} learner{{ cohort_info.learner_count|pluralize }}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold 
+                                   {% if cohort_info.cohort.status == 'ACTIVE' %}bg-green-400 text-green-900
+                                   {% elif cohort_info.cohort.status == 'COMPLETED' %}bg-blue-400 text-blue-900
+                                   {% else %}bg-gray-300 text-gray-700{% endif %}">
+                            {{ cohort_info.cohort.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-5">
+                <!-- Timeline Stats -->
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <p class="text-2xl font-bold text-gray-900">{{ cohort_info.duration_months }}</p>
+                        <p class="text-xs text-gray-500">Duration (months)</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <p class="text-2xl font-bold text-gray-900">{{ cohort_info.months_elapsed }}</p>
+                        <p class="text-xs text-gray-500">Completed</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <p class="text-2xl font-bold text-gray-900">{{ cohort_info.months_remaining }}</p>
+                        <p class="text-xs text-gray-500">Remaining</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <p class="text-2xl font-bold {% if cohort_info.progress_percentage >= 75 %}text-green-600{% elif cohort_info.progress_percentage >= 50 %}text-blue-600{% else %}text-amber-600{% endif %}">
+                            {{ cohort_info.progress_percentage }}%
+                        </p>
+                        <p class="text-xs text-gray-500">Progress</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <p class="text-2xl font-bold text-purple-600">{{ cohort_info.learner_count }}</p>
+                        <p class="text-xs text-gray-500">Learners</p>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between text-sm mb-2">
+                        <span class="text-gray-600">
+                            <i class="fas fa-play-circle text-green-500 mr-1"></i>
+                            {{ cohort_info.cohort.start_date|date:"d M Y" }}
+                        </span>
+                        <span class="text-gray-600">
+                            {{ cohort_info.cohort.end_date|date:"d M Y" }}
+                            <i class="fas fa-flag-checkered text-purple-500 ml-1"></i>
+                        </span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="bg-gradient-to-r from-green-500 to-purple-500 h-3 rounded-full transition-all" 
+                             style="width: {{ cohort_info.progress_percentage }}%">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="flex flex-wrap gap-2 border-t pt-4">
+                    <a href="{% url 'portals:facilitator_cohort_detail' cohort_info.cohort.id %}" 
+                       class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-primary-700 bg-primary-100 rounded-lg hover:bg-primary-200 transition">
+                        <i class="fas fa-users mr-1"></i>View Learners
+                    </a>
+                    <a href="{% url 'portals:facilitator_assessments' %}?cohort={{ cohort_info.cohort.id }}" 
+                       class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-amber-700 bg-amber-100 rounded-lg hover:bg-amber-200 transition">
+                        <i class="fas fa-clipboard-check mr-1"></i>Assessments
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+            <i class="fas fa-graduation-cap text-4xl text-gray-300 mb-3"></i>
+            <p class="text-gray-500">You are not assigned to any cohorts.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- Session List View (Today, Tomorrow, Week, Month) -->
+    {% if sessions_by_date %}
+    <div class="space-y-4">
+        {% for date, sessions in sessions_by_date.items %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <!-- Date Header -->
+            <div class="px-5 py-3 bg-gray-50 border-b border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center mr-3">
+                            <span class="text-primary-700 font-bold">{{ date|date:"d" }}</span>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900">{{ date|date:"l" }}</h3>
+                            <p class="text-sm text-gray-500">{{ date|date:"d F Y" }}</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
+                        {{ sessions|length }} session{{ sessions|length|pluralize }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Sessions -->
+            <div class="divide-y divide-gray-100">
+                {% for session in sessions %}
+                <div class="px-5 py-4 hover:bg-gray-50 transition">
+                    <div class="flex items-start">
+                        <!-- Time Column -->
+                        <div class="flex-shrink-0 w-20 text-center mr-4">
+                            <div class="text-lg font-bold text-gray-900">
+                                {{ session.start_time|time:"H:i" }}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                to {{ session.end_time|time:"H:i" }}
+                            </div>
+                        </div>
+
+                        <!-- Session Info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                {% if session.session_type == 'CLASS' %}
+                                <span class="px-2 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-700">
+                                    <i class="fas fa-chalkboard mr-1"></i>Class
+                                </span>
+                                {% elif session.session_type == 'PRACTICAL' %}
+                                <span class="px-2 py-0.5 text-xs font-medium rounded bg-green-100 text-green-700">
+                                    <i class="fas fa-tools mr-1"></i>Practical
+                                </span>
+                                {% elif session.session_type == 'ASSESSMENT' %}
+                                <span class="px-2 py-0.5 text-xs font-medium rounded bg-red-100 text-red-700">
+                                    <i class="fas fa-clipboard-check mr-1"></i>Assessment
+                                </span>
+                                {% elif session.session_type == 'WORKSHOP' %}
+                                <span class="px-2 py-0.5 text-xs font-medium rounded bg-purple-100 text-purple-700">
+                                    <i class="fas fa-users mr-1"></i>Workshop
+                                </span>
+                                {% else %}
+                                <span class="px-2 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-700">
+                                    {{ session.get_session_type_display|default:"Session" }}
+                                </span>
+                                {% endif %}
+
+                                <!-- Learner Count Badge -->
+                                <span class="px-2 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-600">
+                                    <i class="fas fa-user-graduate mr-1"></i>{{ session.cohort.enrollments.count }} learners
+                                </span>
+                            </div>
+
+                            <h4 class="font-medium text-gray-900">
+                                {{ session.title|default:session.cohort.qualification.title }}
+                            </h4>
+                            <p class="text-sm text-gray-600 mt-1">{{ session.cohort.name }}</p>
+
+                            <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                {% if session.venue %}
+                                <span class="inline-flex items-center">
+                                    <i class="fas fa-map-marker-alt mr-1"></i>{{ session.venue.name }}
+                                </span>
+                                {% endif %}
+                                {% if session.module %}
+                                <span class="inline-flex items-center">
+                                    <i class="fas fa-book mr-1"></i>{{ session.module.title|truncatechars:30 }}
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            {% if session.description %}
+                            <p class="mt-2 text-sm text-gray-600 line-clamp-2">{{ session.description }}</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex-shrink-0 ml-4 flex flex-col gap-2">
+                            {% if session.session_type == 'ASSESSMENT' %}
+                            <a href="{% url 'portals:facilitator_cohort_detail' session.cohort.id %}" 
+                               class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded hover:bg-primary-700 transition">
+                                <i class="fas fa-clipboard-check mr-1"></i>Grade
+                            </a>
+                            {% else %}
+                            <a href="{% url 'portals:facilitator_cohort_detail' session.cohort.id %}" 
+                               class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition">
+                                <i class="fas fa-eye mr-1"></i>View
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-calendar-times text-3xl text-gray-400"></i>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No Sessions Scheduled</h3>
+        <p class="text-gray-500 mb-4">
+            {% if view_type == 'today' %}
+            You don't have any sessions scheduled for today.
+            {% elif view_type == 'tomorrow' %}
+            You don't have any sessions scheduled for tomorrow.
+            {% elif view_type == 'week' %}
+            You don't have any sessions scheduled this week.
+            {% elif view_type == 'month' %}
+            You don't have any sessions scheduled this month.
+            {% else %}
+            No sessions found for the selected period.
+            {% endif %}
+        </p>
+        <div class="flex justify-center gap-3">
+            {% if view_type != 'week' %}
+            <a href="{% url 'portals:facilitator_schedule' %}?view=week" class="text-primary-600 hover:text-primary-700 text-sm">
+                View this week →
+            </a>
+            {% endif %}
+            {% if view_type != 'month' %}
+            <a href="{% url 'portals:facilitator_schedule' %}?view=month" class="text-primary-600 hover:text-primary-700 text-sm">
+                View this month →
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- Quick Stats & Actions -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Today's Summary -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <h3 class="font-semibold text-gray-900 mb-4">
+                <i class="fas fa-chart-pie text-primary-600 mr-2"></i>Quick Stats
+            </h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-blue-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-blue-700">{{ my_cohorts|length }}</p>
+                    <p class="text-sm text-blue-600">Active Classes</p>
+                </div>
+                <div class="bg-amber-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-amber-700">{{ pending_assessments_count|default:0 }}</p>
+                    <p class="text-sm text-amber-600">Pending Grades</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Navigation -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <h3 class="font-semibold text-gray-900 mb-4">
+                <i class="fas fa-compass text-primary-600 mr-2"></i>Quick Links
+            </h3>
+            <div class="grid grid-cols-2 gap-3">
+                <a href="{% url 'portals:facilitator_dashboard' %}" class="flex items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition">
+                    <i class="fas fa-home text-gray-600 mr-2"></i>
+                    <span class="text-sm font-medium text-gray-700">Dashboard</span>
+                </a>
+                <a href="{% url 'portals:facilitator_classes' %}" class="flex items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition">
+                    <i class="fas fa-users text-gray-600 mr-2"></i>
+                    <span class="text-sm font-medium text-gray-700">My Classes</span>
+                </a>
+                <a href="{% url 'portals:facilitator_assessments' %}" class="flex items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition">
+                    <i class="fas fa-clipboard-check text-gray-600 mr-2"></i>
+                    <span class="text-sm font-medium text-gray-700">Assessments</span>
+                </a>
+                <a href="{% url 'portals:facilitator_schedule' %}?view=3year" class="flex items-center p-3 rounded-lg bg-purple-50 hover:bg-purple-100 transition">
+                    <i class="fas fa-graduation-cap text-purple-600 mr-2"></i>
+                    <span class="text-sm font-medium text-purple-700">Full Programs</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

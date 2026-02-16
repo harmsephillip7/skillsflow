@@ -1,0 +1,152 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Lesson Plans - {{ module.title }} - SkillsFlow{% endblock %}
+
+{% block page_title %}Lesson Plans{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'academics:qualification_list' %}" class="text-primary-600 hover:text-primary-800">Qualifications</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 24 24">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'academics:qualification_detail' module.qualification.pk %}" class="text-primary-600 hover:text-primary-800">{{ module.qualification.title|truncatewords:5 }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ module.code }} - Lesson Plans</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'academics:lesson_plan_create' module.pk %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    New Lesson Plan
+</a>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Module Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="flex items-center space-x-3">
+                    <span class="font-mono text-sm text-primary-600">{{ module.us_id }}</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium
+                        {% if module.module_type == 'KM' %}bg-indigo-100 text-indigo-700
+                        {% elif module.module_type == 'PM' %}bg-emerald-100 text-emerald-700
+                        {% else %}bg-amber-100 text-amber-700{% endif %}">
+                        {{ module.get_module_type_display }}
+                    </span>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mt-1">{{ module.title }}</h2>
+                <p class="text-sm text-gray-500">{{ module.credits }} Credits • NQF {{ module.nqf_level }}</p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-500">Notional Hours</p>
+                <p class="text-2xl font-bold text-gray-900">{{ module.notional_hours }}h</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lesson Plans List -->
+    {% if lesson_plans %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for plan in lesson_plans %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">{{ plan.title }}</h3>
+                        <p class="text-sm text-gray-500">Session {{ plan.session_number }}</p>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        {% if plan.session_type == 'CLASSROOM' %}bg-indigo-100 text-indigo-700
+                        {% elif plan.session_type == 'PRACTICAL' %}bg-emerald-100 text-emerald-700
+                        {% elif plan.session_type == 'COMBINED' %}bg-purple-100 text-purple-700
+                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                        {{ plan.get_session_type_display }}
+                    </span>
+                </div>
+                
+                {% if plan.learning_objectives %}
+                <div class="mb-4">
+                    <p class="text-xs font-medium text-gray-500 uppercase mb-1">Learning Objectives</p>
+                    <ul class="text-sm text-gray-600 list-disc list-inside">
+                        {% for obj in plan.learning_objectives|slice:":3" %}
+                        <li class="truncate">{{ obj }}</li>
+                        {% endfor %}
+                        {% if plan.learning_objectives|length > 3 %}
+                        <li class="text-gray-400">+{{ plan.learning_objectives|length|add:"-3" }} more</li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <div class="grid grid-cols-2 gap-3">
+                    {% if plan.classroom_duration_minutes %}
+                    <div class="bg-indigo-50 rounded-lg p-3 text-center">
+                        <p class="text-lg font-bold text-indigo-700">{{ plan.classroom_duration_minutes }}min</p>
+                        <p class="text-xs text-indigo-600">Classroom</p>
+                    </div>
+                    {% endif %}
+                    {% if plan.practical_duration_minutes %}
+                    <div class="bg-emerald-50 rounded-lg p-3 text-center">
+                        <p class="text-lg font-bold text-emerald-700">{{ plan.practical_duration_minutes }}min</p>
+                        <p class="text-xs text-emerald-600">Practical</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                <a href="{% url 'academics:lesson_plan_detail' plan.pk %}" class="text-primary-600 hover:text-primary-800 text-sm font-medium">
+                    View Plan →
+                </a>
+                <div class="flex items-center space-x-2">
+                    <a href="{% url 'academics:lesson_plan_duplicate' plan.pk %}" class="text-gray-400 hover:text-gray-600" title="Duplicate">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                    </a>
+                    <a href="{% url 'academics:lesson_plan_edit' plan.pk %}" class="text-gray-400 hover:text-gray-600" title="Edit">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+        <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900">No Lesson Plans Yet</h3>
+        <p class="mt-2 text-gray-500 max-w-sm mx-auto">
+            Create lesson plans to guide facilitators on what and how to present each session for this module.
+        </p>
+        <a href="{% url 'academics:lesson_plan_create' module.pk %}" class="mt-6 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Create First Lesson Plan
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,347 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}{{ intake.name }} - Intake Detail{% endblock %}
+
+{% block main_content %}
+<div class="p-6">
+    <!-- Breadcrumb & Header -->
+    <div class="mb-6">
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 text-sm text-gray-500">
+                <li><a href="{% url 'intakes:dashboard' %}" class="hover:text-teal-600">Intakes</a></li>
+                <li class="flex items-center"><svg class="w-4 h-4 mx-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg></li>
+                <li><a href="{% url 'intakes:bucket_list' %}" class="hover:text-teal-600">Buckets</a></li>
+                <li class="flex items-center"><svg class="w-4 h-4 mx-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg></li>
+                <li class="text-gray-700 font-medium">{{ intake.code }}</li>
+            </ol>
+        </nav>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-3 bg-teal-100 rounded-xl">
+                    <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ intake.name }}</h1>
+                    <p class="text-gray-500 text-sm">{{ intake.code }} • {{ intake.campus.name }}</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                {% if intake.status in 'PLANNED,RECRUITING,ENROLLMENT_OPEN' and not intake.is_full %}
+                <a href="{% url 'intakes:enroll' intake.pk %}" class="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                    </svg>
+                    Enroll Learner
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Intake Details Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900">Intake Details</h2>
+                    <span class="px-3 py-1 text-sm font-medium rounded-full
+                        {% if intake.status == 'ACTIVE' %}bg-green-100 text-green-800
+                        {% elif intake.status == 'RECRUITING' %}bg-blue-100 text-blue-800
+                        {% elif intake.status == 'ENROLLMENT_OPEN' %}bg-teal-100 text-teal-800
+                        {% elif intake.status == 'COMPLETED' %}bg-gray-100 text-gray-800
+                        {% elif intake.status == 'PLANNED' %}bg-purple-100 text-purple-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ intake.get_status_display }}
+                    </span>
+                </div>
+                <div class="p-6">
+                    <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <dt class="text-sm text-gray-500">Programme</dt>
+                            <dd class="font-medium text-gray-900">{{ intake.qualification.name }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-gray-500">Campus</dt>
+                            <dd class="font-medium text-gray-900">{{ intake.campus.name }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-gray-500">Start Date</dt>
+                            <dd class="font-medium text-gray-900">{{ intake.start_date|date:"d F Y" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-gray-500">End Date</dt>
+                            <dd class="font-medium text-gray-900">{{ intake.end_date|date:"d F Y" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-gray-500">Delivery Mode</dt>
+                            <dd class="font-medium text-gray-900">{{ intake.get_delivery_mode_display }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-gray-500">Enrollment Deadline</dt>
+                            <dd class="font-medium text-gray-900">{{ intake.enrollment_deadline|date:"d F Y"|default:"Not set" }}</dd>
+                        </div>
+                        {% if intake.facilitator %}
+                        <div>
+                            <dt class="text-sm text-gray-500">Facilitator</dt>
+                            <dd class="font-medium text-gray-900">{{ intake.facilitator.get_full_name }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if intake.venue %}
+                        <div>
+                            <dt class="text-sm text-gray-500">Venue</dt>
+                            <dd class="font-medium text-gray-900">{{ intake.venue.name }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                    
+                    {% if intake.description %}
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <dt class="text-sm text-gray-500 mb-1">Description</dt>
+                        <dd class="text-gray-700">{{ intake.description }}</dd>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Enrolled Learners -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Enrolled Learners ({{ enrolled_list|length }})
+                    </h2>
+                </div>
+                <div class="overflow-x-auto">
+                    {% if enrolled_list %}
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Learner</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID Number</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Funding</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enrolled</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for enrollment in enrolled_list %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3">
+                                    <div class="font-medium text-gray-900">{{ enrollment.learner.first_name }} {{ enrollment.learner.last_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ enrollment.enrollment_number }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600">{{ enrollment.learner.id_number|default:"-" }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="text-xs px-2 py-1 rounded-full
+                                        {% if enrollment.funding_type == 'SELF_FUNDED' %}bg-gray-100 text-gray-700
+                                        {% elif enrollment.funding_type == 'PARENT_FUNDED' %}bg-pink-100 text-pink-700
+                                        {% elif enrollment.funding_type == 'EMPLOYER_FUNDED' %}bg-blue-100 text-blue-700
+                                        {% elif enrollment.funding_type == 'BURSARY' %}bg-purple-100 text-purple-700
+                                        {% elif enrollment.funding_type == 'SETA_FUNDED' %}bg-green-100 text-green-700
+                                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                        {{ enrollment.get_funding_type_display }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">
+                                        {{ enrollment.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600">{{ enrollment.enrollment_date|date:"d M Y"|default:"-" }}</td>
+                                <td class="px-4 py-3 text-right">
+                                    <a href="{% url 'intakes:enrollment_detail' enrollment.pk %}" class="text-teal-600 hover:text-teal-800 text-sm font-medium">View</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-gray-500 text-center py-8">No enrolled learners yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Pending Enrollments -->
+            {% if pending_list %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Pending Enrollments ({{ pending_list|length }})
+                    </h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-yellow-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Learner</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Funding</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Applied</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for enrollment in pending_list %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3">
+                                    <div class="font-medium text-gray-900">{{ enrollment.learner.first_name }} {{ enrollment.learner.last_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ enrollment.enrollment_number }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-sm">{{ enrollment.get_funding_type_display }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="text-xs px-2 py-1 rounded-full
+                                        {% if enrollment.status == 'APPLIED' %}bg-blue-100 text-blue-800
+                                        {% elif enrollment.status == 'DOC_CHECK' %}bg-purple-100 text-purple-800
+                                        {% elif enrollment.status == 'PAYMENT_PENDING' %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ enrollment.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    {% if enrollment.registration_paid %}
+                                    <span class="text-green-600 text-sm">✓ Paid</span>
+                                    {% elif enrollment.bursary_contract_signed %}
+                                    <span class="text-green-600 text-sm">✓ Bursary</span>
+                                    {% else %}
+                                    <span class="text-red-600 text-sm">✗ Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600">{{ enrollment.application_date|date:"d M Y" }}</td>
+                                <td class="px-4 py-3 text-right">
+                                    <a href="{% url 'intakes:enrollment_detail' enrollment.pk %}" class="text-teal-600 hover:text-teal-800 text-sm font-medium">Process →</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Capacity Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">Capacity</h3>
+                </div>
+                <div class="p-6">
+                    <!-- Visual Bucket -->
+                    <div class="relative h-32 bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200 mb-4">
+                        <div class="absolute bottom-0 left-0 right-0 transition-all duration-500
+                            {% if intake.fill_percentage >= 90 %}bg-green-400
+                            {% elif intake.fill_percentage >= 70 %}bg-yellow-400
+                            {% elif intake.fill_percentage >= 50 %}bg-orange-400
+                            {% else %}bg-red-400{% endif %}"
+                            style="height: {{ intake.fill_percentage }}%;">
+                        </div>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="text-3xl font-bold text-gray-800">{{ intake.enrolled_count }}</span>
+                            <span class="text-sm text-gray-600">of {{ intake.max_capacity }}</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Fill Rate</span>
+                            <span class="font-semibold {% if intake.fill_percentage >= 80 %}text-green-600{% elif intake.fill_percentage >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">{{ intake.fill_percentage }}%</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Enrolled</span>
+                            <span class="font-semibold text-green-600">{{ intake.enrolled_count }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Pending</span>
+                            <span class="font-semibold text-yellow-600">{{ intake.pending_count }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Available</span>
+                            <span class="font-semibold text-teal-600">{{ intake.available_spots }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Min Viable</span>
+                            <span class="font-semibold {% if intake.is_viable %}text-green-600{% else %}text-red-600{% endif %}">{{ intake.min_viable }} {% if intake.is_viable %}✓{% else %}✗{% endif %}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fees Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">Fees</h3>
+                </div>
+                <div class="p-6 space-y-3">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Registration</span>
+                        <span class="font-medium">R {{ intake.registration_fee|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Tuition</span>
+                        <span class="font-medium">R {{ intake.tuition_fee|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Materials</span>
+                        <span class="font-medium">R {{ intake.materials_fee|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm pt-3 border-t border-gray-100">
+                        <span class="font-medium text-gray-700">Total</span>
+                        <span class="font-bold text-gray-900">R {{ intake.total_fee|floatformat:2|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Funding Breakdown -->
+            {% if funding_breakdown %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">Funding Mix</h3>
+                </div>
+                <div class="p-6 space-y-3">
+                    {% for item in funding_breakdown %}
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">{{ item.funding_type|title }}</span>
+                        <span class="font-medium">{{ item.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">Quick Actions</h3>
+                </div>
+                <div class="p-4 space-y-2">
+                    {% if intake.status in 'PLANNED,RECRUITING,ENROLLMENT_OPEN' and not intake.is_full %}
+                    <a href="{% url 'intakes:enroll' intake.pk %}" class="block w-full text-center px-4 py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors">
+                        Enroll Learner
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'intakes:bucket_list' %}" class="block w-full text-center px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors">
+                        Back to Buckets
+                    </a>
+                    {% if intake.training_notification %}
+                    <a href="{% url 'not_detail' intake.training_notification.pk %}" class="block w-full text-center px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors">
+                        View NOT
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

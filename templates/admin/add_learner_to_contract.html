@@ -1,0 +1,149 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}Add Learner to Contract{% endblock %}
+
+{% block main_content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div>
+        <nav class="flex items-center text-sm text-gray-500 mb-2">
+            <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a href="{% url 'admin:contract_list' %}" class="hover:text-primary-600">Contracts</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a href="{% url 'admin:contract_detail' pk=contract.pk %}" class="hover:text-primary-600">{{ contract.contract_number }}</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="text-gray-700">Add Learner</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">Add Learner to Contract</h1>
+        <p class="text-gray-500 mt-1">Add an original learner to this contract.</p>
+    </div>
+    
+    <!-- Contract Info Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900">Contract Information</h2>
+        </div>
+        <div class="p-6">
+            <dl class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <dt class="text-gray-500">Contract</dt>
+                    <dd class="font-medium text-gray-900">{{ contract.contract_number }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">Name</dt>
+                    <dd class="font-medium text-gray-900">{{ contract.name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">Original Learner Count</dt>
+                    <dd class="font-medium text-gray-900">{{ contract.original_learner_count }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">Currently Active</dt>
+                    <dd class="font-bold text-green-600">{{ contract.active_learners }}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+    
+    <!-- Info Box -->
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex">
+            <svg class="w-6 h-6 text-blue-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <h3 class="text-blue-800 font-medium">Adding Original Learners</h3>
+                <p class="text-blue-700 text-sm mt-1">
+                    This will add a learner as an <strong>original</strong> learner to the contract. 
+                    If terminations occur later, dropout rates will be calculated based on the number of original learners.
+                </p>
+                <p class="text-blue-700 text-sm mt-2">
+                    To add a replacement for a terminated learner, use the 
+                    <a href="{% url 'admin:contract_add_replacement' contract_pk=contract.pk %}" class="underline">Add Replacement</a> option instead.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Form -->
+    <form method="post" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        <div class="px-6 py-4 border-b border-gray-100 bg-green-50">
+            <h2 class="text-lg font-semibold text-green-800">Learner Details</h2>
+        </div>
+        <div class="p-6 space-y-6">
+            <!-- Select Learner -->
+            <div>
+                <label for="learner_id" class="block text-sm font-medium text-gray-700 mb-1">
+                    Select Learner <span class="text-red-500">*</span>
+                </label>
+                <select name="learner_id" id="learner_id" required
+                        class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">Choose a learner...</option>
+                    {% for learner in available_learners %}
+                    <option value="{{ learner.id }}">
+                        {{ learner.surname }}, {{ learner.first_name }} ({{ learner.sa_id_number|default:learner.passport_number|default:"No ID" }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <p class="mt-1 text-xs text-gray-500">Only learners not already enrolled in this contract are shown (first 100 results).</p>
+            </div>
+            
+            <!-- Training Notification -->
+            {% if training_notifications %}
+            <div>
+                <label for="training_notification_id" class="block text-sm font-medium text-gray-700 mb-1">
+                    Training Notification (NOT)
+                </label>
+                <select name="training_notification_id" id="training_notification_id"
+                        class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">Not assigned to a specific NOT</option>
+                    {% for not in training_notifications %}
+                    <option value="{{ not.id }}">
+                        {{ not.reference_number }} - {{ not.title|truncatechars:50 }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <p class="mt-1 text-xs text-gray-500">Optionally assign this learner to a specific Training Notification under this contract.</p>
+            </div>
+            {% endif %}
+            
+            <!-- Enrollment Date -->
+            <div>
+                <label for="enrollment_date" class="block text-sm font-medium text-gray-700 mb-1">
+                    Enrollment Date <span class="text-red-500">*</span>
+                </label>
+                <input type="date" name="enrollment_date" id="enrollment_date" required
+                       value="{% now 'Y-m-d' %}"
+                       class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+            </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+            <a href="{% url 'admin:contract_detail' pk=contract.pk %}" 
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Cancel
+            </a>
+            <button type="submit" 
+                    class="inline-flex items-center px-6 py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 transition shadow-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                </svg>
+                Add Learner
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

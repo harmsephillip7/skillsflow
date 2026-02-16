@@ -1,0 +1,445 @@
+{% extends 'portals/workplace_officer/base.html' %}
+{% load static %}
+
+{% block title %}Stipend Detail - {{ stipend.placement.learner.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Stipend Calculation</h2>
+            <p class="text-muted mb-0">{{ stipend.placement.learner.get_full_name }} - {{ stipend.period_display }}</p>
+        </div>
+        <div>
+            <a href="{% url 'portals:officer_stipend_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Verification Status Alert -->
+    {% if not can_finalize %}
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2" style="font-size: 1.5rem;"></i>
+        <div class="flex-grow-1">
+            <h5 class="alert-heading mb-1">Attendance Verification Required</h5>
+            <p class="mb-2">Only <strong>{{ verification_percentage }}%</strong> of attendance records are fully verified. All attendance must be verified by both mentor and facilitator before this stipend can be approved.</p>
+            <div class="d-flex gap-2 mt-2">
+                <a href="{% url 'portals:facilitator_attendance' %}?learner={{ stipend.placement.learner.id }}&month={{ stipend.month }}&year={{ stipend.year }}" 
+                   target="_blank" 
+                   class="btn btn-sm btn-warning">
+                    <i class="bi bi-box-arrow-up-right"></i> Go to Facilitator Verification
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-warning" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh Status
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Stipend Summary -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-wallet2"></i> Stipend Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <span class="badge bg-{{ stipend.status|lower }} mb-2">{{ stipend.status }}</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="text-muted small">Period</label>
+                        <div class="fw-bold">{{ stipend.period_display }}</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-muted small">Host Employer</label>
+                        <div class="fw-bold">{{ stipend.placement.host.employer.name }}</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-muted small">Daily Rate</label>
+                        <div class="fw-bold">R{{ stipend.daily_rate|floatformat:2 }}</div>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="text-muted small">Gross Amount</label>
+                        <div class="fw-bold fs-5 text-success">R{{ stipend.gross_amount|floatformat:2 }}</div>
+                    </div>
+
+                    {% if stipend.total_deductions %}
+                    <div class="mb-3">
+                        <label class="text-muted small">Total Deductions</label>
+                        <div class="fw-bold text-danger">-R{{ stipend.total_deductions|floatformat:2 }}</div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="text-muted small">Net Amount</label>
+                        <div class="fw-bold fs-4 text-primary">R{{ stipend.net_amount|floatformat:2 }}</div>
+                    </div>
+
+                    {% if stipend.approved_by %}
+                    <hr>
+                    <div class="mb-2">
+                        <label class="text-muted small">Approved By</label>
+                        <div>{{ stipend.approved_by.get_full_name }}</div>
+                    </div>
+                    <div class="mb-0">
+                        <label class="text-muted small">Approved At</label>
+                        <div>{{ stipend.approved_at|date:"d M Y H:i" }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Breakdown -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Attendance Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-check-circle-fill text-success fs-3"></i>
+                                    <div class="fs-4 fw-bold mt-2">{{ stipend.days_present }}</div>
+                                    <div class="text-muted small">Days Present</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-calendar-event text-primary fs-3"></i>
+                                    <div class="fs-4 fw-bold mt-2">{{ stipend.days_annual_leave }}</div>
+                                    <div class="text-muted small">Annual Leave</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-hospital text-danger fs-3"></i>
+                                    <div class="fs-4 fw-bold mt-2">{{ stipend.days_sick_leave }}</div>
+                                    <div class="text-muted small">Sick Leave</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-people-fill text-info fs-3"></i>
+                                    <div class="fs-4 fw-bold mt-2">{{ stipend.days_family_leave }}</div>
+                                    <div class="text-muted small">Family Leave</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-calendar-x text-warning fs-3"></i>
+                                    <div class="fs-4 fw-bold mt-2">{{ stipend.days_unpaid_leave }}</div>
+                                    <div class="text-muted small">Unpaid Leave</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-flag-fill text-success fs-3"></i>
+                                    <div class="fs-4 fw-bold mt-2">{{ stipend.days_public_holiday }}</div>
+                                    <div class="text-muted small">Public Holiday</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-x-circle-fill text-dark fs-3"></i>
+                                    <div class="fs-4 fw-bold mt-2">{{ stipend.days_absent }}</div>
+                                    <div class="text-muted small">Absent</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-pause-circle-fill text-secondary fs-3"></i>
+                                    <div class="fs-4 fw-bold mt-2">{{ stipend.days_suspended }}</div>
+                                    <div class="text-muted small">Suspended</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-cash-coin fs-3"></i>
+                                    <div class="fs-4 fw-bold mt-2">{{ stipend.paid_days }}</div>
+                                    <div class="small">Total Paid Days</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verification Progress -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-shield-check"></i> Attendance Verification Progress</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-calendar3 text-secondary fs-3"></i>
+                                    <div class="fs-4 fw-bold mt-2">{{ stipend.total_attendance_records }}</div>
+                                    <div class="text-muted small">Total Records</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-check-all fs-3"></i>
+                                    <div class="fs-4 fw-bold mt-2">{{ stipend.dual_verified_records }}</div>
+                                    <div class="small">Fully Verified</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-dark h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-check fs-3"></i>
+                                    <div class="fs-4 fw-bold mt-2">{{ stipend.mentor_verified_only|add:stipend.facilitator_verified_only }}</div>
+                                    <div class="small">Partially Verified</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-danger text-white h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-x-circle fs-3"></i>
+                                    <div class="fs-4 fw-bold mt-2">{{ stipend.unverified_records }}</div>
+                                    <div class="small">Unverified</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-bold">Verification Progress</span>
+                            <span class="fw-bold {% if can_finalize %}text-success{% else %}text-warning{% endif %}">{{ verification_percentage }}%</span>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar {% if can_finalize %}bg-success{% else %}bg-warning{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ verification_percentage }}%;" 
+                                 aria-valuenow="{{ verification_percentage }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ verification_percentage }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Attendance Records -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="bi bi-table"></i> Daily Attendance Records</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Status</th>
+                            <th>Clock In</th>
+                            <th>Clock Out</th>
+                            <th>Hours</th>
+                            <th>Mentor</th>
+                            <th>Facilitator</th>
+                            <th>Verification</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in attendance %}
+                        <tr class="{% if record.mentor_verified and record.facilitator_verified %}table-success{% elif record.mentor_verified or record.facilitator_verified %}table-warning{% else %}table-danger{% endif %}">
+                            <td>{{ record.date|date:"d M Y" }}</td>
+                            <td>{{ record.date|date:"l" }}</td>
+                            <td>
+                                <span class="badge bg-{{ record.status|lower }}">{{ record.get_status_display }}</span>
+                            </td>
+                            <td>{{ record.time_in|time:"H:i"|default:"—" }}</td>
+                            <td>{{ record.time_out|time:"H:i"|default:"—" }}</td>
+                            <td>{{ record.hours_worked|floatformat:1|default:"—" }}</td>
+                            <td class="text-center">
+                                {% if record.mentor_verified %}
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if record.facilitator_verified %}
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.mentor_verified and record.facilitator_verified %}
+                                    <span class="badge bg-success">Fully Verified</span>
+                                {% elif record.mentor_verified %}
+                                    <span class="badge bg-warning">Mentor Only</span>
+                                {% elif record.facilitator_verified %}
+                                    <span class="badge bg-warning">Facilitator Only</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Unverified</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted">No attendance records for this period</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex gap-2 justify-content-end">
+                <button type="button" 
+                        class="btn btn-warning" 
+                        onclick="recalculateStipend()">
+                    <i class="bi bi-arrow-clockwise"></i> Recalculate
+                </button>
+                <button type="button" 
+                        class="btn btn-success" 
+                        onclick="approveStipend()"
+                        {% if not can_finalize %}disabled title="Attendance must be fully verified before approval"{% endif %}>
+                    <i class="bi bi-check-circle"></i> Approve Stipend
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Approval Modal -->
+<div class="modal fade" id="approvalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Approve Stipend</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to approve this stipend calculation for <strong>{{ stipend.placement.learner.get_full_name }}</strong>?</p>
+                <div class="alert alert-info">
+                    <strong>Net Amount:</strong> R{{ stipend.net_amount|floatformat:2 }}
+                </div>
+                <div class="mb-3">
+                    <label for="approvalNotes" class="form-label">Notes (Optional)</label>
+                    <textarea class="form-control" id="approvalNotes" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="confirmApproval()">Confirm Approval</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function approveStipend() {
+    const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
+    modal.show();
+}
+
+function confirmApproval() {
+    const notes = document.getElementById('approvalNotes').value;
+    
+    fetch("{% url 'portals:officer_stipend_verify' stipend.id %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            action: 'approve',
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Stipend approved successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to approve stipend'));
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+}
+
+function recalculateStipend() {
+    if (!confirm('Are you sure you want to recalculate this stipend? This will create a new calculation based on current attendance data.')) {
+        return;
+    }
+    
+    fetch("{% url 'portals:officer_stipend_verify' stipend.id %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            action: 'recalculate'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Stipend recalculated successfully!');
+            window.location.href = "{% url 'portals:officer_stipend_detail' 0 %}".replace('/0/', '/' + data.stipend_id + '/');
+        } else {
+            alert('Error: ' + (data.error || 'Failed to recalculate'));
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+}
+</script>
+{% endblock %}

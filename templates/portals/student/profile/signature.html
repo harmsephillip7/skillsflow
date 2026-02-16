@@ -1,0 +1,116 @@
+{% extends 'portals/student/base.html' %}
+{% load static %}
+
+{% block title %}Digital Signature - Student Portal{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <nav class="flex mb-4" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'portals:student_dashboard' %}" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                        </svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <a href="{% url 'portals:student_profile' %}" class="text-gray-500 hover:text-gray-700 ml-1 md:ml-2">Profile</a>
+                    </div>
+                </li>
+                <li aria-current="page">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="text-gray-700 ml-1 md:ml-2 font-medium">Digital Signature</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+        
+        <h1 class="text-2xl font-bold text-gray-900">Digital Signature</h1>
+        <p class="mt-1 text-gray-600">
+            Capture your digital signature for use on compliance documents, agreements, and certificates.
+        </p>
+    </div>
+
+    {% if no_learner_profile %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <p class="text-yellow-800">No learner profile found. Please contact support.</p>
+    </div>
+    {% else %}
+    
+    {% if has_signature and signature_locked %}
+    <!-- Signature Already Captured (Locked) -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div class="flex items-center mb-4">
+            <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-lg font-medium text-gray-900">Signature Captured & Locked</h3>
+                <p class="text-sm text-gray-500">
+                    Captured on {{ signature_captured_at|date:"d F Y" }} at {{ signature_captured_at|time:"H:i" }}
+                </p>
+            </div>
+        </div>
+        
+        <div class="border rounded-lg p-4 bg-gray-50">
+            <p class="text-sm text-gray-600 mb-2">Your stored signature:</p>
+            <img src="{{ signature_url }}" alt="Your signature" class="max-w-full h-auto border border-gray-200 rounded bg-white">
+        </div>
+        
+        <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex">
+                <svg class="w-5 h-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                <div>
+                    <p class="text-sm text-blue-800 font-medium">Signature Locked</p>
+                    <p class="text-sm text-blue-700 mt-1">
+                        Your signature is locked and will be used on all compliance documents generated on your behalf.
+                        If you need to change your signature, please contact your administrator.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    
+    <!-- Signature Capture Form -->
+    <form method="post" action="{% url 'portals:student_signature' %}">
+        {% csrf_token %}
+        
+        {% with signature_locked=signature_locked %}
+        {% include 'components/signature_pad.html' %}
+        {% endwith %}
+        
+        <div class="mt-6 flex justify-end space-x-3">
+            <a href="{% url 'portals:student_profile' %}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                Save & Lock Signature
+            </button>
+        </div>
+    </form>
+    {% endif %}
+    
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends 'base/app_layout.html' %}
+
+{% block title %}Create IDP - {{ employee.get_full_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:dashboard' %}" class="text-gray-700 hover:text-blue-600">Corporate</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:employee_idp_list' employee.pk %}" class="text-gray-700 hover:text-blue-600">{{ employee.get_full_name }} IDPs</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">New IDP</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-900">Create Individual Development Plan</h2>
+            <p class="text-sm text-gray-500 mt-1">Set up a new development period for {{ employee.get_full_name }}</p>
+        </div>
+        
+        <form method="post" class="p-6 space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Period Start Date</label>
+                    <input type="date" name="period_start" required class="w-full border-gray-300 rounded-lg shadow-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Period End Date</label>
+                    <input type="date" name="period_end" required class="w-full border-gray-300 rounded-lg shadow-sm">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Link to WSP/ATR Service Year (Optional)</label>
+                <select name="service_year_id" class="w-full border-gray-300 rounded-lg shadow-sm">
+                    <option value="">-- Select Service Year --</option>
+                    {% for year in service_years %}
+                    <option value="{{ year.pk }}">FY {{ year.financial_year_display }}</option>
+                    {% endfor %}
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Linking to a service year allows training needs to be pulled into the WSP submission.</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Career Goals</label>
+                <textarea name="career_goals" rows="4" class="w-full border-gray-300 rounded-lg shadow-sm" placeholder="What are the employee's long-term career aspirations?"></textarea>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Development Areas</label>
+                <textarea name="development_areas" rows="4" class="w-full border-gray-300 rounded-lg shadow-sm" placeholder="What specific skills or competencies need improvement?"></textarea>
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-100">
+                <a href="{% url 'corporate:employee_idp_list' employee.pk %}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Create IDP
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

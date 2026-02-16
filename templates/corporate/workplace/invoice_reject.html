@@ -1,0 +1,82 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Reject Invoice {{ invoice.invoice_number }} - SkillsFlow{% endblock %}
+
+{% block page_title %}Reject Invoice{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:dashboard' %}" class="text-gray-500 hover:text-gray-700">Corporate</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:invoice_list' host.pk %}" class="text-gray-500 hover:text-gray-700">Invoices</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Reject {{ invoice.invoice_number }}</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6">
+        <div class="mb-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 h-12 w-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Reject Invoice</h3>
+                    <p class="text-sm text-gray-500">{{ invoice.invoice_number }} - R {{ invoice.amount|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+            
+            <div>
+                <label for="rejection_reason" class="block text-sm font-medium text-gray-700">Rejection Reason <span class="text-red-500">*</span></label>
+                <textarea name="rejection_reason" id="rejection_reason" rows="4" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm" placeholder="Please provide a reason for rejecting this invoice..."></textarea>
+                <p class="mt-1 text-xs text-gray-500">This reason will be recorded and visible in the invoice history.</p>
+            </div>
+            
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-medium text-red-800">Warning</h4>
+                        <p class="mt-1 text-sm text-red-700">
+                            This action cannot be undone. The invoice will be marked as rejected and the rejection reason will be recorded.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-100">
+                <a href="{% url 'corporate:invoice_detail' host.pk invoice.pk %}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Cancel
+                </a>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    Reject Invoice
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1092 @@
+{% extends 'crm/crm_base.html' %}
+{% load static humanize %}
+
+{% block title %}{{ pipeline.name }} - Pipeline Settings - CRM{% endblock %}
+
+{% block page_title %}{{ pipeline.name }}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:dashboard' %}" class="text-gray-500 hover:text-gray-700">CRM</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:pipeline_settings' %}" class="text-gray-500 hover:text-gray-700">Pipeline Settings</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ pipeline.name }}</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'crm:pipeline_settings' %}" 
+       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Back to Pipelines
+    </a>
+    <a href="{% url 'crm:pipeline_hub' %}?pipeline={{ pipeline.pk }}" 
+       class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+        View Pipeline
+    </a>
+</div>
+{% endblock %}
+
+{% block crm_content %}
+<div class="space-y-6">
+    
+    <!-- Tab Navigation -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="border-b border-gray-200">
+            <nav class="flex -mb-px" aria-label="Tabs">
+                <button type="button" onclick="switchTab('settings')" id="tab-settings"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors border-primary-500 text-primary-600">
+                    <span class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        General Settings
+                    </span>
+                </button>
+                <button type="button" onclick="switchTab('stages')" id="tab-stages"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    <span class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                        </svg>
+                        Stages
+                        <span class="ml-2 bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs">{{ stages|length }}</span>
+                    </span>
+                </button>
+                <button type="button" onclick="switchTab('blueprints')" id="tab-blueprints"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    <span class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                        </svg>
+                        Blueprints & Automation
+                    </span>
+                </button>
+                <button type="button" onclick="switchTab('templates')" id="tab-templates"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    <span class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        Communication Templates
+                    </span>
+                </button>
+            </nav>
+        </div>
+        
+        <!-- Tab Content -->
+        <div class="p-6">
+            
+            <!-- GENERAL SETTINGS TAB -->
+            <div id="content-settings" class="tab-content">
+                <form id="pipeline-settings-form" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Name -->
+                        <div>
+                            <label for="pipeline-name" class="block text-sm font-medium text-gray-700 mb-1">Pipeline Name *</label>
+                            <input type="text" id="pipeline-name" name="name" value="{{ pipeline.name }}" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+                        
+                        <!-- Learner Type -->
+                        <div>
+                            <label for="pipeline-type" class="block text-sm font-medium text-gray-700 mb-1">Learner Type</label>
+                            <select id="pipeline-type" name="learner_type"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                                {% for value, label in learner_types %}
+                                <option value="{{ value }}" {% if pipeline.learner_type == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Color -->
+                        <div>
+                            <label for="pipeline-color" class="block text-sm font-medium text-gray-700 mb-1">Pipeline Color</label>
+                            <div class="flex items-center space-x-3">
+                                <input type="color" id="pipeline-color" name="color" value="{{ pipeline.color }}"
+                                       class="w-12 h-10 px-1 py-1 border border-gray-300 rounded-lg cursor-pointer">
+                                <input type="text" id="pipeline-color-hex" value="{{ pipeline.color }}" 
+                                       class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                                       pattern="^#[0-9A-Fa-f]{6}$">
+                            </div>
+                        </div>
+                        
+                        <!-- Communication Frequency -->
+                        <div>
+                            <label for="pipeline-frequency" class="block text-sm font-medium text-gray-700 mb-1">Default Communication Frequency</label>
+                            <select id="pipeline-frequency" name="default_communication_frequency_days"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                                {% for days, label in frequency_choices %}
+                                <option value="{{ days }}" {% if pipeline.default_communication_frequency_days == days %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <p class="mt-1 text-sm text-gray-500">Time between automated follow-up communications</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div>
+                        <label for="pipeline-description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="pipeline-description" name="description" rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">{{ pipeline.description }}</textarea>
+                    </div>
+                    
+                    <!-- Toggles -->
+                    <div class="flex flex-wrap gap-6">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="is_active" value="1" {% if pipeline.is_active %}checked{% endif %}
+                                   class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700">Active</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="is_default" value="1" {% if pipeline.is_default %}checked{% endif %}
+                                   class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700">Default for {{ pipeline.get_learner_type_display }}</span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button type="button" onclick="savePipelineSettings()"
+                                class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- STAGES TAB -->
+            <div id="content-stages" class="tab-content hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Pipeline Stages</h3>
+                    <button type="button" onclick="openAddStageModal()"
+                            class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Add Stage
+                    </button>
+                </div>
+                
+                <p class="text-sm text-gray-500 mb-4">Drag stages to reorder. Click on a stage to edit its settings.</p>
+                
+                <!-- Stages List - Drag & Drop -->
+                <div id="stages-list" class="space-y-2">
+                    {% for stage in stages %}
+                    <div class="stage-item bg-white border border-gray-200 rounded-lg p-4 cursor-move hover:shadow-md transition-shadow"
+                         data-stage-id="{{ stage.pk }}" draggable="true">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="drag-handle text-gray-400 cursor-move">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+                                    </svg>
+                                </div>
+                                <div class="w-4 h-4 rounded-full" style="background-color: {{ stage.color }};"></div>
+                                <div>
+                                    <h4 class="font-medium text-gray-900">{{ stage.name }}</h4>
+                                    <p class="text-xs text-gray-500">Code: {{ stage.code }} | {{ stage.win_probability }}% probability</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <!-- Stage Type Badges -->
+                                {% if stage.is_entry_stage %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Entry</span>
+                                {% endif %}
+                                {% if stage.is_won_stage %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Won</span>
+                                {% endif %}
+                                {% if stage.is_lost_stage %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Lost</span>
+                                {% endif %}
+                                {% if stage.is_nurture_stage %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">Nurture</span>
+                                {% endif %}
+                                
+                                <button type="button" onclick="editStage({{ stage.pk }})"
+                                        class="p-1.5 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-gray-100" title="Edit">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button type="button" onclick="deleteStage({{ stage.pk }}, '{{ stage.name }}')"
+                                        class="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50" title="Delete">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8 text-gray-500">
+                        <p>No stages configured. Add your first stage to get started.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- BLUEPRINTS TAB -->
+            <div id="content-blueprints" class="tab-content hidden">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Stage Blueprints & Automation</h3>
+                <p class="text-sm text-gray-500 mb-6">Configure what happens when a lead enters each stage. Set up recommended actions, automatic tasks, and notifications.</p>
+                
+                <div class="space-y-4">
+                    {% for stage in stages %}
+                    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                        <button type="button" onclick="toggleBlueprintAccordion({{ stage.pk }})"
+                                class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-3 h-3 rounded-full" style="background-color: {{ stage.color }};"></div>
+                                <span class="font-medium text-gray-900">{{ stage.name }}</span>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform accordion-icon-{{ stage.pk }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="blueprint-content-{{ stage.pk }}" class="hidden p-4 border-t border-gray-200">
+                            <form id="blueprint-form-{{ stage.pk }}" class="space-y-4">
+                                <!-- Automation Toggles -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <label class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                        <input type="checkbox" name="notify_agent_on_entry" value="1"
+                                               {% if stage.blueprint.notify_agent_on_entry %}checked{% endif %}
+                                               class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                        <span class="ml-2 text-sm text-gray-700">Notify agent when lead enters this stage</span>
+                                    </label>
+                                    <label class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                        <input type="checkbox" name="auto_send_initial_communication" value="1"
+                                               {% if stage.blueprint.auto_send_initial_communication %}checked{% endif %}
+                                               class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                        <span class="ml-2 text-sm text-gray-700">Auto-send initial communication</span>
+                                    </label>
+                                    <label class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                        <input type="checkbox" name="notify_agent_on_overdue" value="1"
+                                               {% if stage.blueprint.notify_agent_on_overdue %}checked{% endif %}
+                                               class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                        <span class="ml-2 text-sm text-gray-700">Notify agent when lead is overdue</span>
+                                    </label>
+                                    <label class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                        <input type="checkbox" name="auto_schedule_follow_up" value="1"
+                                               {% if stage.blueprint.auto_schedule_follow_up %}checked{% endif %}
+                                               class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                        <span class="ml-2 text-sm text-gray-700">Auto-schedule follow-up communications</span>
+                                    </label>
+                                </div>
+                                
+                                <!-- Overdue Days -->
+                                <div class="max-w-xs">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Overdue Notification After (days)</label>
+                                    <input type="number" name="overdue_notification_days" min="1" max="30"
+                                           value="{{ stage.blueprint.overdue_notification_days|default:3 }}"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                                </div>
+                                
+                                <!-- Recommended Actions -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Recommended Actions</label>
+                                    <div id="actions-list-{{ stage.pk }}" class="space-y-2 mb-2">
+                                        {% for action in stage.blueprint.recommended_actions %}
+                                        {% if action.type != 'requirement' %}
+                                        <div class="flex items-center space-x-2 action-item">
+                                            <input type="text" value="{{ action.action }}" placeholder="Action name"
+                                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                            <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <button type="button" onclick="addActionField({{ stage.pk }})"
+                                            class="text-sm text-primary-600 hover:text-primary-700">
+                                        + Add Action
+                                    </button>
+                                </div>
+                                
+                                <!-- Stage Requirements (Transition Rules) -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Stage Transition Requirements</label>
+                                    <p class="text-xs text-gray-500 mb-2">What must be done before moving a lead to the next stage?</p>
+                                    <div id="requirements-list-{{ stage.pk }}" class="space-y-2 mb-2">
+                                        {% for action in stage.blueprint.recommended_actions %}
+                                        {% if action.type == 'requirement' %}
+                                        <div class="flex items-center space-x-2 requirement-item">
+                                            <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                                <option value="document" {% if action.requirement_type == 'document' %}selected{% endif %}>Document Required</option>
+                                                <option value="activity" {% if action.requirement_type == 'activity' %}selected{% endif %}>Activity Completed</option>
+                                                <option value="field" {% if action.requirement_type == 'field' %}selected{% endif %}>Field Filled</option>
+                                            </select>
+                                            <input type="text" value="{{ action.description }}" placeholder="Description"
+                                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                            <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <button type="button" onclick="addRequirementField({{ stage.pk }})"
+                                            class="text-sm text-primary-600 hover:text-primary-700">
+                                        + Add Requirement
+                                    </button>
+                                </div>
+                                
+                                <div class="flex justify-end">
+                                    <button type="button" onclick="saveBlueprint({{ stage.pk }})"
+                                            class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700">
+                                        Save Blueprint
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- TEMPLATES TAB -->
+            <div id="content-templates" class="tab-content hidden">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Communication Templates</h3>
+                <p class="text-sm text-gray-500 mb-6">Assign message templates to each stage for automated communications.</p>
+                
+                <div class="space-y-4">
+                    {% for stage in stages %}
+                    <div class="bg-white border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-3 h-3 rounded-full" style="background-color: {{ stage.color }};"></div>
+                                <h4 class="font-medium text-gray-900">{{ stage.name }}</h4>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Default Template -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Default Template</label>
+                                <select id="default-template-{{ stage.pk }}" 
+                                        onchange="updateDefaultTemplate({{ stage.pk }}, this.value)"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                                    <option value="">-- None --</option>
+                                    {% for template in message_templates %}
+                                    <option value="{{ template.pk }}" {% if stage.blueprint.default_template_id == template.pk %}selected{% endif %}>
+                                        [{{ template.get_channel_type_display }}] {{ template.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">Used for quick-send and auto-communications</p>
+                            </div>
+                            
+                            <!-- Available Templates (Multi-select) -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Available Templates</label>
+                                <select id="templates-{{ stage.pk }}" multiple
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                                        size="4">
+                                    {% for template in message_templates %}
+                                    <option value="{{ template.pk }}" 
+                                            {% if template in stage.blueprint.communication_templates.all %}selected{% endif %}>
+                                        [{{ template.get_channel_type_display }}] {{ template.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3 flex justify-end">
+                            <button type="button" onclick="saveTemplateAssignments({{ stage.pk }})"
+                                    class="px-3 py-1.5 text-sm font-medium text-primary-600 border border-primary-300 rounded-lg hover:bg-primary-50">
+                                Save Templates
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Add Stage Modal -->
+<div id="add-stage-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">Add New Stage</h3>
+                <button type="button" onclick="closeAddStageModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <form id="add-stage-form" class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Stage Name *</label>
+                    <input type="text" name="name" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                           placeholder="e.g., Qualified">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Stage Code *</label>
+                    <input type="text" name="code" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 uppercase"
+                           placeholder="e.g., QUALIFIED">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea name="description" rows="2"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                          placeholder="What happens at this stage?"></textarea>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                    <input type="color" name="color" value="#6B7280"
+                           class="w-full h-10 px-1 py-1 border border-gray-300 rounded-lg cursor-pointer">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Expected Days</label>
+                    <input type="number" name="expected_duration_days" value="7" min="1"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Win Probability %</label>
+                    <input type="number" name="win_probability" value="0" min="0" max="100"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-4">
+                <label class="flex items-center">
+                    <input type="checkbox" name="is_entry_stage" value="1"
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                    <span class="ml-2 text-sm text-gray-700">Entry Stage</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="is_won_stage" value="1"
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                    <span class="ml-2 text-sm text-gray-700">Won Stage</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="is_lost_stage" value="1"
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                    <span class="ml-2 text-sm text-gray-700">Lost Stage</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="is_nurture_stage" value="1"
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                    <span class="ml-2 text-sm text-gray-700">Nurture Stage</span>
+                </label>
+            </div>
+        </form>
+        <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+            <button type="button" onclick="closeAddStageModal()"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                Cancel
+            </button>
+            <button type="button" onclick="createStage()"
+                    class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700">
+                Add Stage
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Stage Modal -->
+<div id="edit-stage-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">Edit Stage</h3>
+                <button type="button" onclick="closeEditStageModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <form id="edit-stage-form" class="p-6 space-y-4">
+            <input type="hidden" name="stage_id" id="edit-stage-id">
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Stage Name *</label>
+                    <input type="text" name="name" id="edit-stage-name" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Stage Code</label>
+                    <input type="text" name="code" id="edit-stage-code" readonly
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea name="description" id="edit-stage-description" rows="2"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"></textarea>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                    <input type="color" name="color" id="edit-stage-color"
+                           class="w-full h-10 px-1 py-1 border border-gray-300 rounded-lg cursor-pointer">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Expected Days</label>
+                    <input type="number" name="expected_duration_days" id="edit-stage-duration" min="1"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Win Probability %</label>
+                    <input type="number" name="win_probability" id="edit-stage-probability" min="0" max="100"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Communication Frequency Override</label>
+                <select name="communication_frequency_days" id="edit-stage-frequency"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">Use pipeline default</option>
+                    {% for days, label in frequency_choices %}
+                    <option value="{{ days }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="flex flex-wrap gap-4">
+                <label class="flex items-center">
+                    <input type="checkbox" name="is_entry_stage" id="edit-stage-entry" value="1"
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                    <span class="ml-2 text-sm text-gray-700">Entry Stage</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="is_won_stage" id="edit-stage-won" value="1"
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                    <span class="ml-2 text-sm text-gray-700">Won Stage</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="is_lost_stage" id="edit-stage-lost" value="1"
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                    <span class="ml-2 text-sm text-gray-700">Lost Stage</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="is_nurture_stage" id="edit-stage-nurture" value="1"
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                    <span class="ml-2 text-sm text-gray-700">Nurture Stage</span>
+                </label>
+            </div>
+        </form>
+        <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+            <button type="button" onclick="closeEditStageModal()"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                Cancel
+            </button>
+            <button type="button" onclick="updateStage()"
+                    class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700">
+                Save Changes
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const pipelineId = {{ pipeline.pk }};
+const csrfToken = '{{ csrf_token }}';
+
+// Stages data for editing
+const stagesData = {
+    {% for stage in stages %}
+    {{ stage.pk }}: {
+        id: {{ stage.pk }},
+        name: '{{ stage.name|escapejs }}',
+        code: '{{ stage.code|escapejs }}',
+        description: '{{ stage.description|escapejs }}',
+        color: '{{ stage.color }}',
+        expected_duration_days: {{ stage.expected_duration_days }},
+        win_probability: {{ stage.win_probability }},
+        communication_frequency_days: {{ stage.communication_frequency_days|default:"null" }},
+        is_entry_stage: {{ stage.is_entry_stage|yesno:"true,false" }},
+        is_won_stage: {{ stage.is_won_stage|yesno:"true,false" }},
+        is_lost_stage: {{ stage.is_lost_stage|yesno:"true,false" }},
+        is_nurture_stage: {{ stage.is_nurture_stage|yesno:"true,false" }}
+    },
+    {% endfor %}
+};
+
+// Tab switching
+function switchTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    // Remove active state from all tabs
+    document.querySelectorAll('[id^="tab-"]').forEach(el => {
+        el.classList.remove('border-primary-500', 'text-primary-600');
+        el.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected tab content
+    document.getElementById('content-' + tabName).classList.remove('hidden');
+    // Set active state on tab
+    const tab = document.getElementById('tab-' + tabName);
+    tab.classList.remove('border-transparent', 'text-gray-500');
+    tab.classList.add('border-primary-500', 'text-primary-600');
+}
+
+// Color sync
+document.getElementById('pipeline-color').addEventListener('input', function() {
+    document.getElementById('pipeline-color-hex').value = this.value;
+});
+document.getElementById('pipeline-color-hex').addEventListener('input', function() {
+    if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
+        document.getElementById('pipeline-color').value = this.value;
+    }
+});
+
+// Save pipeline settings
+async function savePipelineSettings() {
+    const form = document.getElementById('pipeline-settings-form');
+    const data = {
+        name: form.querySelector('[name="name"]').value,
+        description: form.querySelector('[name="description"]').value,
+        learner_type: form.querySelector('[name="learner_type"]').value,
+        color: form.querySelector('[name="color"]').value,
+        default_communication_frequency_days: form.querySelector('[name="default_communication_frequency_days"]').value,
+        is_active: form.querySelector('[name="is_active"]').checked,
+        is_default: form.querySelector('[name="is_default"]').checked
+    };
+    
+    try {
+        const response = await fetch('{% url "crm:pipeline_update" pipeline.pk %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            showToast('Pipeline settings saved successfully!', 'success');
+        } else {
+            showToast(result.error || 'Failed to save settings.', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('An error occurred. Please try again.', 'error');
+    }
+}
+
+// Stage Modal Functions
+function openAddStageModal() {
+    document.getElementById('add-stage-modal').classList.remove('hidden');
+}
+
+function closeAddStageModal() {
+    document.getElementById('add-stage-modal').classList.add('hidden');
+    document.getElementById('add-stage-form').reset();
+}
+
+function openEditStageModal() {
+    document.getElementById('edit-stage-modal').classList.remove('hidden');
+}
+
+function closeEditStageModal() {
+    document.getElementById('edit-stage-modal').classList.add('hidden');
+}
+
+function editStage(stageId) {
+    const stage = stagesData[stageId];
+    if (!stage) return;
+    
+    document.getElementById('edit-stage-id').value = stage.id;
+    document.getElementById('edit-stage-name').value = stage.name;
+    document.getElementById('edit-stage-code').value = stage.code;
+    document.getElementById('edit-stage-description').value = stage.description;
+    document.getElementById('edit-stage-color').value = stage.color;
+    document.getElementById('edit-stage-duration').value = stage.expected_duration_days;
+    document.getElementById('edit-stage-probability').value = stage.win_probability;
+    document.getElementById('edit-stage-frequency').value = stage.communication_frequency_days || '';
+    document.getElementById('edit-stage-entry').checked = stage.is_entry_stage;
+    document.getElementById('edit-stage-won').checked = stage.is_won_stage;
+    document.getElementById('edit-stage-lost').checked = stage.is_lost_stage;
+    document.getElementById('edit-stage-nurture').checked = stage.is_nurture_stage;
+    
+    openEditStageModal();
+}
+
+async function createStage() {
+    const form = document.getElementById('add-stage-form');
+    const formData = new FormData(form);
+    
+    const data = {
+        name: formData.get('name'),
+        code: formData.get('code'),
+        description: formData.get('description'),
+        color: formData.get('color'),
+        expected_duration_days: formData.get('expected_duration_days'),
+        win_probability: formData.get('win_probability'),
+        is_entry_stage: formData.get('is_entry_stage') === '1',
+        is_won_stage: formData.get('is_won_stage') === '1',
+        is_lost_stage: formData.get('is_lost_stage') === '1',
+        is_nurture_stage: formData.get('is_nurture_stage') === '1'
+    };
+    
+    try {
+        const response = await fetch(`{% url "crm:stage_create" pipeline.pk %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            window.location.reload();
+        } else {
+            showToast(result.error || 'Failed to create stage.', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('An error occurred. Please try again.', 'error');
+    }
+}
+
+async function updateStage() {
+    const form = document.getElementById('edit-stage-form');
+    const stageId = document.getElementById('edit-stage-id').value;
+    
+    const data = {
+        name: document.getElementById('edit-stage-name').value,
+        description: document.getElementById('edit-stage-description').value,
+        color: document.getElementById('edit-stage-color').value,
+        expected_duration_days: document.getElementById('edit-stage-duration').value,
+        win_probability: document.getElementById('edit-stage-probability').value,
+        communication_frequency_days: document.getElementById('edit-stage-frequency').value,
+        is_entry_stage: document.getElementById('edit-stage-entry').checked,
+        is_won_stage: document.getElementById('edit-stage-won').checked,
+        is_lost_stage: document.getElementById('edit-stage-lost').checked,
+        is_nurture_stage: document.getElementById('edit-stage-nurture').checked
+    };
+    
+    try {
+        const response = await fetch(`{% url "crm:stage_update" 0 %}`.replace('0', stageId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            window.location.reload();
+        } else {
+            showToast(result.error || 'Failed to update stage.', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('An error occurred. Please try again.', 'error');
+    }
+}
+
+async function deleteStage(stageId, stageName) {
+    if (!confirm(`Are you sure you want to delete "${stageName}"? This cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`{% url "crm:stage_delete" 0 %}`.replace('0', stageId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            window.location.reload();
+        } else {
+            showToast(result.error || 'Failed to delete stage.', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('An error occurred. Please try again.', 'error');
+    }
+}
+
+// Drag and Drop for Stages
+let draggedElement = null;
+
+document.querySelectorAll('.stage-item').forEach(item => {
+    item.addEventListener('dragstart', function(e) {
+        draggedElement = this;
+        this.classList.add('opacity-50');
+    });
+    
+    item.addEventListener('dragend', function(e) {
+        this.classList.remove('opacity-50');
+        draggedElement = null;
+    });
+    
+    item.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('border-primary-500', 'border-2');
+    });
+    
+    item.addEventListener('dragleave', function(e) {
+        this.classList.remove('border-primary-500', 'border-2');
+    });
+    
+    item.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('border-primary-500', 'border-2');
+        
+        if (draggedElement && draggedElement !== this) {
+            const list = document.getElementById('stages-list');
+            const items = [...list.querySelectorAll('.stage-item')];
+            const draggedIdx = items.indexOf(draggedElement);
+            const targetIdx = items.indexOf(this);
+            
+            if (draggedIdx < targetIdx) {
+                this.parentNode.insertBefore(draggedElement, this.nextSibling);
+            } else {
+                this.parentNode.insertBefore(draggedElement, this);
+            }
+            
+            // Save new order
+            saveStageOrder();
+        }
+    });
+});
+
+async function saveStageOrder() {
+    const stageOrder = [...document.querySelectorAll('.stage-item')].map(el => el.dataset.stageId);
+    
+    try {
+        const response = await fetch(`{% url "crm:stage_reorder" pipeline.pk %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ stage_order: stageOrder })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            showToast('Stage order saved!', 'success');
+        }
+    } catch (error) {
+        console.error('Error saving order:', error);
+    }
+}
+
+// Blueprint accordion
+function toggleBlueprintAccordion(stageId) {
+    const content = document.getElementById('blueprint-content-' + stageId);
+    const icon = document.querySelector('.accordion-icon-' + stageId);
+    
+    content.classList.toggle('hidden');
+    icon.classList.toggle('rotate-180');
+}
+
+// Add action field
+function addActionField(stageId) {
+    const list = document.getElementById('actions-list-' + stageId);
+    const div = document.createElement('div');
+    div.className = 'flex items-center space-x-2 action-item';
+    div.innerHTML = `
+        <input type="text" placeholder="Action name" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    `;
+    list.appendChild(div);
+}
+
+// Add requirement field
+function addRequirementField(stageId) {
+    const list = document.getElementById('requirements-list-' + stageId);
+    const div = document.createElement('div');
+    div.className = 'flex items-center space-x-2 requirement-item';
+    div.innerHTML = `
+        <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            <option value="document">Document Required</option>
+            <option value="activity">Activity Completed</option>
+            <option value="field">Field Filled</option>
+        </select>
+        <input type="text" placeholder="Description" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    `;
+    list.appendChild(div);
+}
+
+// Save blueprint
+async function saveBlueprint(stageId) {
+    const form = document.getElementById('blueprint-form-' + stageId);
+    
+    // Collect actions
+    const actions = [...form.querySelectorAll('.action-item input')].map(input => ({
+        action: input.value,
+        type: 'action'
+    })).filter(a => a.action);
+    
+    // Collect requirements
+    const requirements = [...form.querySelectorAll('.requirement-item')].map(item => ({
+        type: 'requirement',
+        requirement_type: item.querySelector('select').value,
+        description: item.querySelector('input').value
+    })).filter(r => r.description);
+    
+    const data = {
+        notify_agent_on_entry: form.querySelector('[name="notify_agent_on_entry"]').checked,
+        notify_agent_on_overdue: form.querySelector('[name="notify_agent_on_overdue"]').checked,
+        auto_send_initial_communication: form.querySelector('[name="auto_send_initial_communication"]').checked,
+        auto_schedule_follow_up: form.querySelector('[name="auto_schedule_follow_up"]').checked,
+        overdue_notification_days: form.querySelector('[name="overdue_notification_days"]').value,
+        recommended_actions: [...actions, ...requirements]
+    };
+    
+    try {
+        const response = await fetch(`{% url "crm:blueprint_update" 0 %}`.replace('0', stageId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            showToast('Blueprint saved successfully!', 'success');
+        } else {
+            showToast(result.error || 'Failed to save blueprint.', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('An error occurred. Please try again.', 'error');
+    }
+}
+
+// Template functions
+async function updateDefaultTemplate(stageId, templateId) {
+    try {
+        const response = await fetch(`{% url "crm:blueprint_update" 0 %}`.replace('0', stageId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ default_template_id: templateId || null })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            showToast('Default template updated!', 'success');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function saveTemplateAssignments(stageId) {
+    const select = document.getElementById('templates-' + stageId);
+    const templateIds = [...select.selectedOptions].map(opt => opt.value);
+    
+    try {
+        const response = await fetch(`{% url "crm:blueprint_update" 0 %}`.replace('0', stageId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ template_ids: templateIds })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            showToast('Templates assigned successfully!', 'success');
+        } else {
+            showToast(result.error || 'Failed to save templates.', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('An error occurred. Please try again.', 'error');
+    }
+}
+
+// Toast notification
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-600' : 'bg-red-600'
+    } text-white`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Close modals on outside click
+['add-stage-modal', 'edit-stage-modal'].forEach(modalId => {
+    document.getElementById(modalId).addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+        }
+    });
+});
+
+// Close modals on Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAddStageModal();
+        closeEditStageModal();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Upload Request</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        h1 {
+            color: #1a1a2e;
+            margin: 0 0 10px;
+            font-size: 24px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        .message-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .document-list {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .document-list h3 {
+            margin: 0 0 15px;
+            color: #333;
+            font-size: 16px;
+        }
+        .document-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .document-item:last-child {
+            border-bottom: none;
+        }
+        .document-icon {
+            width: 32px;
+            height: 32px;
+            background-color: #e0e7ff;
+            border-radius: 6px;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cta-button {
+            display: block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 30px 0;
+        }
+        .cta-button:hover {
+            opacity: 0.9;
+        }
+        .note {
+            font-size: 13px;
+            color: #666;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+            </div>
+            <h1>Document Upload Request</h1>
+            <p class="subtitle">{{ brand_name }}</p>
+        </div>
+        
+        <p class="greeting">Hi {{ contact_name|default:lead.first_name }}! 👋</p>
+        
+        {% if is_parent and learner_name %}
+        <p>We need a few documents for {{ learner_name }}'s application.</p>
+        {% else %}
+        <p>We need a few documents to continue processing your application.</p>
+        {% endif %}
+        
+        <p>We need a few documents to continue processing your application. Please use the secure link below to upload them.</p>
+        
+        {% if custom_message %}
+        <div class="message-box">
+            <p style="margin: 0;">{{ custom_message }}</p>
+        </div>
+        {% endif %}
+        
+        <div class="document-list">
+            <h3>📋 Required Documents:</h3>
+            {% for doc_name in doc_names %}
+            <div class="document-item">
+                <div class="document-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <span>{{ doc_name }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <a href="{{ portal_url }}" class="cta-button">
+            📄 Upload Documents Now
+        </a>
+        
+        <p class="note">
+            This link is valid for 14 days. Accepted formats: PDF, JPEG, PNG (max 10MB per file).
+        </p>
+        
+        <div class="footer">
+            <p>If you have any questions, simply reply to this email.</p>
+            <p>&copy; {% now "Y" %} {{ brand_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

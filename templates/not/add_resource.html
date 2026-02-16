@@ -1,0 +1,401 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Add Resource - {{ notification.reference_number }}{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 text-sm text-gray-500">
+                <li><a href="{% url 'not_dashboard' %}" class="hover:text-blue-600">NOT Dashboard</a></li>
+                <li class="flex items-center"><svg class="w-4 h-4 mx-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg></li>
+                <li><a href="{% url 'not_detail' notification.pk %}" class="hover:text-blue-600">{{ notification.reference_number }}</a></li>
+                <li class="flex items-center"><svg class="w-4 h-4 mx-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg></li>
+                <li class="text-gray-700 font-medium">Add Resource</li>
+            </ol>
+        </nav>
+        <div class="flex items-center gap-3">
+            <div class="p-3 bg-purple-100 rounded-xl">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Add Resource Requirement</h1>
+                <p class="text-gray-500 text-sm">{{ notification.title }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Form -->
+        <div class="lg:col-span-2">
+            <form method="post" id="resourceForm">
+                {% csrf_token %}
+                <input type="hidden" name="force_allocation" id="forceAllocation" value="false">
+                
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                            </svg>
+                            Resource Details
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Resource Type <span class="text-red-500">*</span></label>
+                                <select name="resource_type" id="resourceType" required
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select type...</option>
+                                    {% for value, label in type_choices %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select name="status" id="resourceStatus"
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    {% for value, label in status_choices %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Description <span class="text-red-500">*</span></label>
+                                <input type="text" name="description" required
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                       placeholder="e.g., NQF Level 4 Assessors, Training Venue 30-seater">
+                            </div>
+                            
+                            <!-- Assign Personnel (shown for FACILITATOR, ASSESSOR, MODERATOR) -->
+                            <div class="md:col-span-2 hidden" id="personnelSection">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assign Personnel</label>
+                                <select name="assigned_user" id="assignedUser"
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select person to assign...</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">Select a person to allocate to this project. The system will check for conflicts with other projects.</p>
+                            </div>
+                            
+                            <!-- Link to existing venue -->
+                            <div class="md:col-span-2 hidden" id="venueSection">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Link to Venue</label>
+                                <select name="venue" id="venueSelect"
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select venue...</option>
+                                    {% for venue in venues %}
+                                    <option value="{{ venue.id }}">{{ venue.name }} (Capacity: {{ venue.capacity|default:"N/A" }})</option>
+                                    {% endfor %}
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">Select a venue to allocate to this project. The system will check for conflicts with other projects.</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity Required <span class="text-red-500">*</span></label>
+                                <input type="number" name="quantity_required" required value="1" min="1"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity Available</label>
+                                <input type="number" name="quantity_available" value="0" min="0"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Cost (ZAR)</label>
+                                <div class="flex">
+                                    <span class="inline-flex items-center px-3 bg-gray-100 text-gray-600 border border-r-0 border-gray-300 rounded-l-lg text-sm font-medium">R</span>
+                                    <input type="number" name="estimated_cost" step="0.01"
+                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                           placeholder="0.00">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Supplier / Source</label>
+                                <input type="text" name="supplier"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                       placeholder="e.g., Internal, External Agency">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Procurement Notes</label>
+                                <textarea name="procurement_notes" rows="2"
+                                          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                          placeholder="Any notes about sourcing this resource..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button type="submit" id="submitBtn" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add Resource
+                    </button>
+                    <a href="{% url 'not_detail' notification.pk %}" class="inline-flex items-center gap-2 px-6 py-3 bg-white text-gray-700 font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Resource Types Guide -->
+            <div class="bg-amber-50 rounded-xl shadow-sm border border-amber-200 overflow-hidden">
+                <div class="p-6">
+                    <h3 class="text-sm font-semibold text-amber-800 flex items-center gap-2 mb-4">
+                        <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                        Resource Types
+                    </h3>
+                    <dl class="text-sm space-y-3">
+                        <div>
+                            <dt class="font-medium text-amber-900">Facilitator</dt>
+                            <dd class="text-amber-700">Training facilitators required</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-amber-900">Assessor</dt>
+                            <dd class="text-amber-700">Qualified assessors for POE</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-amber-900">Moderator</dt>
+                            <dd class="text-amber-700">Internal or external moderators</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-amber-900">Venue</dt>
+                            <dd class="text-amber-700">Training venue requirements</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-amber-900">Equipment</dt>
+                            <dd class="text-amber-700">IT, projection, etc.</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-amber-900">Materials</dt>
+                            <dd class="text-amber-700">Learning materials, stationery</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-amber-900">Transport</dt>
+                            <dd class="text-amber-700">Learner or facilitator transport</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Resource Shortages Info -->
+            <div class="bg-red-50 rounded-xl shadow-sm border border-red-200 overflow-hidden">
+                <div class="p-6">
+                    <h3 class="text-sm font-semibold text-red-800 flex items-center gap-2 mb-3">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        Resource Shortages
+                    </h3>
+                    <p class="text-sm text-red-700">
+                        If quantity available is less than quantity required, the system will flag this as a shortage and notify managers so they can take action to recruit or source additional resources.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Conflict Warning Modal -->
+<div id="conflictModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onclick="closeConflictModal()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen"></span>
+        <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-xl shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="px-6 py-4 border-b border-gray-200 bg-amber-50">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center w-10 h-10 bg-amber-100 rounded-full">
+                        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Resource Conflict Detected</h3>
+                        <p class="text-sm text-gray-600" id="conflictMessage">This resource has existing allocations.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4">
+                <p class="text-sm text-gray-700 mb-4">The following projects have overlapping allocation periods:</p>
+                <div id="conflictList" class="space-y-2 max-h-48 overflow-y-auto">
+                    <!-- Conflicts will be populated here -->
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex items-center justify-end gap-3">
+                <button type="button" onclick="closeConflictModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="button" onclick="proceedWithConflict()" class="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700">
+                    Proceed Anyway
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Personnel data from server
+const facilitators = [
+    {% for user in facilitators %}
+    {id: {{ user.id }}, name: "{{ user.get_full_name|escapejs }}"},
+    {% endfor %}
+];
+const assessors = [
+    {% for user in assessors %}
+    {id: {{ user.id }}, name: "{{ user.get_full_name|escapejs }}"},
+    {% endfor %}
+];
+const moderators = [
+    {% for user in moderators %}
+    {id: {{ user.id }}, name: "{{ user.get_full_name|escapejs }}"},
+    {% endfor %}
+];
+
+// Handle resource type change to show appropriate fields
+document.getElementById('resourceType').addEventListener('change', function() {
+    const resourceType = this.value;
+    const personnelSection = document.getElementById('personnelSection');
+    const venueSection = document.getElementById('venueSection');
+    const assignedUserSelect = document.getElementById('assignedUser');
+    
+    // Hide all sections first
+    personnelSection.classList.add('hidden');
+    venueSection.classList.add('hidden');
+    
+    // Clear assigned user
+    assignedUserSelect.innerHTML = '<option value="">Select person to assign...</option>';
+    
+    if (resourceType === 'FACILITATOR') {
+        personnelSection.classList.remove('hidden');
+        facilitators.forEach(user => {
+            assignedUserSelect.innerHTML += `<option value="${user.id}">${user.name}</option>`;
+        });
+    } else if (resourceType === 'ASSESSOR') {
+        personnelSection.classList.remove('hidden');
+        assessors.forEach(user => {
+            assignedUserSelect.innerHTML += `<option value="${user.id}">${user.name}</option>`;
+        });
+    } else if (resourceType === 'MODERATOR') {
+        personnelSection.classList.remove('hidden');
+        moderators.forEach(user => {
+            assignedUserSelect.innerHTML += `<option value="${user.id}">${user.name}</option>`;
+        });
+    } else if (resourceType === 'VENUE') {
+        venueSection.classList.remove('hidden');
+    }
+});
+
+// Form submission with AJAX for conflict checking
+document.getElementById('resourceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    const formData = new FormData(form);
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Disable submit button
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Checking...';
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Success - redirect
+            window.location.href = data.redirect_url || '{% url "not_detail" notification.pk %}';
+        } else if (data.has_conflicts) {
+            // Show conflict modal
+            showConflictModal(data.message, data.conflicts);
+        } else {
+            // Error
+            alert(data.message || 'An error occurred');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Fallback to regular form submission
+        form.submit();
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg> Add Resource';
+    });
+});
+
+function showConflictModal(message, conflicts) {
+    document.getElementById('conflictMessage').textContent = message;
+    
+    const conflictList = document.getElementById('conflictList');
+    conflictList.innerHTML = '';
+    
+    conflicts.forEach(conflict => {
+        conflictList.innerHTML += `
+            <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-medium text-gray-900">${conflict.not_reference}</p>
+                        <p class="text-sm text-gray-600">${conflict.not_title}</p>
+                    </div>
+                    <span class="text-xs text-gray-500">${conflict.start_date} - ${conflict.end_date}</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    document.getElementById('conflictModal').classList.remove('hidden');
+}
+
+function closeConflictModal() {
+    document.getElementById('conflictModal').classList.add('hidden');
+}
+
+function proceedWithConflict() {
+    // Set force flag and resubmit
+    document.getElementById('forceAllocation').value = 'true';
+    closeConflictModal();
+    
+    // Submit form normally (with force flag)
+    const form = document.getElementById('resourceForm');
+    const formData = new FormData(form);
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = data.redirect_url || '{% url "not_detail" notification.pk %}';
+        } else {
+            alert(data.message || 'An error occurred');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        form.submit();
+    });
+}
+</script>
+{% endblock %}

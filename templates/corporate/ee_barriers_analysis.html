@@ -1,0 +1,193 @@
+{% extends 'base/app_layout.html' %}
+
+{% block title %}Barriers Analysis - {{ client.company_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li><a href="{% url 'corporate:ee_clients_dashboard' %}" class="text-gray-700 hover:text-blue-600">EE Clients</a></li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li><a href="{% url 'corporate:ee_service_management' client.pk %}" class="text-gray-700 hover:text-blue-600">{{ client.company_name }}</a></li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">Barriers Analysis</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<button onclick="document.getElementById('addBarrierModal').classList.remove('hidden')" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+    </svg>
+    Add Barrier
+</button>
+{% endblock %}
+
+{% block main_content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-900">Barriers to Employment Equity</h1>
+    <p class="text-gray-500 mt-1">{{ client.company_name }} - EE Year {{ ee_service_year.reporting_year }}</p>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <p class="text-sm text-gray-500">Total Barriers</p>
+        <p class="text-2xl font-bold text-gray-900">{{ total_barriers }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <p class="text-sm text-gray-500">High Priority</p>
+        <p class="text-2xl font-bold text-red-600">{{ high_priority }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <p class="text-sm text-gray-500">In Progress</p>
+        <p class="text-2xl font-bold text-blue-600">{{ in_progress }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <p class="text-sm text-gray-500">Addressed</p>
+        <p class="text-2xl font-bold text-green-600">{{ addressed }}</p>
+    </div>
+</div>
+
+<!-- Barriers by Category -->
+{% for category, category_barriers in barriers_by_category.items %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+    <div class="p-4 border-b border-gray-100 bg-gray-50">
+        <h2 class="text-lg font-semibold text-gray-900">{{ category }}</h2>
+    </div>
+    <div class="divide-y divide-gray-200">
+        {% for barrier in category_barriers %}
+        <div class="p-4 hover:bg-gray-50">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center space-x-2 mb-2">
+                        <span class="px-2 py-1 text-xs rounded-full 
+                            {% if barrier.priority == 'HIGH' %}bg-red-100 text-red-800
+                            {% elif barrier.priority == 'MEDIUM' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ barrier.get_priority_display }}
+                        </span>
+                        <span class="px-2 py-1 text-xs rounded-full 
+                            {% if barrier.status == 'ADDRESSED' %}bg-green-100 text-green-800
+                            {% elif barrier.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ barrier.get_status_display }}
+                        </span>
+                        {% if barrier.affected_group %}
+                        <span class="text-xs text-gray-500">Affects: {{ barrier.affected_group }}</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-gray-900 mb-2">{{ barrier.description }}</p>
+                    {% if barrier.root_cause %}
+                    <p class="text-sm text-gray-600"><strong>Root Cause:</strong> {{ barrier.root_cause }}</p>
+                    {% endif %}
+                    {% if barrier.proposed_measure %}
+                    <p class="text-sm text-gray-600 mt-1"><strong>Proposed Measure:</strong> {{ barrier.proposed_measure }}</p>
+                    {% endif %}
+                    <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                        {% if barrier.responsible_person %}
+                        <span>Responsible: {{ barrier.responsible_person }}</span>
+                        {% endif %}
+                        {% if barrier.target_date %}
+                        <span>Target: {{ barrier.target_date|date:"d M Y" }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% empty %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+    <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+    </svg>
+    <h2 class="text-xl font-semibold text-gray-900 mb-2">No Barriers Identified</h2>
+    <p class="text-gray-500 mb-4">Conduct a barrier analysis to identify obstacles to employment equity.</p>
+    <button onclick="document.getElementById('addBarrierModal').classList.remove('hidden')" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+        Identify First Barrier
+    </button>
+</div>
+{% endfor %}
+
+<!-- Add Barrier Modal -->
+<div id="addBarrierModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-5 border w-full max-w-xl shadow-lg rounded-xl bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Add Barrier</h3>
+            <form method="post" action="{% url 'corporate:ee_add_barrier' client.pk ee_service_year.pk %}">
+                {% csrf_token %}
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <select name="barrier_category" class="w-full rounded-lg border-gray-300" required>
+                            <option value="RECRUITMENT">Recruitment</option>
+                            <option value="ADVANCEMENT">Advancement/Promotion</option>
+                            <option value="RETENTION">Retention</option>
+                            <option value="TRAINING">Training & Development</option>
+                            <option value="WORKING_CONDITIONS">Working Conditions</option>
+                            <option value="CULTURE">Corporate Culture</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                        <select name="priority" class="w-full rounded-lg border-gray-300">
+                            <option value="HIGH">High</option>
+                            <option value="MEDIUM" selected>Medium</option>
+                            <option value="LOW">Low</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea name="description" rows="3" class="w-full rounded-lg border-gray-300" required placeholder="Describe the barrier..."></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Affected Group</label>
+                        <input type="text" name="affected_group" class="w-full rounded-lg border-gray-300" placeholder="e.g., African females">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Occupational Level</label>
+                        <input type="text" name="occupational_level" class="w-full rounded-lg border-gray-300" placeholder="e.g., Senior Management">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Root Cause</label>
+                    <textarea name="root_cause" rows="2" class="w-full rounded-lg border-gray-300" placeholder="What is causing this barrier?"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Proposed Measure</label>
+                    <textarea name="proposed_measure" rows="2" class="w-full rounded-lg border-gray-300" placeholder="What action will address this barrier?"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Responsible Person</label>
+                        <input type="text" name="responsible_person" class="w-full rounded-lg border-gray-300">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Target Date</label>
+                        <input type="date" name="target_date" class="w-full rounded-lg border-gray-300">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="document.getElementById('addBarrierModal').classList.add('hidden')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                        Add Barrier
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="mt-6">
+    <a href="{% url 'corporate:ee_service_management' client.pk %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+        ← Back to EE Management
+    </a>
+</div>
+{% endblock %}

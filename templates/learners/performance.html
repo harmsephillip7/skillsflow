@@ -1,0 +1,403 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Learner Performance Dashboard - SkillsFlow{% endblock %}
+
+{% block main_content %}
+<div class="flex flex-col h-full">
+    <!-- Page Header -->
+    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Learner Performance Dashboard</h1>
+                <p class="mt-1 text-sm text-gray-500">Track assessment results, progress, and identify at-risk learners</p>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'learners:export_templates' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Export Report
+                </a>
+            </div>
+        </div>
+        
+        <!-- Filters -->
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+            <form method="get" class="flex flex-wrap items-center gap-3">
+                <!-- Qualification Filter -->
+                <select name="qualification" 
+                        onchange="this.form.submit()"
+                        class="border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Qualifications</option>
+                    {% for qual in qualifications %}
+                    <option value="{{ qual.id }}" {% if selected_qualification == qual.id|stringformat:"s" %}selected{% endif %}>
+                        {{ qual.title|truncatechars:40 }}
+                    </option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Campus Filter -->
+                <select name="campus"
+                        onchange="this.form.submit()"
+                        class="border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Campuses</option>
+                    {% for campus in campuses %}
+                    <option value="{{ campus.id }}" {% if selected_campus == campus.id|stringformat:"s" %}selected{% endif %}>
+                        {{ campus.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Performance Filter -->
+                <select name="performance"
+                        onchange="this.form.submit()"
+                        class="border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Performance</option>
+                    <option value="excellent" {% if selected_performance == 'excellent' %}selected{% endif %}>Excellent (90%+)</option>
+                    <option value="good" {% if selected_performance == 'good' %}selected{% endif %}>Good (75-89%)</option>
+                    <option value="average" {% if selected_performance == 'average' %}selected{% endif %}>Average (50-74%)</option>
+                    <option value="at_risk" {% if selected_performance == 'at_risk' %}selected{% endif %}>At Risk (&lt;50%)</option>
+                </select>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Dashboard Content -->
+    <div class="flex-1 overflow-auto p-6 bg-gray-50">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Average Pass Rate</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ pass_rate|floatformat:1 }}%</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: {{ pass_rate }}%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">At-Risk Learners</p>
+                        <p class="text-2xl font-bold text-red-600">{{ at_risk_count }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="mt-2 text-xs text-gray-500">{{ at_risk_percent|floatformat:1 }}% of active learners</p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Total Assessments</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_assessments }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="mt-2 text-xs text-gray-500">{{ pending_assessments }} pending grading</p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Top Performers</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ top_performers_count }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="mt-2 text-xs text-gray-500">90%+ competency rate</p>
+            </div>
+        </div>
+        
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Performance Chart -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Performance Overview</h2>
+                <canvas id="performanceChart" height="250"></canvas>
+            </div>
+            
+            <!-- Result Distribution -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Result Distribution</h2>
+                <canvas id="resultDistributionChart" height="200"></canvas>
+                
+                <div class="mt-4 space-y-2">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="flex items-center">
+                            <span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                            Competent (C)
+                        </span>
+                        <span class="font-medium">{{ competent_count }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="flex items-center">
+                            <span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                            Not Yet Competent (NYC)
+                        </span>
+                        <span class="font-medium">{{ nyc_count }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="flex items-center">
+                            <span class="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
+                            Absent (ABS)
+                        </span>
+                        <span class="font-medium">{{ absent_count }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- At-Risk Learners Table -->
+        <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900">At-Risk Learners</h2>
+                    <p class="text-sm text-gray-500">Learners with high failure rates or incomplete assessments</p>
+                </div>
+                <a href="{% url 'learners:list' %}?performance=at_risk" class="text-sm text-primary-600 hover:text-primary-800 font-medium">
+                    View All →
+                </a>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Learner
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Qualification
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Competency Rate
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Failed Assessments
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Risk Level
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for learner in at_risk_learners %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                                        <span class="text-sm font-medium text-red-700">
+                                            {{ learner.first_name|slice:":1" }}{{ learner.last_name|slice:":1" }}
+                                        </span>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ learner.first_name }} {{ learner.last_name }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            {{ learner.sa_id_number }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ learner.qualification_title|default:"—"|truncatechars:30 }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <span class="text-sm font-medium text-gray-900">{{ learner.competency_rate|floatformat:0 }}%</span>
+                                    <div class="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                                        <div class="bg-red-500 h-2 rounded-full" style="width: {{ learner.competency_rate }}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ learner.failed_count }} / {{ learner.total_assessments }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if learner.competency_rate < 30 %}bg-red-100 text-red-800
+                                    {% elif learner.competency_rate < 50 %}bg-orange-100 text-orange-800
+                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {% if learner.competency_rate < 30 %}Critical
+                                    {% elif learner.competency_rate < 50 %}High
+                                    {% else %}Medium{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <a href="{% url 'learners:detail' learner.id %}" class="text-primary-600 hover:text-primary-900">
+                                    View Details
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center">
+                                <svg class="mx-auto h-12 w-12 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">No at-risk learners</h3>
+                                <p class="mt-1 text-sm text-gray-500">Great news! All learners are performing well.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Top Performers -->
+        <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Top Performers</h2>
+                <p class="text-sm text-gray-500">Learners with the highest competency rates</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+                {% for learner in top_performers %}
+                <div class="flex items-center p-4 bg-gradient-to-br from-yellow-50 to-white rounded-lg border border-yellow-200">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <h3 class="text-sm font-semibold text-gray-900">
+                            {{ learner.first_name }} {{ learner.last_name }}
+                        </h3>
+                        <p class="text-xs text-gray-500">{{ learner.qualification_title|truncatechars:25 }}</p>
+                        <div class="mt-1 flex items-center">
+                            <span class="text-lg font-bold text-green-600">{{ learner.competency_rate|floatformat:0 }}%</span>
+                            <span class="ml-2 text-xs text-gray-500">competency</span>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-3 text-center py-8 text-gray-500">
+                    No top performers yet
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Performance Chart
+    const perfCtx = document.getElementById('performanceChart').getContext('2d');
+    new Chart(perfCtx, {
+        type: 'line',
+        data: {
+            labels: {{ monthly_labels|safe }},
+            datasets: [{
+                label: 'Pass Rate %',
+                data: {{ monthly_pass_rates|safe }},
+                borderColor: '#16a34a',
+                backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                fill: true,
+                tension: 0.4
+            }, {
+                label: 'Assessments Completed',
+                data: {{ monthly_completed|safe }},
+                borderColor: '#3b82f6',
+                backgroundColor: 'transparent',
+                tension: 0.4,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Pass Rate %'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Assessments'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Result Distribution Chart
+    const distCtx = document.getElementById('resultDistributionChart').getContext('2d');
+    new Chart(distCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Competent', 'Not Yet Competent', 'Absent', 'Deferred'],
+            datasets: [{
+                data: [{{ competent_count }}, {{ nyc_count }}, {{ absent_count }}, {{ deferred_count }}],
+                backgroundColor: ['#22c55e', '#ef4444', '#9ca3af', '#f59e0b'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

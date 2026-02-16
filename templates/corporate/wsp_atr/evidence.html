@@ -1,0 +1,268 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Evidence Management - {{ submission_type }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <a href="{% url 'corporate:wsp_atr_dashboard' %}" class="hover:text-blue-600">WSP/ATR</a>
+                <span>/</span>
+                <a href="{% url 'corporate:wsp_atr_detail' submission.pk submission_type|lower %}" class="hover:text-blue-600">{{ submission_type }}</a>
+                <span>/</span>
+                <span>Evidence</span>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900">Evidence Management</h1>
+            <p class="text-gray-500">{{ submission.client.company_name }} - {{ submission.wsp_year }} {{ submission_type }}</p>
+        </div>
+    </div>
+
+    <!-- Upload Progress -->
+    <div class="grid lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Total Documents</p>
+            <p class="text-3xl font-bold text-gray-900">{{ evidence_items|length }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Approved</p>
+            <p class="text-3xl font-bold text-green-600">{{ approved_count }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Pending Review</p>
+            <p class="text-3xl font-bold text-yellow-600">{{ pending_count }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Rejected</p>
+            <p class="text-3xl font-bold text-red-600">{{ rejected_count }}</p>
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+        <!-- Upload Form -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm border p-5">
+                <h2 class="font-semibold text-gray-900 mb-4">Upload Evidence</h2>
+                <form method="post" enctype="multipart/form-data" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Document Title *</label>
+                        <input type="text" name="title" required class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Document Type *</label>
+                        <select name="document_type" required class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select type...</option>
+                            <option value="POP">Proof of Payment</option>
+                            <option value="CERTIFICATE">Certificate</option>
+                            <option value="ATTENDANCE">Attendance Register</option>
+                            <option value="SIGNOFF">Sign-off Sheet</option>
+                            <option value="CONTRACT">Contract/Agreement</option>
+                            <option value="INVOICE">Invoice</option>
+                            <option value="REPORT">Report</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Related Training</label>
+                        <select name="training_item" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select training (optional)...</option>
+                            {% for item in training_items %}
+                            <option value="{{ item.pk }}">{{ item.training_name|default:item.programme.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" rows="3" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Optional description..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">File *</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
+                                        <span>Upload a file</span>
+                                        <input type="file" name="file" required class="sr-only">
+                                    </label>
+                                    <p class="pl-1">or drag and drop</p>
+                                </div>
+                                <p class="text-xs text-gray-500">PDF, DOC, XLS, JPG up to 10MB</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        Upload Evidence
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Evidence List -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-sm border">
+                <div class="p-5 border-b flex items-center justify-between">
+                    <h2 class="font-semibold text-gray-900">Uploaded Evidence</h2>
+                    <div class="flex items-center gap-2">
+                        <select class="text-sm rounded-lg border-gray-300" id="filter-type">
+                            <option value="">All Types</option>
+                            <option value="POP">Proof of Payment</option>
+                            <option value="CERTIFICATE">Certificate</option>
+                            <option value="ATTENDANCE">Attendance Register</option>
+                            <option value="SIGNOFF">Sign-off Sheet</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                        <select class="text-sm rounded-lg border-gray-300" id="filter-status">
+                            <option value="">All Statuses</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="REJECTED">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="divide-y">
+                    {% for evidence in evidence_items %}
+                    <div class="p-4 hover:bg-gray-50 evidence-item" data-type="{{ evidence.document_type }}" data-status="{{ evidence.status }}">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg flex-shrink-0">
+                                {% if evidence.file_extension == 'pdf' %}
+                                <svg class="h-6 w-6 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
+                                </svg>
+                                {% elif evidence.file_extension in 'doc,docx' %}
+                                <svg class="h-6 w-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
+                                </svg>
+                                {% else %}
+                                <svg class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                {% endif %}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <p class="font-medium text-gray-900">{{ evidence.title }}</p>
+                                        <p class="text-sm text-gray-500">{{ evidence.get_document_type_display }}</p>
+                                    </div>
+                                    <span class="px-2 py-1 text-xs rounded-full 
+                                        {% if evidence.status == 'APPROVED' %}bg-green-100 text-green-700
+                                        {% elif evidence.status == 'PENDING' %}bg-yellow-100 text-yellow-700
+                                        {% else %}bg-red-100 text-red-700{% endif %}">
+                                        {{ evidence.get_status_display }}
+                                    </span>
+                                </div>
+                                {% if evidence.description %}
+                                <p class="text-sm text-gray-500 mt-1">{{ evidence.description }}</p>
+                                {% endif %}
+                                {% if evidence.training_item %}
+                                <p class="text-xs text-blue-600 mt-1">
+                                    <span class="text-gray-400">Training:</span> {{ evidence.training_item.training_name|default:evidence.training_item.programme.name }}
+                                </p>
+                                {% endif %}
+                                <div class="flex items-center gap-4 mt-3 text-sm">
+                                    <span class="text-gray-400">
+                                        Uploaded {{ evidence.uploaded_at|date:"d M Y" }} by {{ evidence.uploaded_by.get_full_name }}
+                                    </span>
+                                    <a href="{{ evidence.file.url }}" target="_blank" class="text-blue-600 hover:underline">
+                                        Download
+                                    </a>
+                                    {% if can_review %}
+                                    <button onclick="showReviewModal({{ evidence.pk }})" class="text-blue-600 hover:underline">
+                                        Review
+                                    </button>
+                                    {% endif %}
+                                    {% if can_delete and evidence.status == 'PENDING' %}
+                                    <form action="{% url 'corporate:evidence_delete' evidence.pk %}" method="post" class="inline" onsubmit="return confirm('Delete this evidence?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-red-600 hover:underline">Delete</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                                {% if evidence.review_notes %}
+                                <div class="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                    <span class="text-gray-500">Review notes:</span> {{ evidence.review_notes }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 text-center text-gray-500">
+                        <svg class="h-12 w-12 mx-auto mb-2 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p>No evidence uploaded yet.</p>
+                        <p class="text-sm mt-1">Use the form to upload your first document.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div id="review-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black opacity-50"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Review Evidence</h3>
+            <form id="review-form" method="post">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select name="status" required class="w-full rounded-lg border-gray-300">
+                            <option value="APPROVED">Approve</option>
+                            <option value="REJECTED">Reject</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea name="review_notes" rows="3" class="w-full rounded-lg border-gray-300" placeholder="Optional feedback..."></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex gap-3">
+                    <button type="button" onclick="closeReviewModal()" class="flex-1 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Submit Review</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filter functionality
+document.getElementById('filter-type').addEventListener('change', filterEvidence);
+document.getElementById('filter-status').addEventListener('change', filterEvidence);
+
+function filterEvidence() {
+    const typeFilter = document.getElementById('filter-type').value;
+    const statusFilter = document.getElementById('filter-status').value;
+    
+    document.querySelectorAll('.evidence-item').forEach(item => {
+        const type = item.dataset.type;
+        const status = item.dataset.status;
+        const showType = !typeFilter || type === typeFilter;
+        const showStatus = !statusFilter || status === statusFilter;
+        item.style.display = showType && showStatus ? 'block' : 'none';
+    });
+}
+
+// Review modal
+function showReviewModal(evidenceId) {
+    document.getElementById('review-form').action = `/corporate/evidence/${evidenceId}/review/`;
+    document.getElementById('review-modal').classList.remove('hidden');
+}
+
+function closeReviewModal() {
+    document.getElementById('review-modal').classList.add('hidden');
+}
+</script>
+{% endblock %}

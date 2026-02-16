@@ -1,0 +1,287 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{{ submission.wsp_year }} {{ submission_type }} - {{ submission.client.company_name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <a href="{% url 'corporate:wsp_atr_dashboard' %}" class="hover:text-blue-600">WSP/ATR</a>
+                <span>/</span>
+                <span>{{ submission_type }} Detail</span>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ submission.client.company_name }}</h1>
+            <p class="text-gray-500">{{ submission.wsp_year }} {{ submission_type }} Submission</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="px-3 py-1.5 rounded-full text-sm font-medium
+                {% if submission.status == 'ACCEPTED' %}bg-green-100 text-green-700
+                {% elif submission.status == 'SUBMITTED' %}bg-blue-100 text-blue-700
+                {% elif submission.status == 'DRAFT' %}bg-gray-100 text-gray-700
+                {% elif submission.status == 'REJECTED' %}bg-red-100 text-red-700
+                {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                {{ submission.get_status_display }}
+            </span>
+            {% if can_edit %}
+            <a href="{% url 'corporate:wsp_edit' submission.pk %}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Edit {{ submission_type }}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Total Learners</p>
+            <p class="text-3xl font-bold text-gray-900">{{ submission.total_learners|default:0 }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Training Programs</p>
+            <p class="text-3xl font-bold text-gray-900">{{ training_items|length }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Total Spend</p>
+            <p class="text-3xl font-bold text-gray-900">R {{ submission.total_spend|floatformat:0|default:0 }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Evidence Items</p>
+            <p class="text-3xl font-bold text-gray-900">{{ evidence_count }}</p>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-white rounded-xl shadow-sm border">
+        <div class="border-b">
+            <nav class="flex -mb-px" aria-label="Tabs">
+                <button class="tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-blue-500 text-blue-600" data-tab="training">
+                    Training Programs
+                </button>
+                <button class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="evidence">
+                    Evidence
+                </button>
+                <button class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="checklist">
+                    Checklist
+                </button>
+                <button class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="history">
+                    History
+                </button>
+            </nav>
+        </div>
+
+        <!-- Training Programs Tab -->
+        <div id="training-tab" class="tab-content p-5">
+            <div class="mb-4 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-900">Training Programs</h3>
+                {% if can_edit %}
+                <button class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                    Add Training
+                </button>
+                {% endif %}
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Training Program</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Intervention</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Learners</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Spend</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Provider</th>
+                            <th class="px-4 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for item in training_items %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3">
+                                <span class="font-medium text-gray-900">{{ item.training_name|default:item.programme.name }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600">
+                                {{ item.get_intervention_type_display|default:"-" }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="grid grid-cols-3 gap-2 text-xs">
+                                    <div class="text-center">
+                                        <span class="font-medium text-gray-900">{{ item.african_male|default:0|add:item.african_female|default:0 }}</span>
+                                        <span class="text-gray-500 block">African</span>
+                                    </div>
+                                    <div class="text-center">
+                                        <span class="font-medium text-gray-900">{{ item.coloured_male|default:0|add:item.coloured_female|default:0 }}</span>
+                                        <span class="text-gray-500 block">Coloured</span>
+                                    </div>
+                                    <div class="text-center">
+                                        <span class="font-medium text-gray-900">{{ item.indian_male|default:0|add:item.indian_female|default:0 }}</span>
+                                        <span class="text-gray-500 block">Indian</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600">
+                                R {{ item.total_cost|floatformat:0|default:0 }}
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600">
+                                {{ item.training_provider|default:"-" }}
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if can_edit %}
+                                <button class="text-blue-600 hover:text-blue-800 text-sm">Edit</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                No training programs added yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Evidence Tab -->
+        <div id="evidence-tab" class="tab-content hidden p-5">
+            <div class="mb-4 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-900">Evidence Documents</h3>
+                <a href="{% url 'corporate:wsp_atr_evidence' submission.pk submission_type|lower %}" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                    Manage Evidence
+                </a>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for evidence in evidence_items %}
+                <div class="border rounded-lg p-4 hover:shadow-md transition">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 flex items-center justify-center bg-blue-100 text-blue-600 rounded-lg">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-gray-900 truncate">{{ evidence.title }}</p>
+                            <p class="text-sm text-gray-500">{{ evidence.get_document_type_display }}</p>
+                            <div class="mt-2 flex items-center gap-2">
+                                <span class="px-2 py-0.5 text-xs rounded-full 
+                                    {% if evidence.status == 'APPROVED' %}bg-green-100 text-green-700
+                                    {% elif evidence.status == 'PENDING' %}bg-yellow-100 text-yellow-700
+                                    {% else %}bg-red-100 text-red-700{% endif %}">
+                                    {{ evidence.get_status_display }}
+                                </span>
+                                <span class="text-xs text-gray-400">{{ evidence.uploaded_at|date:"d M Y" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-full text-center py-8 text-gray-500">
+                    <svg class="h-12 w-12 mx-auto mb-2 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p>No evidence uploaded yet.</p>
+                    <a href="{% url 'corporate:wsp_atr_evidence' submission.pk submission_type|lower %}" class="mt-2 inline-block text-blue-600 hover:underline">
+                        Upload evidence
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Checklist Tab -->
+        <div id="checklist-tab" class="tab-content hidden p-5">
+            <h3 class="font-semibold text-gray-900 mb-4">Submission Checklist</h3>
+            <div class="space-y-4">
+                {% for category in checklist_categories %}
+                <div class="border rounded-lg overflow-hidden">
+                    <div class="bg-gray-50 px-4 py-3 flex items-center justify-between">
+                        <h4 class="font-medium text-gray-900">{{ category.name }}</h4>
+                        <span class="text-sm text-gray-500">
+                            {{ category.completed_count }}/{{ category.total_count }} complete
+                        </span>
+                    </div>
+                    <div class="divide-y">
+                        {% for item in category.items %}
+                        <label class="flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer">
+                            <input type="checkbox" {% if item.is_completed %}checked{% endif %} class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <div class="flex-1">
+                                <span class="text-gray-900">{{ item.name }}</span>
+                                {% if item.is_required %}
+                                <span class="ml-2 text-xs text-red-500">Required</span>
+                                {% endif %}
+                                {% if item.description %}
+                                <p class="text-sm text-gray-500 mt-1">{{ item.description }}</p>
+                                {% endif %}
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-gray-500">
+                    No checklist items configured.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="history-tab" class="tab-content hidden p-5">
+            <h3 class="font-semibold text-gray-900 mb-4">Submission History</h3>
+            <div class="flow-root">
+                <ul class="-mb-8">
+                    {% for event in history %}
+                    <li class="relative pb-8">
+                        {% if not forloop.last %}
+                        <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                        {% endif %}
+                        <div class="relative flex items-start space-x-3">
+                            <div class="relative">
+                                <div class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center ring-8 ring-white">
+                                    <svg class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div>
+                                    <p class="text-sm text-gray-900">{{ event.description }}</p>
+                                    <p class="mt-0.5 text-sm text-gray-500">
+                                        {{ event.user.get_full_name|default:"System" }} • {{ event.created_at|date:"d M Y, H:i" }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="text-center py-8 text-gray-500">No history recorded.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Remove active from all buttons
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('active', 'border-blue-500', 'text-blue-600');
+            b.classList.add('border-transparent', 'text-gray-500');
+        });
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+        
+        // Activate clicked button
+        this.classList.add('active', 'border-blue-500', 'text-blue-600');
+        this.classList.remove('border-transparent', 'text-gray-500');
+        
+        // Show target tab
+        const tabId = this.dataset.tab + '-tab';
+        document.getElementById(tabId).classList.remove('hidden');
+    });
+});
+</script>
+{% endblock %}

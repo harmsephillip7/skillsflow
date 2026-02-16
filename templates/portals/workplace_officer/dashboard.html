@@ -1,0 +1,317 @@
+{% extends 'portals/workplace_officer/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Workplace Officer Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-speedometer2 me-2"></i>Dashboard</h2>
+    <span class="text-muted">{{ today|date:"l, d F Y" }}</span>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card stat-card">
+            <div class="stat-value text-primary">{{ stats.total_placements }}</div>
+            <div class="stat-label">Active Placements</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stat-card">
+            <div class="stat-value text-success">{{ stats.pending_visits }}</div>
+            <div class="stat-label">Visits Due</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stat-card">
+            <div class="stat-value text-warning">{{ stats.pending_stipends }}</div>
+            <div class="stat-label">Pending Stipends</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stat-card">
+            <div class="stat-value text-danger">{{ stats.open_disciplinary }}</div>
+            <div class="stat-label">Open Cases</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stat-card" style="cursor: pointer;" onclick="window.location.href='{% url 'portals:officer_dispute_list' %}'">
+            <div class="stat-value {% if stats.overdue_disputes > 0 %}text-danger{% else %}text-warning{% endif %}">
+                {{ stats.pending_disputes }}
+            </div>
+            <div class="stat-label">Pending Disputes</div>
+            {% if stats.overdue_disputes > 0 %}
+            <small class="text-danger">{{ stats.overdue_disputes }} overdue</small>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stat-card">
+            <div class="stat-value text-info">{{ unread_messages }}</div>
+            <div class="stat-label">Messages</div>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts Section -->
+{% if alerts %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-bell me-2"></i>Alerts & Actions Required</span>
+        <span class="badge bg-danger">{{ alerts|length }}</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            {% for alert in alerts %}
+            <a href="{{ alert.url }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi {{ alert.icon }} text-{{ alert.type }} me-2"></i>
+                    <strong>{{ alert.title }}</strong>
+                    <p class="mb-0 text-muted small">{{ alert.description }}</p>
+                </div>
+                <span class="badge bg-{{ alert.type }}">{{ alert.priority }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Calendar Feature Card -->
+<div class="card mb-4 bg-gradient-primary text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <div class="d-flex align-items-center mb-2">
+                    <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3">
+                        <i class="bi bi-calendar3 fs-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-1">My Calendar</h4>
+                        <p class="mb-0 opacity-75">View your complete schedule</p>
+                    </div>
+                </div>
+                <p class="small mb-0 opacity-90">
+                    📅 Track placement visits, reviews, and important dates
+                </p>
+            </div>
+            <a href="#" onclick="alert('Calendar feature coming soon for workplace officers!'); return false;" class="btn btn-light btn-lg">
+                <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Placements -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-people me-2"></i>My Placements</span>
+                <a href="{% url 'portals:officer_placements' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Learner</th>
+                                <th>Host Employer</th>
+                                <th>Status</th>
+                                <th>Last Visit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for placement in recent_placements %}
+                            <tr data-url="{% url 'portals:officer_placement_detail' placement.id %}" class="clickable-row" style="cursor:pointer;">
+                                <td>
+                                    <strong>{{ placement.learner.user.get_full_name }}</strong>
+                                    <br><small class="text-muted">{{ placement.learner.id_number|default:"No ID" }}</small>
+                                </td>
+                                <td>{{ placement.host_employer.name }}</td>
+                                <td>
+                                    <span class="badge badge-status bg-{% if placement.status == 'active' %}success{% elif placement.status == 'on_hold' %}warning{% else %}secondary{% endif %}">
+                                        {{ placement.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if placement.last_visit %}
+                                        {{ placement.last_visit|date:"d M Y" }}
+                                    {% else %}
+                                        <span class="text-warning">No visits</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">No placements assigned</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Upcoming Site Visits -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-calendar-event me-2"></i>Upcoming Site Visits</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for visit in upcoming_visits %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>{{ visit.placement.learner.user.get_full_name }}</strong>
+                                <p class="mb-0 small text-muted">{{ visit.placement.host_employer.name }}</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary">{{ visit.scheduled_date|date:"d M" }}</span>
+                                <br><small>{{ visit.visit_type }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item text-center text-muted py-4">
+                        No upcoming visits scheduled
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Pending Stipends -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-cash-stack me-2"></i>Pending Stipend Reviews</span>
+                <a href="{% url 'portals:officer_stipends' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Learner</th>
+                                <th>Period</th>
+                                <th>Amount</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stipend in pending_stipends %}
+                            <tr>
+                                <td>{{ stipend.placement.learner.user.get_full_name }}</td>
+                                <td>{{ stipend.month|date:"M Y" }}</td>
+                                <td>R {{ stipend.calculated_amount|floatformat:2 }}</td>
+                                <td>
+                                    <a href="{% url 'portals:officer_stipend_detail' stipend.id %}" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-check-lg"></i> Review
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">No pending stipends</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Messages -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-chat-dots me-2"></i>Messages</span>
+                <a href="{% url 'portals:officer_messages' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-3">
+                    {% if unread_messages > 0 %}
+                    <span class="badge bg-danger fs-4 mb-2">{{ unread_messages }}</span>
+                    <p class="mb-0">Unread messages</p>
+                    {% else %}
+                    <i class="bi bi-chat-check text-success fs-1"></i>
+                    <p class="mb-0 text-muted">No unread messages</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Open Disciplinary Cases -->
+{% if open_cases %}
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center bg-danger text-white">
+        <span><i class="bi bi-exclamation-triangle me-2"></i>Open Disciplinary Cases</span>
+        <a href="{% url 'portals:officer_disciplinary' %}" class="btn btn-sm btn-light">View All</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Case #</th>
+                        <th>Learner</th>
+                        <th>Type</th>
+                        <th>Opened</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in open_cases %}
+                    <tr>
+                        <td><strong>{{ case.case_number }}</strong></td>
+                        <td>{{ case.enrollment.learner.user.get_full_name }}</td>
+                        <td>{{ case.get_case_type_display }}</td>
+                        <td>{{ case.opened_date|date:"d M Y" }}</td>
+                        <td>
+                            <span class="badge bg-{% if case.status == 'pending' %}warning{% elif case.status == 'in_progress' %}info{% else %}secondary{% endif %}">
+                                {{ case.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'portals:officer_disciplinary_detail' case.id %}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh alerts every 5 minutes
+    setTimeout(function() {
+        location.reload();
+    }, 300000);
+    
+    // Handle clickable rows
+    document.querySelectorAll('.clickable-row').forEach(function(row) {
+        row.addEventListener('click', function() {
+            window.location = this.dataset.url;
+        });
+    });
+</script>
+{% endblock %}

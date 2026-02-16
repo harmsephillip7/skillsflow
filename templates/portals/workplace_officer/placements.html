@@ -1,0 +1,203 @@
+{% extends 'portals/workplace_officer/base.html' %}
+{% load static %}
+
+{% block title %}Placements - Workplace Officer Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-people me-2"></i>My Placements</h2>
+    <div class="d-flex gap-2">
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-funnel"></i> Filter: {{ filter_status|default:"All" }}
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="?status=">All Statuses</a></li>
+                <li><a class="dropdown-item" href="?status=active">Active</a></li>
+                <li><a class="dropdown-item" href="?status=on_hold">On Hold</a></li>
+                <li><a class="dropdown-item" href="?status=completed">Completed</a></li>
+                <li><a class="dropdown-item" href="?status=terminated">Terminated</a></li>
+            </ul>
+        </div>
+        <input type="text" class="form-control" id="searchInput" placeholder="Search learners..." style="width: 250px;">
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card bg-primary bg-opacity-10">
+            <div class="stat-value text-primary">{{ stats.total }}</div>
+            <div class="stat-label">Total Placements</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-success bg-opacity-10">
+            <div class="stat-value text-success">{{ stats.active }}</div>
+            <div class="stat-label">Active</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-warning bg-opacity-10">
+            <div class="stat-value text-warning">{{ stats.on_hold }}</div>
+            <div class="stat-label">On Hold</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-info bg-opacity-10">
+            <div class="stat-value text-info">{{ stats.needs_visit }}</div>
+            <div class="stat-label">Need Visit</div>
+        </div>
+    </div>
+</div>
+
+<!-- Placements Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="placementsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Learner</th>
+                        <th>Programme</th>
+                        <th>Host Employer</th>
+                        <th>Mentor</th>
+                        <th>Start Date</th>
+                        <th>Status</th>
+                        <th>Last Visit</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for placement in placements %}
+                    <tr class="placement-row">
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle bg-primary text-white me-2">
+                                    {{ placement.learner.user.first_name|slice:":1" }}{{ placement.learner.user.last_name|slice:":1" }}
+                                </div>
+                                <div>
+                                    <strong>{{ placement.learner.user.get_full_name }}</strong>
+                                    <br><small class="text-muted">{{ placement.learner.id_number|default:"No ID" }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {{ placement.enrollment.intake.programme.title|truncatewords:5 }}
+                            <br><small class="text-muted">{{ placement.enrollment.intake.name }}</small>
+                        </td>
+                        <td>
+                            <strong>{{ placement.host_employer.name }}</strong>
+                            <br><small class="text-muted">{{ placement.host_employer.city|default:"" }}</small>
+                        </td>
+                        <td>
+                            {% if placement.mentor %}
+                                {{ placement.mentor.user.get_full_name }}
+                            {% else %}
+                                <span class="text-warning">Not assigned</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ placement.start_date|date:"d M Y" }}</td>
+                        <td>
+                            <span class="badge badge-status bg-{% if placement.status == 'active' %}success{% elif placement.status == 'on_hold' %}warning{% elif placement.status == 'completed' %}info{% else %}danger{% endif %}">
+                                {{ placement.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if placement.last_visit %}
+                                <span class="{% if placement.visit_overdue %}text-danger{% else %}text-muted{% endif %}">
+                                    {{ placement.last_visit|date:"d M Y" }}
+                                </span>
+                                {% if placement.visit_overdue %}
+                                    <br><small class="text-danger"><i class="bi bi-exclamation-circle"></i> Overdue</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-warning">No visits yet</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'portals:workplace_officer_placement_detail' placement.id %}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'portals:workplace_officer_schedule_visit' placement.id %}" class="btn btn-sm btn-outline-success" title="Schedule Visit">
+                                    <i class="bi bi-calendar-plus"></i>
+                                </a>
+                                <a href="{% url 'portals:workplace_officer_add_support' placement.id %}" class="btn btn-sm btn-outline-info" title="Add Support Note">
+                                    <i class="bi bi-chat-heart"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <i class="bi bi-inbox display-4 text-muted"></i>
+                            <p class="text-muted mt-2">No placements found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if placements.has_other_pages %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if placements.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ placements.previous_page_number }}&status={{ filter_status }}">Previous</a>
+        </li>
+        {% endif %}
+        
+        {% for num in placements.paginator.page_range %}
+            {% if placements.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > placements.number|add:'-3' and num < placements.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}&status={{ filter_status }}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if placements.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ placements.next_page_number }}&status={{ filter_status }}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll('.placement-row');
+        
+        rows.forEach(function(row) {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(filter) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}

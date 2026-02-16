@@ -1,0 +1,243 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}Intake Buckets{% endblock %}
+
+{% block main_content %}
+<div class="p-6">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-3 bg-teal-100 rounded-xl">
+                    <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Intake Buckets</h1>
+                    <p class="text-gray-500 text-sm">Visual capacity view - see available spots at a glance</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <a href="{% url 'intakes:dashboard' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="{% url 'intakes:create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    New Intake
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+        <form method="get" class="flex flex-wrap items-center gap-4">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Campus</label>
+                <select name="campus" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                    <option value="">All Campuses</option>
+                    {% for campus in all_campuses %}
+                    <option value="{{ campus.id }}" {% if selected_campus == campus.id|stringformat:"i" %}selected{% endif %}>{{ campus.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Status</label>
+                <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                    <option value="">All Statuses</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Programme</label>
+                <select name="qualification" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                    <option value="">All Programmes</option>
+                    {% for qual in all_qualifications %}
+                    <option value="{{ qual.id }}" {% if selected_qualification == qual.id|stringformat:"i" %}selected{% endif %}>{{ qual.name|truncatechars:40 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex items-end gap-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="show_past" value="true" {% if show_past %}checked{% endif %} class="rounded border-gray-300 text-teal-600 focus:ring-teal-500">
+                    <span class="text-sm text-gray-600">Show completed</span>
+                </label>
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors">
+                    Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Campus Buckets -->
+    {% for campus, intakes in campus_intakes.items %}
+    <div class="mb-8">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="p-2 bg-blue-100 rounded-lg">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold text-gray-900">{{ campus.name }}</h2>
+            <span class="text-sm text-gray-500">({{ intakes|length }} intake{{ intakes|length|pluralize }})</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {% for intake in intakes %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+                <!-- Header with status -->
+                <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between
+                    {% if intake.status == 'ACTIVE' %}bg-green-50
+                    {% elif intake.status == 'RECRUITING' or intake.status == 'ENROLLMENT_OPEN' %}bg-blue-50
+                    {% elif intake.status == 'COMPLETED' %}bg-gray-50
+                    {% else %}bg-white{% endif %}">
+                    <span class="text-xs font-medium px-2 py-1 rounded-full
+                        {% if intake.status == 'ACTIVE' %}bg-green-100 text-green-800
+                        {% elif intake.status == 'RECRUITING' %}bg-blue-100 text-blue-800
+                        {% elif intake.status == 'ENROLLMENT_OPEN' %}bg-teal-100 text-teal-800
+                        {% elif intake.status == 'COMPLETED' %}bg-gray-100 text-gray-800
+                        {% elif intake.status == 'PLANNED' %}bg-purple-100 text-purple-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ intake.get_status_display }}
+                    </span>
+                    <span class="text-xs text-gray-500">{{ intake.code }}</span>
+                </div>
+
+                <!-- Content -->
+                <div class="p-4">
+                    <a href="{% url 'intakes:detail' intake.pk %}" class="block">
+                        <h3 class="font-semibold text-gray-900 mb-1 hover:text-teal-600 transition-colors">{{ intake.name|truncatechars:35 }}</h3>
+                        <p class="text-sm text-gray-500 mb-3">{{ intake.qualification.name|truncatechars:40 }}</p>
+                    </a>
+
+                    <!-- Dates -->
+                    <div class="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        {{ intake.start_date|date:"d M" }} - {{ intake.end_date|date:"d M Y" }}
+                    </div>
+
+                    <!-- Capacity Bucket -->
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between text-sm mb-2">
+                            <span class="font-medium text-gray-700">Capacity</span>
+                            <span class="{% if intake.fill_percentage >= 90 %}text-green-600{% elif intake.fill_percentage >= 70 %}text-yellow-600{% elif intake.fill_percentage >= 50 %}text-orange-600{% else %}text-red-600{% endif %} font-bold">
+                                {{ intake.fill_percentage }}%
+                            </span>
+                        </div>
+                        
+                        <!-- Visual Bucket -->
+                        <div class="relative h-24 bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200">
+                            <!-- Fill level -->
+                            <div class="absolute bottom-0 left-0 right-0 transition-all duration-500
+                                {% if intake.fill_percentage >= 90 %}bg-green-400
+                                {% elif intake.fill_percentage >= 70 %}bg-yellow-400
+                                {% elif intake.fill_percentage >= 50 %}bg-orange-400
+                                {% else %}bg-red-400{% endif %}"
+                                style="height: {{ intake.fill_percentage }}%;">
+                                <!-- Pending overlay -->
+                                {% if intake.pending_count > 0 %}
+                                <div class="absolute top-0 left-0 right-0 bg-yellow-200 opacity-50" 
+                                     style="height: {% widthratio intake.pending_count intake.max_capacity 100 %}%;"></div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Center stats -->
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="text-2xl font-bold text-gray-800">{{ intake.enrolled_count }}</span>
+                                <span class="text-xs text-gray-600">of {{ intake.max_capacity }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Stats row -->
+                        <div class="flex items-center justify-between mt-2 text-xs">
+                            <span class="text-green-600">
+                                <span class="font-semibold">{{ intake.enrolled_count }}</span> enrolled
+                            </span>
+                            {% if intake.pending_count > 0 %}
+                            <span class="text-yellow-600">
+                                <span class="font-semibold">{{ intake.pending_count }}</span> pending
+                            </span>
+                            {% endif %}
+                            <span class="text-teal-600">
+                                <span class="font-semibold">{{ intake.available_spots }}</span> available
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-2">
+                        <a href="{% url 'intakes:detail' intake.pk %}" class="flex-1 text-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
+                            View
+                        </a>
+                        {% if intake.status in 'PLANNED,RECRUITING,ENROLLMENT_OPEN' and not intake.is_full %}
+                        <a href="{% url 'intakes:enroll' intake.pk %}" class="flex-1 text-center px-3 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors">
+                            Enroll
+                        </a>
+                        {% elif intake.is_full %}
+                        <span class="flex-1 text-center px-3 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-lg cursor-not-allowed">
+                            Full
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+        <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No Intakes Found</h3>
+        <p class="text-gray-500 mb-4">No intakes match your current filters.</p>
+        <a href="{% url 'intakes:create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Create First Intake
+        </a>
+    </div>
+    {% endfor %}
+
+    <!-- Legend -->
+    <div class="mt-8 p-4 bg-gray-50 rounded-xl">
+        <h4 class="text-sm font-semibold text-gray-700 mb-3">Bucket Fill Legend</h4>
+        <div class="flex flex-wrap gap-4 text-sm">
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-green-400 rounded"></div>
+                <span class="text-gray-600">90%+ Full</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-yellow-400 rounded"></div>
+                <span class="text-gray-600">70-89% Full</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-orange-400 rounded"></div>
+                <span class="text-gray-600">50-69% Full</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-red-400 rounded"></div>
+                <span class="text-gray-600">&lt;50% Full (Needs Recruitment)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-yellow-200 rounded"></div>
+                <span class="text-gray-600">Pending Enrollments</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

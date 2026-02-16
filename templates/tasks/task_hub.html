@@ -1,0 +1,477 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}Task Hub{% endblock %}
+
+{% block main_content %}
+<div x-data="taskHub()" x-init="init()">
+    <!-- Header with stats -->
+    <div class="mb-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Task Hub</h1>
+                <p class="text-gray-500">Manage all your tasks in one place</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button @click="showQuickActions = !showQuickActions" 
+                        class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition shadow-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    Quick Actions
+                </button>
+            </div>
+        </div>
+        
+        <!-- Task Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-2xl font-bold text-gray-900">{{ overdue_count }}</p>
+                        <p class="text-xs text-gray-500">Overdue</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-2xl font-bold text-gray-900">{{ urgent_count }}</p>
+                        <p class="text-xs text-gray-500">Urgent</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-2xl font-bold text-gray-900">{{ today_count }}</p>
+                        <p class="text-xs text-gray-500">Due Today</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-2xl font-bold text-gray-900">{{ completed_today }}</p>
+                        <p class="text-xs text-gray-500">Done Today</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions Panel -->
+    <div x-show="showQuickActions" x-collapse class="mb-6">
+        <div class="bg-gradient-to-r from-primary-50 to-blue-50 rounded-xl border border-primary-100 p-4">
+            <h3 class="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <a href="{% url 'capture:bulk_marks' %}" class="flex items-center p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition">
+                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Capture Marks</p>
+                        <p class="text-xs text-gray-500">Bulk entry</p>
+                    </div>
+                </a>
+                
+                <a href="{% url 'capture:attendance_list' %}" class="flex items-center p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition">
+                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Attendance</p>
+                        <p class="text-xs text-gray-500">Mark register</p>
+                    </div>
+                </a>
+                
+                <a href="{% url 'capture:learning_plan_list' %}" class="flex items-center p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition">
+                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Learning Plan</p>
+                        <p class="text-xs text-gray-500">View plans</p>
+                    </div>
+                </a>
+                
+                <a href="{% url 'capture:stipend_calculator' %}" class="flex items-center p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition">
+                    <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-4 h-4 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Stipends</p>
+                        <p class="text-xs text-gray-500">Manage payments</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters and View Toggle -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+        <div class="flex items-center gap-2">
+            <!-- Category Filter -->
+            <select x-model="selectedCategory" @change="loadTasks()" 
+                    class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">All Categories</option>
+                {% for value, label in categories %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+            
+            <!-- Priority Filter -->
+            <select x-model="selectedPriority" @change="loadTasks()"
+                    class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">All Priorities</option>
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="normal">Normal</option>
+                <option value="low">Low</option>
+            </select>
+            
+            <!-- Status Filter -->
+            <select x-model="selectedStatus" @change="loadTasks()"
+                    class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">All Open</option>
+                <option value="pending">Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+            </select>
+        </div>
+        
+        <div class="flex items-center gap-2">
+            <!-- Search -->
+            <div class="relative">
+                <input type="text" x-model="searchQuery" @input.debounce.300ms="loadTasks()"
+                       placeholder="Search tasks..."
+                       class="text-sm border border-gray-200 rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+            
+            <!-- View Toggle -->
+            <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                <button @click="viewMode = 'list'" 
+                        :class="viewMode === 'list' ? 'bg-white shadow-sm' : ''"
+                        class="p-2 rounded-lg transition">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                    </svg>
+                </button>
+                <button @click="viewMode = 'kanban'"
+                        :class="viewMode === 'kanban' ? 'bg-white shadow-sm' : ''"
+                        class="p-2 rounded-lg transition">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Task List View -->
+    <div x-show="viewMode === 'list'" class="space-y-3">
+        <template x-if="loading">
+            <div class="flex justify-center py-12">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            </div>
+        </template>
+        
+        <template x-if="!loading && tasks.length === 0">
+            <div class="text-center py-12 bg-white rounded-xl border border-gray-100">
+                <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900">No tasks found</h3>
+                <p class="text-gray-500 mt-1">You're all caught up! 🎉</p>
+            </div>
+        </template>
+        
+        <template x-for="task in tasks" :key="task.id">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                <div class="p-4 flex items-start gap-4">
+                    <!-- Checkbox -->
+                    <button @click="completeTask(task.id)" 
+                            class="flex-shrink-0 w-6 h-6 mt-1 border-2 rounded-lg hover:border-primary-500 transition"
+                            :class="task.status === 'completed' ? 'bg-primary-500 border-primary-500' : 'border-gray-300'">
+                        <svg x-show="task.status === 'completed'" class="w-full h-full text-white p-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- Task Content -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <!-- Priority Badge -->
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                  :class="{
+                                      'bg-red-100 text-red-800': task.priority === 'urgent',
+                                      'bg-orange-100 text-orange-800': task.priority === 'high',
+                                      'bg-blue-100 text-blue-800': task.priority === 'normal',
+                                      'bg-gray-100 text-gray-800': task.priority === 'low'
+                                  }">
+                                <span x-text="task.priority_display"></span>
+                            </span>
+                            
+                            <!-- Category Badge -->
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
+                                  x-text="task.category_display">
+                            </span>
+                        </div>
+                        
+                        <h3 class="text-base font-medium text-gray-900 mb-1"
+                            :class="task.status === 'completed' ? 'line-through text-gray-500' : ''"
+                            x-text="task.title">
+                        </h3>
+                        
+                        <p class="text-sm text-gray-500 line-clamp-2" x-text="task.description"></p>
+                        
+                        <!-- Meta info -->
+                        <div class="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                            <div class="flex items-center" x-show="task.due_date">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <span x-text="task.due_date_display" 
+                                      :class="task.is_overdue ? 'text-red-600 font-medium' : ''"></span>
+                            </div>
+                            <div class="flex items-center" x-show="task.related_object_display">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                </svg>
+                                <span x-text="task.related_object_display"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex items-center gap-2">
+                        <button @click="snoozeTask(task.id)" 
+                                class="p-2 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition"
+                                title="Snooze 1 day">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </button>
+                        <a :href="'/tasks/' + task.id + '/'" 
+                           class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition"
+                           title="View details">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+    
+    <!-- Kanban View -->
+    <div x-show="viewMode === 'kanban'" class="overflow-x-auto">
+        <div class="flex gap-4 min-w-max pb-4">
+            <!-- Pending Column -->
+            <div class="w-80 bg-gray-100 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-700">Pending</h3>
+                    <span class="bg-gray-200 text-gray-600 text-xs font-medium px-2 py-1 rounded-full"
+                          x-text="tasks.filter(t => t.status === 'pending').length"></span>
+                </div>
+                <div class="space-y-3">
+                    <template x-for="task in tasks.filter(t => t.status === 'pending')" :key="task.id">
+                        <div class="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition"
+                             @click="window.location.href = '/tasks/' + task.id + '/'">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="w-2 h-2 rounded-full"
+                                      :class="{
+                                          'bg-red-500': task.priority === 'urgent',
+                                          'bg-orange-500': task.priority === 'high',
+                                          'bg-blue-500': task.priority === 'normal',
+                                          'bg-gray-400': task.priority === 'low'
+                                      }"></span>
+                                <span class="text-xs text-gray-500" x-text="task.category_display"></span>
+                            </div>
+                            <h4 class="text-sm font-medium text-gray-900 mb-2" x-text="task.title"></h4>
+                            <div class="flex items-center text-xs text-gray-500" x-show="task.due_date">
+                                <svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <span x-text="task.due_date_display"
+                                      :class="task.is_overdue ? 'text-red-600' : ''"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            
+            <!-- In Progress Column -->
+            <div class="w-80 bg-blue-50 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-blue-700">In Progress</h3>
+                    <span class="bg-blue-200 text-blue-600 text-xs font-medium px-2 py-1 rounded-full"
+                          x-text="tasks.filter(t => t.status === 'in_progress').length"></span>
+                </div>
+                <div class="space-y-3">
+                    <template x-for="task in tasks.filter(t => t.status === 'in_progress')" :key="task.id">
+                        <div class="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition"
+                             @click="window.location.href = '/tasks/' + task.id + '/'">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="w-2 h-2 rounded-full"
+                                      :class="{
+                                          'bg-red-500': task.priority === 'urgent',
+                                          'bg-orange-500': task.priority === 'high',
+                                          'bg-blue-500': task.priority === 'normal',
+                                          'bg-gray-400': task.priority === 'low'
+                                      }"></span>
+                                <span class="text-xs text-gray-500" x-text="task.category_display"></span>
+                            </div>
+                            <h4 class="text-sm font-medium text-gray-900 mb-2" x-text="task.title"></h4>
+                            <div class="flex items-center text-xs text-gray-500" x-show="task.due_date">
+                                <svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <span x-text="task.due_date_display"
+                                      :class="task.is_overdue ? 'text-red-600' : ''"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            
+            <!-- Completed Column -->
+            <div class="w-80 bg-green-50 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-green-700">Completed</h3>
+                    <span class="bg-green-200 text-green-600 text-xs font-medium px-2 py-1 rounded-full"
+                          x-text="tasks.filter(t => t.status === 'completed').length"></span>
+                </div>
+                <div class="space-y-3">
+                    <template x-for="task in tasks.filter(t => t.status === 'completed')" :key="task.id">
+                        <div class="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md transition opacity-75"
+                             @click="window.location.href = '/tasks/' + task.id + '/'">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                <span class="text-xs text-gray-500" x-text="task.category_display"></span>
+                            </div>
+                            <h4 class="text-sm font-medium text-gray-500 line-through mb-2" x-text="task.title"></h4>
+                            <div class="flex items-center text-xs text-gray-400" x-show="task.completed_at">
+                                <svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span x-text="task.completed_at_display"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function taskHub() {
+    return {
+        tasks: [],
+        loading: true,
+        viewMode: 'list',
+        showQuickActions: false,
+        selectedCategory: '',
+        selectedPriority: '',
+        selectedStatus: '',
+        searchQuery: '',
+        
+        init() {
+            this.loadTasks();
+        },
+        
+        async loadTasks() {
+            this.loading = true;
+            try {
+                const params = new URLSearchParams();
+                if (this.selectedCategory) params.append('category', this.selectedCategory);
+                if (this.selectedPriority) params.append('priority', this.selectedPriority);
+                if (this.selectedStatus) params.append('status', this.selectedStatus);
+                if (this.searchQuery) params.append('search', this.searchQuery);
+                
+                const response = await fetch(`/tasks/api/?${params.toString()}`);
+                const data = await response.json();
+                this.tasks = data.tasks;
+            } catch (error) {
+                console.error('Failed to load tasks:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        async completeTask(taskId) {
+            try {
+                const response = await fetch(`/tasks/${taskId}/complete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (response.ok) {
+                    this.loadTasks();
+                }
+            } catch (error) {
+                console.error('Failed to complete task:', error);
+            }
+        },
+        
+        async snoozeTask(taskId) {
+            try {
+                const response = await fetch(`/tasks/${taskId}/snooze/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ days: 1 })
+                });
+                if (response.ok) {
+                    this.loadTasks();
+                }
+            } catch (error) {
+                console.error('Failed to snooze task:', error);
+            }
+        }
+    };
+}
+</script>
+
+{% csrf_token %}
+{% endblock %}

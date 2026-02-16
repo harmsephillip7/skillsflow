@@ -1,0 +1,47 @@
+Meeting Reminder
+================
+
+Dear {{ member.display_name }},
+
+This is a reminder for the upcoming Training Committee Meeting.
+
+MEETING DETAILS
+---------------
+Meeting: {{ meeting.title }}
+Client: {{ client.company_name }}
+Date: {{ meeting.scheduled_date|date:"l, d F Y" }}
+Time: {{ meeting.scheduled_time|time:"H:i" }}
+Duration: {{ meeting.duration_minutes }} minutes
+
+{% if meeting.meeting_type == 'VIRTUAL' %}
+This is a virtual meeting.
+{% if meeting.meeting_link %}
+Join Link: {{ meeting.meeting_link }}
+{% endif %}
+{% if meeting.meeting_id %}
+Meeting ID: {{ meeting.meeting_id }}
+{% endif %}
+{% if meeting.meeting_password %}
+Password: {{ meeting.meeting_password }}
+{% endif %}
+{% elif meeting.meeting_type == 'HYBRID' %}
+This is a hybrid meeting.
+{% if meeting.location %}
+In-Person Location: {{ meeting.location }}
+{% endif %}
+{% if meeting.meeting_link %}
+Join Link (for remote attendance): {{ meeting.meeting_link }}
+{% endif %}
+{% else %}
+{% if meeting.location %}
+Location: {{ meeting.location }}
+{% endif %}
+{% endif %}
+
+Please ensure you have all necessary documents ready for the meeting.
+
+Kind regards,
+SkillsFlow Corporate Services
+
+---
+This is an automated reminder from SkillsFlow.

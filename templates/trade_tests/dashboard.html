@@ -1,0 +1,251 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block page_title %}Trade Tests Dashboard{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Trade Tests Dashboard</h1>
+            <p class="text-gray-500 mt-1">Manage trade test applications, bookings, and NAMB/SETA submissions</p>
+        </div>
+        <div class="flex space-x-3">
+            <a href="{% url 'trade_tests:application_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
+                <svg class="w-5 h-5 mr-2 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                New Application
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Total Applications -->
+        <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-blue-100 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Total Applications</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.total_applications|default:0 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Internal Learners -->
+        <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-green-100 rounded-lg">
+                        <svg class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Internal Learners</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.by_source.internal|default:0 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- External Learners -->
+        <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-purple-100 rounded-lg">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">External Learners</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.by_source.external|default:0 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ARPL Candidates -->
+        <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-orange-100 rounded-lg">
+                        <svg class="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">ARPL Candidates</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.by_source.arpl|default:0 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Upcoming Tests -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-900">Upcoming Trade Tests</h2>
+                    <a href="{% url 'trade_tests:application_list' %}?status=SCHEDULED" class="text-sm text-primary-600 hover:text-primary-700 font-medium">View all</a>
+                </div>
+            </div>
+            <div class="divide-y divide-gray-100">
+                {% for test in upcoming_tests %}
+                <div class="px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-medium text-gray-900">{{ test.learner.get_full_name }}</p>
+                            <p class="text-sm text-gray-500">{{ test.trade.name }}</p>
+                            <p class="text-xs text-gray-400 mt-1">
+                                {{ test.centre.name|default:"TBD" }} • Attempt {{ test.attempt_number }}
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-gray-900">{{ test.scheduled_date|date:"d M Y" }}</p>
+                            <p class="text-xs text-gray-500">{{ test.scheduled_time|time:"H:i" }}</p>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1 {% if test.status == 'SCHEDULED' %}bg-blue-100 text-blue-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ test.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="px-6 py-8 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <p class="mt-2 text-gray-500">No upcoming tests scheduled</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Quick Actions & Status -->
+        <div class="space-y-6">
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Quick Actions</h2>
+                </div>
+                <div class="p-4 space-y-2">
+                    <a href="{% url 'trade_tests:application_create' %}" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="flex-shrink-0 p-2 bg-primary-100 rounded-lg">
+                            <svg class="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                        </div>
+                        <span class="ml-3 text-sm font-medium text-gray-700">New Application</span>
+                    </a>
+                    <a href="{% url 'trade_tests:centre_list' %}" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="flex-shrink-0 p-2 bg-green-100 rounded-lg">
+                            <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                            </svg>
+                        </div>
+                        <span class="ml-3 text-sm font-medium text-gray-700">Manage Test Centres</span>
+                    </a>
+                    <a href="{% url 'trade_tests:application_list' %}?status=SUBMITTED" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="flex-shrink-0 p-2 bg-yellow-100 rounded-lg">
+                            <svg class="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <span class="ml-3 text-sm font-medium text-gray-700">Pending NAMB Submission</span>
+                    </a>
+                    <a href="{% url 'trade_tests:appeal_list' %}" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="flex-shrink-0 p-2 bg-red-100 rounded-lg">
+                            <svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <span class="ml-3 text-sm font-medium text-gray-700">View Appeals</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Status Summary -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Applications by Status</h2>
+                </div>
+                <div class="p-4 space-y-3">
+                    {% for status, count in stats.by_status.items %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">{{ status }}</span>
+                        <span class="text-sm font-medium text-gray-900">{{ count }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-gray-500 text-center py-4">No applications yet</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Results -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900">Recent Results</h2>
+                <a href="{% url 'trade_tests:application_list' %}?status=COMPLETED" class="text-sm text-primary-600 hover:text-primary-700 font-medium">View all</a>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Candidate</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trade</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attempt</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Result</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for result in recent_results %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <p class="text-sm font-medium text-gray-900">{{ result.booking.learner.get_full_name }}</p>
+                            <p class="text-xs text-gray-500">{{ result.booking.application.get_candidate_source_display }}</p>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ result.booking.trade.name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ result.booking.attempt_number }} of 3
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if result.result == 'COMPETENT' %}bg-green-100 text-green-800{% elif result.result == 'NOT_YET_COMPETENT' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ result.get_result_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ result.created_at|date:"d M Y" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                            No results recorded yet
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

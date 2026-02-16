@@ -1,0 +1,339 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ segment.name }} - Tender Segment{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'core:dashboard' %}" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100" title="Main Dashboard">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                    </a>
+                    <a href="{% url 'tenders:segment_list' %}" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100" title="All Segments">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">{{ segment.name }}</h1>
+                        <p class="text-sm text-gray-500">{{ segment.get_decay_model_display }} probability decay</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    {% if segment.is_active %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
+                        <span class="w-2 h-2 mr-2 rounded-full bg-green-500"></span>
+                        Active
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-500">
+                        Inactive
+                    </span>
+                    {% endif %}
+                    
+                    <a href="{% url 'admin:tenders_tendersegment_change' segment.pk %}" class="inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        Edit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Content -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Probability Decay Chart -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Probability Decay Curve</h2>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="decayChart" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Segment Performance -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Performance Metrics</h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                                <p class="text-3xl font-bold text-gray-900">{{ segment.tender_count|default:0 }}</p>
+                                <p class="text-sm text-gray-500">Total Tenders</p>
+                            </div>
+                            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                                <p class="text-3xl font-bold text-blue-600">{{ segment.application_count|default:0 }}</p>
+                                <p class="text-sm text-gray-500">Applications</p>
+                            </div>
+                            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                                <p class="text-3xl font-bold text-green-600">{{ segment.won_count|default:0 }}</p>
+                                <p class="text-sm text-gray-500">Won</p>
+                            </div>
+                            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                                <p class="text-3xl font-bold text-emerald-600">{{ segment.win_rate|floatformat:0|default:0 }}%</p>
+                                <p class="text-sm text-gray-500">Win Rate</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Tenders in Segment -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900">Recent Tenders</h2>
+                        <a href="{% url 'tenders:tender_list' %}?segment={{ segment.pk }}" class="text-sm text-amber-600 hover:text-amber-700 font-medium">View all →</a>
+                    </div>
+                    <div class="divide-y divide-gray-100">
+                        {% for tender in recent_tenders %}
+                        <a href="{% url 'tenders:tender_detail' tender.pk %}" class="block px-6 py-4 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900">{{ tender.reference_number }}</p>
+                                    <p class="text-xs text-gray-500 truncate">{{ tender.title|truncatechars:60 }}</p>
+                                </div>
+                                <div class="ml-4 flex items-center space-x-3">
+                                    {% if tender.estimated_value %}
+                                    <span class="text-sm font-medium text-gray-900">R{{ tender.estimated_value|floatformat:0 }}</span>
+                                    {% endif %}
+                                    {% if tender.status == 'APPROVED' %}
+                                    <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Won</span>
+                                    {% elif tender.status == 'REJECTED' %}
+                                    <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Lost</span>
+                                    {% else %}
+                                    <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{{ tender.get_status_display }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                        {% empty %}
+                        <div class="px-6 py-8 text-center text-sm text-gray-500">
+                            No tenders in this segment yet
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Decay Configuration -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Decay Configuration</h2>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Decay Model</label>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                                {% if segment.decay_model == 'LINEAR' %}bg-blue-100 text-blue-700
+                                {% elif segment.decay_model == 'EXPONENTIAL' %}bg-purple-100 text-purple-700
+                                {% else %}bg-amber-100 text-amber-700{% endif %}">
+                                {{ segment.get_decay_model_display }}
+                            </span>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-gray-200">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm text-gray-500">Initial Probability</span>
+                                <span class="text-sm font-semibold text-green-600">{{ segment.initial_probability|floatformat:0 }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full" style="width: {{ segment.initial_probability }}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm text-gray-500">Floor Probability</span>
+                                <span class="text-sm font-semibold text-red-600">{{ segment.floor_probability|floatformat:0 }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-red-400 h-2 rounded-full" style="width: {{ segment.floor_probability }}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-gray-200">
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-500">Decay Rate</span>
+                                <span class="text-sm font-medium text-gray-900">{{ segment.decay_rate|floatformat:2 }}% per day</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-500">Expected Response</span>
+                                <span class="text-sm font-medium text-gray-900">{{ segment.expected_response_days }} days</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                {% if segment.description %}
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Description</h2>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-sm text-gray-600">{{ segment.description }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Decay Model Explanation -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">How It Works</h2>
+                    </div>
+                    <div class="p-6">
+                        {% if segment.decay_model == 'LINEAR' %}
+                        <div class="space-y-2">
+                            <p class="text-sm text-gray-600">
+                                <strong>Linear Decay</strong> reduces probability by a fixed amount each day.
+                            </p>
+                            <div class="bg-gray-50 rounded-lg p-3 text-xs font-mono text-gray-600">
+                                P(t) = max(floor, initial - rate × days)
+                            </div>
+                        </div>
+                        {% elif segment.decay_model == 'EXPONENTIAL' %}
+                        <div class="space-y-2">
+                            <p class="text-sm text-gray-600">
+                                <strong>Exponential Decay</strong> drops rapidly at first, then slows down.
+                            </p>
+                            <div class="bg-gray-50 rounded-lg p-3 text-xs font-mono text-gray-600">
+                                P(t) = floor + (initial - floor) × e^(-rate × days)
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="space-y-2">
+                            <p class="text-sm text-gray-600">
+                                <strong>Step Decay</strong> uses fixed probability thresholds at specific day intervals.
+                            </p>
+                            <div class="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
+                                Probability drops at configured milestones
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Sources using this segment -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Associated Sources</h2>
+                    </div>
+                    <div class="divide-y divide-gray-100">
+                        {% for source in segment.sources.all %}
+                        <a href="{% url 'tenders:source_detail' source.pk %}" class="block px-6 py-3 hover:bg-gray-50 transition-colors">
+                            <span class="text-sm font-medium text-gray-900">{{ source.name }}</span>
+                        </a>
+                        {% empty %}
+                        <div class="px-6 py-4 text-center text-sm text-gray-500">
+                            No sources use this segment as default
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('decayChart');
+    if (!ctx) return;
+    
+    // Generate decay curve data
+    const initialProb = {{ segment.initial_probability }};
+    const floorProb = {{ segment.floor_probability }};
+    const decayRate = {{ segment.decay_rate }};
+    const expectedDays = {{ segment.expected_response_days }};
+    const decayModel = '{{ segment.decay_model }}';
+    
+    const labels = [];
+    const data = [];
+    
+    for (let day = 0; day <= expectedDays * 1.5; day++) {
+        labels.push('Day ' + day);
+        
+        let prob;
+        if (decayModel === 'LINEAR') {
+            prob = Math.max(floorProb, initialProb - (decayRate * day));
+        } else if (decayModel === 'EXPONENTIAL') {
+            prob = floorProb + (initialProb - floorProb) * Math.exp(-decayRate * day / 100);
+        } else {
+            // Step - simplified
+            if (day < expectedDays * 0.25) prob = initialProb;
+            else if (day < expectedDays * 0.5) prob = initialProb * 0.75;
+            else if (day < expectedDays * 0.75) prob = initialProb * 0.5;
+            else if (day < expectedDays) prob = initialProb * 0.3;
+            else prob = floorProb;
+        }
+        
+        data.push(Math.max(floorProb, Math.min(100, prob)));
+    }
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Success Probability (%)',
+                data: data,
+                borderColor: 'rgb(245, 158, 11)',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                fill: true,
+                tension: decayModel === 'STEP' ? 0 : 0.4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.raw.toFixed(1) + '%';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    },
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                },
+                x: { 
+                    grid: { display: false },
+                    ticks: {
+                        maxTicksLimit: 10
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,226 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}QCTO Sync Dashboard{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">QCTO Data Sync</h1>
+        <p class="mt-1 text-sm text-gray-500">Monitor QCTO qualification data synchronization and review detected changes</p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+        <a href="{% url 'academics:dashboard' %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Sync Status Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Last Sync -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Last Sync</p>
+                    <p class="text-xl font-bold text-gray-900 mt-1">
+                        {% if last_sync %}
+                        {{ last_sync.synced_at|date:"d M Y" }}
+                        {% else %}
+                        Never
+                        {% endif %}
+                    </p>
+                    {% if last_sync %}
+                    <p class="text-xs text-gray-500">{{ last_sync.synced_at|timesince }} ago</p>
+                    {% endif %}
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-sync text-blue-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Next Scheduled -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Next Scheduled</p>
+                    <p class="text-xl font-bold text-gray-900 mt-1">
+                        {{ next_scheduled_sync|date:"d M Y" }}
+                    </p>
+                    <p class="text-xs text-gray-500">15th of month at 06:00</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-calendar-check text-green-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Manual Syncs Remaining -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Manual Syncs</p>
+                    <p class="text-xl font-bold {% if manual_syncs_remaining > 0 %}text-green-600{% else %}text-red-600{% endif %} mt-1">
+                        {{ manual_syncs_remaining }}/2 remaining
+                    </p>
+                    <p class="text-xs text-gray-500">Resets monthly</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-hand-pointer text-purple-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pending Changes -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Pending Review</p>
+                    <p class="text-xl font-bold {% if pending_count > 0 %}text-amber-600{% else %}text-gray-900{% endif %} mt-1">
+                        {{ pending_count }} changes
+                    </p>
+                    <p class="text-xs text-gray-500">Awaiting review</p>
+                </div>
+                <div class="w-12 h-12 {% if pending_count > 0 %}bg-amber-100{% else %}bg-gray-100{% endif %} rounded-lg flex items-center justify-center">
+                    <i class="fas fa-exclamation-circle {% if pending_count > 0 %}text-amber-600{% else %}text-gray-400{% endif %} text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Manual Trigger -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Manual Sync</h2>
+                <p class="text-sm text-gray-600">Trigger a manual QCTO data sync (max 2 per month)</p>
+            </div>
+            <form method="post" action="{% url 'academics:trigger_qcto_sync' %}">
+                {% csrf_token %}
+                <button type="submit" 
+                        {% if not can_trigger_manual %}disabled{% endif %}
+                        class="inline-flex items-center px-6 py-3 {% if can_trigger_manual %}bg-purple-600 hover:bg-purple-700 text-white{% else %}bg-gray-200 text-gray-500 cursor-not-allowed{% endif %} font-medium rounded-lg transition">
+                    <i class="fas fa-sync mr-2"></i>
+                    Sync Now
+                </button>
+            </form>
+        </div>
+        {% if not can_trigger_manual %}
+        <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <p class="text-sm text-amber-800">
+                <i class="fas fa-info-circle mr-1"></i>
+                You've used all 2 manual syncs this month. Please wait for the scheduled sync on the 15th.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Pending Changes -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-clipboard-list text-amber-600 mr-2"></i>Pending Changes
+                </h2>
+            </div>
+            <div class="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                {% for change in pending_changes %}
+                <div class="px-6 py-4 hover:bg-gray-50">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-900">{{ change.qualification.short_title }}</h4>
+                            <p class="text-sm text-gray-500">SAQA: {{ change.qualification.saqa_id }}</p>
+                            <p class="text-sm text-gray-600 mt-1">
+                                <span class="font-medium">{{ change.field_name|title }}:</span>
+                                <span class="text-red-600 line-through">{{ change.old_value|truncatechars:30 }}</span>
+                                →
+                                <span class="text-green-600">{{ change.new_value|truncatechars:30 }}</span>
+                            </p>
+                            <p class="text-xs text-gray-400 mt-1">Detected {{ change.created_at|date:"d M Y H:i" }}</p>
+                        </div>
+                        <a href="{% url 'academics:acknowledge_qcto_change' change.pk %}" 
+                           class="ml-4 px-3 py-1 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100">
+                            Review
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="px-6 py-8 text-center text-gray-500">
+                    <i class="fas fa-check-circle text-3xl text-green-300 mb-2"></i>
+                    <p>No pending changes to review</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Recent Sync History -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-history text-blue-600 mr-2"></i>Sync History
+                </h2>
+            </div>
+            <div class="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                {% for sync in recent_syncs %}
+                <div class="px-6 py-4">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                {% if sync.status == 'COMPLETED' %}
+                                <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                {% elif sync.status == 'FAILED' %}
+                                <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                                {% elif sync.status == 'RUNNING' %}
+                                <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                                {% else %}
+                                <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+                                {% endif %}
+                                <span class="font-medium text-gray-900">{{ sync.synced_at|date:"d M Y H:i" }}</span>
+                                <span class="px-2 py-0.5 text-xs rounded-full {% if sync.trigger_type == 'SCHEDULED' %}bg-blue-100 text-blue-700{% else %}bg-purple-100 text-purple-700{% endif %}">
+                                    {{ sync.get_trigger_type_display }}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-1">
+                                {{ sync.qualifications_checked }} checked, {{ sync.qualifications_updated }} changes
+                                {% if sync.triggered_by %}
+                                <span class="text-gray-400">• by {{ sync.triggered_by.get_full_name }}</span>
+                                {% endif %}
+                            </p>
+                            {% if sync.status == 'FAILED' and sync.error_message %}
+                            <p class="text-sm text-red-600 mt-1">{{ sync.error_message|truncatechars:100 }}</p>
+                            {% endif %}
+                        </div>
+                        <span class="px-2 py-1 text-xs font-medium rounded 
+                            {% if sync.status == 'COMPLETED' %}bg-green-100 text-green-700
+                            {% elif sync.status == 'FAILED' %}bg-red-100 text-red-700
+                            {% elif sync.status == 'RUNNING' %}bg-blue-100 text-blue-700
+                            {% else %}bg-gray-100 text-gray-700{% endif %}">
+                            {{ sync.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="px-6 py-8 text-center text-gray-500">
+                    <i class="fas fa-clock text-3xl text-gray-300 mb-2"></i>
+                    <p>No sync history yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cron Job Info -->
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-6">
+        <h3 class="font-semibold text-gray-900 mb-2">
+            <i class="fas fa-terminal text-gray-600 mr-2"></i>Cron Job Configuration
+        </h3>
+        <p class="text-sm text-gray-600 mb-3">Add this to your crontab to run automatic syncs on the 15th of each month:</p>
+        <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">0 6 15 * * cd /path/to/skillsflow && python manage.py sync_qcto</pre>
+    </div>
+</div>
+{% endblock %}

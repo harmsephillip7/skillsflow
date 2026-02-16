@@ -1,0 +1,385 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Corporate Dashboard - Client Portal{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        {% if client %}
+        <h1 class="text-2xl font-bold text-gray-900">{{ client.company_name }}</h1>
+        <p class="mt-1 text-sm text-gray-500">Welcome back, {{ contact.first_name|default:request.user.first_name }}</p>
+        {% else %}
+        <h1 class="text-2xl font-bold text-gray-900">Corporate Portal</h1>
+        <p class="mt-1 text-sm text-gray-500">No client account linked</p>
+        {% endif %}
+    </div>
+    <div class="mt-4 sm:mt-0 flex items-center gap-3">
+        {% if client %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800">
+            <i class="fas fa-building mr-2"></i>{{ client.status|title }}
+        </span>
+        {% endif %}
+        <a href="{% url 'core:dashboard' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <i class="fas fa-arrow-left mr-2"></i>Main Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if no_client %}
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+    <i class="fas fa-exclamation-triangle text-amber-500 text-4xl mb-3"></i>
+    <h3 class="text-lg font-semibold text-amber-800">No Corporate Account Linked</h3>
+    <p class="text-amber-700 mt-2">Your user account is not linked to a corporate client. Please contact your administrator.</p>
+</div>
+{% else %}
+
+<div class="space-y-6">
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-briefcase text-blue-600"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold text-gray-900">{{ active_services_count }}</p>
+                    <p class="text-xs text-gray-500">Active Services</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-chart-line text-green-600"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold text-gray-900">{{ overall_progress }}%</p>
+                    <p class="text-xs text-gray-500">Avg Progress</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-purple-600"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold text-gray-900">{{ learner_stats.in_training }}</p>
+                    <p class="text-xs text-gray-500">Learners in Training</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 {% if overdue_count > 0 %}bg-red-100{% else %}bg-amber-100{% endif %} rounded-lg flex items-center justify-center">
+                    <i class="fas fa-clock {% if overdue_count > 0 %}text-red-600{% else %}text-amber-600{% endif %}"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold {% if overdue_count > 0 %}text-red-600{% else %}text-gray-900{% endif %}">{{ overdue_count }}</p>
+                    <p class="text-xs text-gray-500">Overdue Items</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <a href="{% url 'portals:corporate_services' %}" class="bg-white hover:bg-gray-50 rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col items-center text-center transition group">
+            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2 group-hover:bg-blue-200 transition">
+                <i class="fas fa-cogs text-blue-600 text-xl"></i>
+            </div>
+            <span class="font-medium text-gray-900">My Services</span>
+            <span class="text-xs text-gray-500">View subscriptions</span>
+        </a>
+        
+        <a href="{% url 'portals:corporate_learners' %}" class="bg-white hover:bg-gray-50 rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col items-center text-center transition group">
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2 group-hover:bg-green-200 transition">
+                <i class="fas fa-user-graduate text-green-600 text-xl"></i>
+            </div>
+            <span class="font-medium text-gray-900">Learners</span>
+            <span class="text-xs text-gray-500">Training progress</span>
+        </a>
+        
+        <a href="{% url 'portals:corporate_deadlines' %}" class="bg-white hover:bg-gray-50 rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col items-center text-center transition group">
+            <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-2 group-hover:bg-amber-200 transition">
+                <i class="fas fa-calendar-check text-amber-600 text-xl"></i>
+            </div>
+            <span class="font-medium text-gray-900">Deadlines</span>
+            <span class="text-xs text-gray-500">Important dates</span>
+        </a>
+        
+        <a href="{% url 'portals:corporate_documents' %}" class="bg-white hover:bg-gray-50 rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col items-center text-center transition group">
+            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-2 group-hover:bg-purple-200 transition">
+                <i class="fas fa-folder-open text-purple-600 text-xl"></i>
+            </div>
+            <span class="font-medium text-gray-900">Documents</span>
+            <span class="text-xs text-gray-500">Files & reports</span>
+        </a>
+        
+        <a href="{% url 'portals:corporate_grants' %}" class="bg-white hover:bg-gray-50 rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col items-center text-center transition group">
+            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-2 group-hover:bg-indigo-200 transition">
+                <i class="fas fa-hand-holding-usd text-indigo-600 text-xl"></i>
+            </div>
+            <span class="font-medium text-gray-900">Grants</span>
+            <span class="text-xs text-gray-500">Funding projects</span>
+        </a>
+    </div>
+
+    <!-- Upcoming Deadlines Alert -->
+    {% if upcoming_deadlines %}
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-bell text-amber-600 text-xl"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-amber-800">Upcoming Deadlines</h3>
+                    <p class="mt-1 text-sm text-amber-700">
+                        You have <strong>{{ upcoming_deadlines|length }}</strong> deadline{{ upcoming_deadlines|length|pluralize }} in the next 30 days.
+                    </p>
+                </div>
+            </div>
+            <a href="{% url 'portals:corporate_deadlines' %}" class="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition">
+                View All
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Active Services -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-900">
+                    <i class="fas fa-cogs text-primary-600 mr-2"></i>Active Services
+                </h3>
+                <a href="{% url 'portals:corporate_services' %}" class="text-sm text-primary-600 hover:text-primary-700">View all →</a>
+            </div>
+            <div class="divide-y divide-gray-100">
+                {% for sub in subscriptions|slice:":5" %}
+                <a href="{% url 'portals:corporate_service_detail' sub.subscription.id %}" class="block px-5 py-4 hover:bg-gray-50 transition">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-medium text-gray-900 truncate">{{ sub.subscription.service.name }}</h4>
+                            <p class="text-sm text-gray-500 mt-1">{{ sub.subscription.service.category.name }}</p>
+                        </div>
+                        <div class="ml-4 flex-shrink-0 flex items-center gap-2">
+                            {% if sub.health == 'GREEN' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                                <i class="fas fa-circle text-green-500 text-xs mr-1"></i>On Track
+                            </span>
+                            {% elif sub.health == 'AMBER' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                <i class="fas fa-circle text-amber-500 text-xs mr-1"></i>At Risk
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+                                <i class="fas fa-circle text-red-500 text-xs mr-1"></i>Critical
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <!-- Progress bar -->
+                    <div class="mt-3">
+                        <div class="flex items-center justify-between text-xs mb-1">
+                            <span class="text-gray-500">{{ sub.milestones_completed }} of {{ sub.milestones_total }} milestones</span>
+                            <span class="font-medium text-gray-700">{{ sub.progress }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="{% if sub.health == 'GREEN' %}bg-green-500{% elif sub.health == 'AMBER' %}bg-amber-500{% else %}bg-red-500{% endif %} h-2 rounded-full transition-all" style="width: {{ sub.progress }}%"></div>
+                        </div>
+                    </div>
+                </a>
+                {% empty %}
+                <div class="px-5 py-8 text-center text-gray-500">
+                    <i class="fas fa-briefcase text-3xl text-gray-300 mb-2"></i>
+                    <p>No active services. Contact us to get started.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Deadlines -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">
+                        <i class="fas fa-calendar-alt text-amber-600 mr-2"></i>Deadlines
+                    </h3>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for deadline in upcoming_deadlines %}
+                    <div class="px-5 py-3">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">{{ deadline.title }}</p>
+                                <p class="text-xs text-gray-500">{{ deadline.get_reminder_type_display }}</p>
+                            </div>
+                            <span class="text-xs font-medium {% if deadline.deadline_date < today %}text-red-600{% else %}text-amber-600{% endif %}">
+                                {{ deadline.deadline_date|date:"d M" }}
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="px-5 py-6 text-center text-gray-500 text-sm">
+                        No upcoming deadlines
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Learner Stats -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">
+                        <i class="fas fa-user-graduate text-green-600 mr-2"></i>Learner Overview
+                    </h3>
+                </div>
+                <div class="p-5">
+                    <dl class="space-y-3">
+                        <div class="flex justify-between">
+                            <dt class="text-sm text-gray-500">Total Employees</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ learner_stats.total_employees }}</dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-sm text-gray-500">In Training</dt>
+                            <dd class="text-sm font-medium text-green-600">{{ learner_stats.in_training }}</dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-sm text-gray-500">Active Enrollments</dt>
+                            <dd class="text-sm font-medium text-blue-600">{{ learner_stats.active_enrollments }}</dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-sm text-gray-500">Completed</dt>
+                            <dd class="text-sm font-medium text-purple-600">{{ learner_stats.completed }}</dd>
+                        </div>
+                    </dl>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <a href="{% url 'portals:corporate_learners' %}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                            View all learners →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grant Projects -->
+    {% if grant_projects %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900">
+                <i class="fas fa-hand-holding-usd text-indigo-600 mr-2"></i>Grant Projects
+            </h3>
+            <a href="{% url 'portals:corporate_grants' %}" class="text-sm text-primary-600 hover:text-primary-700">View all →</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">SETA</th>
+                        <th class="px-5 py-3 text-center text-xs font-medium text-gray-500 uppercase">Learners</th>
+                        <th class="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase">Approved</th>
+                        <th class="px-5 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for grant in grant_projects %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-5 py-4">
+                            <a href="{% url 'portals:corporate_grant_detail' grant.id %}" class="font-medium text-gray-900 hover:text-primary-600">
+                                {{ grant.project_name }}
+                            </a>
+                        </td>
+                        <td class="px-5 py-4 text-sm text-gray-600">{{ grant.seta.code }}</td>
+                        <td class="px-5 py-4 text-center text-sm">
+                            <span class="text-gray-900">{{ grant.enrolled_learners }}</span>
+                            <span class="text-gray-500">/ {{ grant.target_learners }}</span>
+                        </td>
+                        <td class="px-5 py-4 text-right text-sm font-medium text-gray-900">
+                            R{{ grant.approved_amount|floatformat:0 }}
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                                {{ grant.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Documents & Meetings -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Recent Documents -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-900">
+                    <i class="fas fa-file-alt text-purple-600 mr-2"></i>Recent Documents
+                </h3>
+                <a href="{% url 'portals:corporate_documents' %}" class="text-sm text-primary-600 hover:text-primary-700">View all →</a>
+            </div>
+            <div class="divide-y divide-gray-100">
+                {% for doc in recent_documents %}
+                <div class="px-5 py-3 flex items-center justify-between">
+                    <div class="flex items-center min-w-0">
+                        <i class="fas fa-file-pdf text-red-500 mr-3"></i>
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">{{ doc.name }}</p>
+                            <p class="text-xs text-gray-500">{{ doc.upload_date|date:"d M Y" }}</p>
+                        </div>
+                    </div>
+                    <a href="{{ doc.file.url }}" class="text-primary-600 hover:text-primary-700 ml-3" target="_blank">
+                        <i class="fas fa-download"></i>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="px-5 py-6 text-center text-gray-500 text-sm">
+                    No documents uploaded yet
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Recent Meetings -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-900">
+                    <i class="fas fa-users text-blue-600 mr-2"></i>Recent Meetings
+                </h3>
+                <a href="{% url 'portals:corporate_meetings' %}" class="text-sm text-primary-600 hover:text-primary-700">View all →</a>
+            </div>
+            <div class="divide-y divide-gray-100">
+                {% for meeting in recent_meetings %}
+                <a href="{% url 'portals:corporate_meeting_detail' meeting.id %}" class="block px-5 py-3 hover:bg-gray-50">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ meeting.committee.name }}</p>
+                            <p class="text-xs text-gray-500">{{ meeting.venue|default:"Location TBC" }}</p>
+                        </div>
+                        <span class="text-xs text-gray-600">{{ meeting.meeting_date|date:"d M Y" }}</span>
+                    </div>
+                </a>
+                {% empty %}
+                <div class="px-5 py-6 text-center text-gray-500 text-sm">
+                    No meetings recorded yet
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

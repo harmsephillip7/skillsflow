@@ -1,0 +1,284 @@
+{% extends "portals/student/base.html" %}
+{% load static %}
+
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 pb-20">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+        <div class="px-4 py-6">
+            <div class="flex items-center gap-2 mb-2">
+                <a href="{% url 'portals:student_dashboard' %}" class="text-blue-100 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <h1 class="text-2xl font-bold">My Profile</h1>
+            </div>
+            <p class="text-blue-100 text-sm">Manage your personal information and documents</p>
+        </div>
+    </header>
+
+    <div class="px-4 -mt-4">
+        <!-- Profile Photo Card -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-4">
+            <div class="flex items-center gap-6">
+                <div class="relative">
+                    {% if learner.profile_photo %}
+                    <img src="{{ learner.profile_photo.url }}" alt="Profile Photo" 
+                         class="w-32 h-32 rounded-full object-cover border-4 border-blue-100" id="profilePhotoPreview">
+                    {% else %}
+                    <div class="w-32 h-32 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-4xl font-bold border-4 border-blue-200" id="profilePhotoPreview">
+                        {{ learner.user.first_name.0 }}{{ learner.user.last_name.0 }}
+                    </div>
+                    {% endif %}
+                    
+                    <button onclick="document.getElementById('photoInput').click()" 
+                            class="absolute bottom-0 right-0 w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </button>
+                    <input type="file" id="photoInput" accept="image/jpeg,image/png" class="hidden" onchange="uploadPhoto(this)">
+                </div>
+                
+                <div class="flex-1">
+                    <h2 class="text-2xl font-bold text-gray-900">{{ learner.user.get_full_name }}</h2>
+                    <p class="text-gray-600">Learner #{{ learner.learner_number|default:"Not Assigned" }}</p>
+                    <p class="text-sm text-gray-500 mt-1">{{ learner.user.email }}</p>
+                    
+                    <!-- Profile Completeness -->
+                    <div class="mt-4">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">Profile Completeness</span>
+                            <span class="text-sm font-bold text-blue-600">{{ profile_completeness }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full transition-all" style="width: {{ profile_completeness }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-4 gap-3 mb-4">
+            <a href="{% url 'portals:student_profile_edit' %}" class="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition text-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                </div>
+                <p class="text-sm font-medium text-gray-900">Edit Profile</p>
+            </a>
+            
+            <a href="{% url 'portals:student_documents' %}" class="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition text-center">
+                <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <p class="text-sm font-medium text-gray-900">Documents</p>
+                {% if not documents_complete %}
+                <span class="inline-block mt-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">Incomplete</span>
+                {% endif %}
+            </a>
+            
+            <a href="{% url 'portals:student_signature' %}" class="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition text-center">
+                <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                    </svg>
+                </div>
+                <p class="text-sm font-medium text-gray-900">Signature</p>
+                {% if learner.signature %}
+                <span class="inline-block mt-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Captured</span>
+                {% else %}
+                <span class="inline-block mt-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">Required</span>
+                {% endif %}
+            </a>
+            
+            <a href="{% url 'portals:student_card' %}" class="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition text-center">
+                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
+                    </svg>
+                </div>
+                <p class="text-sm font-medium text-gray-900">Student Card</p>
+            </a>
+        </div>
+
+        <!-- Personal Details -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-gray-900">Personal Details</h3>
+                <a href="{% url 'portals:student_profile_edit' %}" class="text-blue-600 text-sm font-medium">Edit</a>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                    <span class="text-gray-600">Full Name</span>
+                    <span class="font-medium text-gray-900">{{ learner.user.get_full_name }}</span>
+                </div>
+                
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                    <span class="text-gray-600">ID Number</span>
+                    <span class="font-medium text-gray-900">{{ learner.id_number|default:"Not provided" }}</span>
+                </div>
+                
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                    <span class="text-gray-600">Date of Birth</span>
+                    <span class="font-medium text-gray-900">{{ learner.date_of_birth|date:"d F Y"|default:"Not provided" }}</span>
+                </div>
+                
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                    <span class="text-gray-600">Gender</span>
+                    <span class="font-medium text-gray-900">{{ learner.get_gender_display|default:"Not provided" }}</span>
+                </div>
+                
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                    <span class="text-gray-600">Phone Number</span>
+                    <span class="font-medium text-gray-900">{{ learner.phone_number|default:"Not provided" }}</span>
+                </div>
+                
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                    <span class="text-gray-600">Email</span>
+                    <span class="font-medium text-gray-900">{{ learner.user.email|default:"Not provided" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Address -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-gray-900">Address</h3>
+                <a href="{% url 'portals:student_profile_edit' %}" class="text-blue-600 text-sm font-medium">Edit</a>
+            </div>
+            
+            {% if learner.address_line1 %}
+            <div class="text-gray-700">
+                <p>{{ learner.address_line1 }}</p>
+                {% if learner.address_line2 %}<p>{{ learner.address_line2 }}</p>{% endif %}
+                <p>{{ learner.city|default:"" }}{% if learner.postal_code %}, {{ learner.postal_code }}{% endif %}</p>
+                {% if learner.province %}<p>{{ learner.province }}</p>{% endif %}
+            </div>
+            {% else %}
+            <p class="text-gray-500 text-sm">No address provided</p>
+            {% endif %}
+        </div>
+
+        <!-- Emergency Contact -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-gray-900">Emergency Contact</h3>
+                <a href="{% url 'portals:student_profile_edit' %}" class="text-blue-600 text-sm font-medium">Edit</a>
+            </div>
+            
+            {% if learner.emergency_contact_name %}
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Name</span>
+                    <span class="font-medium text-gray-900">{{ learner.emergency_contact_name }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Phone</span>
+                    <span class="font-medium text-gray-900">{{ learner.emergency_contact_phone|default:"Not provided" }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Relationship</span>
+                    <span class="font-medium text-gray-900">{{ learner.emergency_contact_relationship|default:"Not provided" }}</span>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-gray-500 text-sm">No emergency contact provided</p>
+            {% endif %}
+        </div>
+
+        <!-- Recent Documents -->
+        {% if documents %}
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-gray-900">Recent Documents</h3>
+                <a href="{% url 'portals:student_documents' %}" class="text-blue-600 text-sm font-medium">View All</a>
+            </div>
+            
+            <div class="space-y-2">
+                {% for doc in documents|slice:":3" %}
+                <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900 text-sm">{{ doc.get_document_type_display }}</p>
+                            <p class="text-xs text-gray-500">{{ doc.created_at|date:"d M Y" }}</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full
+                        {% if doc.verified %}bg-green-100 text-green-700
+                        {% else %}bg-amber-100 text-amber-700{% endif %}">
+                        {% if doc.verified %}Verified{% else %}Pending{% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+async function uploadPhoto(input) {
+    if (!input.files || !input.files[0]) return;
+    
+    const file = input.files[0];
+    
+    // Validate file type
+    if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+        alert('Only JPEG and PNG images are allowed');
+        return;
+    }
+    
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be under 5MB');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('photo', file);
+    
+    try {
+        const response = await fetch("{% url 'portals:student_profile_photo_upload' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Update preview
+            const preview = document.getElementById('profilePhotoPreview');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.innerHTML = `<img src="${e.target.result}" alt="Profile Photo" class="w-32 h-32 rounded-full object-cover border-4 border-blue-100">`;
+            };
+            reader.readAsDataURL(file);
+            
+            alert('Profile photo updated successfully!');
+        } else {
+            alert(data.error || 'Failed to upload photo');
+        }
+    } catch (error) {
+        alert('Network error. Please try again.');
+    }
+}
+</script>
+{% endblock %}

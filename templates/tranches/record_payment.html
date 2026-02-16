@@ -1,0 +1,154 @@
+{% extends 'base/app_layout.html' %}
+{% load static admin_tags %}
+
+{% block title %}Record Payment - {{ tranche.reference_number }}{% endblock %}
+
+{% block page_title %}Record Payment{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'tranches:tranche_list' %}" class="text-primary-600 hover:text-primary-800">Tranches</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="text-primary-600 hover:text-primary-800">{{ tranche.reference_number }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Record Payment</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-green-600 to-emerald-700 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <svg class="w-12 h-12 text-green-200" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="ml-5">
+                <h2 class="text-xl font-bold">Record Payment for {{ tranche.name }}</h2>
+                <p class="mt-1 text-green-200">{{ tranche.reference_number }}</p>
+            </div>
+        </div>
+        
+        <div class="mt-6 grid grid-cols-2 gap-4 border-t border-green-500 pt-4">
+            <div>
+                <p class="text-sm text-green-200">Claimed Amount</p>
+                <p class="text-2xl font-bold">R{{ tranche.amount|floatformat:0 }}</p>
+            </div>
+            {% if submission and submission.approved_amount %}
+            <div>
+                <p class="text-sm text-green-200">Approved Amount</p>
+                <p class="text-2xl font-bold">R{{ submission.approved_amount|floatformat:0 }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Submission Info -->
+    {% if submission %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-sm font-semibold text-gray-900 mb-3">Submission Details</h3>
+        <dl class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+                <dt class="text-gray-500">Reference</dt>
+                <dd class="font-medium text-gray-900">{{ submission.submission_reference }}</dd>
+            </div>
+            <div>
+                <dt class="text-gray-500">Submitted</dt>
+                <dd class="font-medium text-gray-900">{{ submission.submission_date|date:"d M Y" }}</dd>
+            </div>
+            <div>
+                <dt class="text-gray-500">Status</dt>
+                <dd class="font-medium text-green-600">{{ submission.get_status_display }}</dd>
+            </div>
+            {% if submission.funder_reference %}
+            <div>
+                <dt class="text-gray-500">Funder Reference</dt>
+                <dd class="font-medium text-gray-900">{{ submission.funder_reference }}</dd>
+            </div>
+            {% endif %}
+        </dl>
+    </div>
+    {% endif %}
+    
+    <!-- Payment Form -->
+    <form method="post" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">Payment Details</h3>
+        </div>
+        
+        <div class="p-6 space-y-6">
+            <!-- Amount Paid -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Amount Received *</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-gray-500">R</span>
+                    <input type="number" name="amount_paid" step="0.01" min="0" required
+                           value="{% if submission.approved_amount %}{{ submission.approved_amount }}{% else %}{{ tranche.amount }}{% endif %}"
+                           class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                </div>
+            </div>
+            
+            <!-- Payment Date -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Payment Date *</label>
+                <input type="date" name="payment_date" value="{% now 'Y-m-d' %}" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+            </div>
+            
+            <!-- Payment Reference -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Payment Reference</label>
+                <input type="text" name="payment_reference" placeholder="Bank reference or transaction ID"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+            </div>
+            
+            <!-- Payment Method -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                <select name="payment_method" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                    <option value="EFT" selected>EFT / Bank Transfer</option>
+                    <option value="CHEQUE">Cheque</option>
+                    <option value="CASH">Cash</option>
+                    <option value="OTHER">Other</option>
+                </select>
+            </div>
+            
+            <!-- Notes -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea name="notes" rows="3" placeholder="Any additional notes about this payment..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"></textarea>
+            </div>
+        </div>
+        
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+            <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                <svg class="w-4 h-4 inline-block mr-2 -mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                Record Payment
+            </button>
+        </div>
+    </form>
+    
+</div>
+{% endblock %}

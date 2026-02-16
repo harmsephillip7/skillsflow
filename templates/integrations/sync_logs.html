@@ -1,0 +1,131 @@
+{% extends 'base/base.html' %}
+
+{% block title %}{{ page_title|default:"Sync Logs" }} - SkillsFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'integrations:hub' %}" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">Sync Logs</h1>
+                        <p class="text-sm text-gray-500">View synchronization history</p>
+                    </div>
+                </div>
+                
+                <!-- Filter -->
+                <div class="flex items-center space-x-3">
+                    <select onchange="window.location.search = this.value ? '?status=' + this.value : ''" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <option value="">All Status</option>
+                        <option value="SUCCESS" {% if selected_status == 'SUCCESS' %}selected{% endif %}>Success</option>
+                        <option value="PARTIAL" {% if selected_status == 'PARTIAL' %}selected{% endif %}>Partial</option>
+                        <option value="FAILED" {% if selected_status == 'FAILED' %}selected{% endif %}>Failed</option>
+                        <option value="IN_PROGRESS" {% if selected_status == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entity</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Records</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Started</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for log in logs %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                                    {% if log.connection.provider.icon %}
+                                        <img src="{{ log.connection.provider.icon.url }}" alt="" class="w-5 h-5">
+                                    {% else %}
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                        </svg>
+                                    {% endif %}
+                                </div>
+                                <span class="text-sm font-medium text-gray-900">{{ log.connection.provider.name }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-sm text-gray-900">{{ log.entity_type }}</span>
+                            <span class="text-xs text-gray-500 ml-1">({{ log.get_direction_display }})</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if log.status == 'SUCCESS' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Success</span>
+                            {% elif log.status == 'PARTIAL' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Partial</span>
+                            {% elif log.status == 'IN_PROGRESS' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">In Progress</span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ log.records_processed }}/{{ log.records_total }}
+                            {% if log.records_failed > 0 %}
+                                <span class="text-red-600">({{ log.records_failed }} failed)</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if log.duration_ms %}{{ log.duration_ms }}ms{% else %}-{% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ log.started_at|timesince }} ago
+                        </td>
+                    </tr>
+                    {% if log.error_message %}
+                    <tr class="bg-red-50">
+                        <td colspan="6" class="px-6 py-2 text-sm text-red-700">
+                            <span class="font-medium">Error:</span> {{ log.error_message }}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                            No sync logs found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            {% if logs.has_other_pages %}
+            <div class="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <div class="text-sm text-gray-500">
+                    Showing {{ logs.start_index }} to {{ logs.end_index }} of {{ logs.paginator.count }}
+                </div>
+                <div class="flex space-x-2">
+                    {% if logs.has_previous %}
+                    <a href="?page={{ logs.previous_page_number }}{% if selected_status %}&status={{ selected_status }}{% endif %}" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg">Previous</a>
+                    {% endif %}
+                    {% if logs.has_next %}
+                    <a href="?page={{ logs.next_page_number }}{% if selected_status %}&status={{ selected_status }}{% endif %}" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,183 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{{ enrollment.cohort.qualification.title }} - Learner Portal{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                <li><a href="{% url 'portals:student_dashboard' %}" class="hover:text-primary-600">Dashboard</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li><a href="{% url 'portals:student_enrollments' %}" class="hover:text-primary-600">Courses</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li class="text-gray-900 truncate max-w-[200px]">{{ enrollment.cohort.qualification.title }}</li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">{{ enrollment.cohort.qualification.title }}</h1>
+        <p class="mt-1 text-sm text-gray-500">{{ enrollment.cohort.name }}</p>
+    </div>
+    <div class="mt-4 sm:mt-0 flex items-center gap-2">
+        {% if enrollment.status == 'ACTIVE' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+            <i class="fas fa-check-circle mr-2"></i>Active
+        </span>
+        {% else %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+            {{ enrollment.get_status_display }}
+        </span>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Course Progress Overview -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="flex-1">
+                <h3 class="font-semibold text-gray-900 mb-4">Course Progress</h3>
+                <div class="w-full bg-gray-200 rounded-full h-4">
+                    <div class="bg-primary-600 h-4 rounded-full transition-all" style="width: {{ enrollment.progress|default:0 }}%"></div>
+                </div>
+                <div class="flex items-center justify-between mt-2 text-sm">
+                    <span class="text-gray-500">{{ modules|length }} modules total</span>
+                    <span class="font-medium text-primary-600">{{ enrollment.progress|default:0 }}% complete</span>
+                </div>
+            </div>
+            <div class="mt-4 md:mt-0 md:ml-8 flex gap-6">
+                <div class="text-center">
+                    <p class="text-3xl font-bold text-green-600">{{ completed_count }}</p>
+                    <p class="text-xs text-gray-500">Completed</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl font-bold text-amber-600">{{ pending_count }}</p>
+                    <p class="text-xs text-gray-500">Pending</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl font-bold text-gray-600">{{ total_count }}</p>
+                    <p class="text-xs text-gray-500">Total</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modules List -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-900">
+                <i class="fas fa-layer-group text-primary-600 mr-2"></i>Course Modules
+            </h3>
+        </div>
+        
+        <div class="divide-y divide-gray-100">
+            {% for module in modules %}
+            <div class="p-5" x-data="{ open: false }">
+                <div class="flex items-start justify-between cursor-pointer" @click="open = !open">
+                    <div class="flex items-start flex-1">
+                        <div class="flex-shrink-0">
+                            {% if module.completed %}
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check text-green-600"></i>
+                            </div>
+                            {% else %}
+                            <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                <span class="text-gray-600 font-medium">{{ forloop.counter }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <h4 class="font-medium text-gray-900">{{ module.title }}</h4>
+                            <p class="text-sm text-gray-500 mt-1">{{ module.code }} • {{ module.credits|default:0 }} credits</p>
+                            <div class="mt-2 flex items-center gap-4 text-xs text-gray-500">
+                                <span><i class="fas fa-clipboard-list mr-1"></i>{{ module.assessments.count }} assessments</span>
+                                {% if module.nqf_level %}
+                                <span><i class="fas fa-layer-group mr-1"></i>NQF {{ module.nqf_level }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <button class="p-2 text-gray-400 hover:text-gray-600 transition">
+                        <i class="fas fa-chevron-down transition-transform" :class="{ 'rotate-180': open }"></i>
+                    </button>
+                </div>
+                
+                <!-- Assessments Accordion -->
+                <div x-show="open" x-collapse class="mt-4 ml-14">
+                    {% if module.assessments.all %}
+                    <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+                        <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Assessments</h5>
+                        {% for assessment in module.assessments.all %}
+                        <div class="bg-white rounded-lg p-3 border border-gray-200 flex items-center justify-between">
+                            <div class="flex items-center">
+                                {% if assessment.activity_type == 'TEST' %}
+                                <div class="w-8 h-8 bg-red-100 rounded flex items-center justify-center mr-3">
+                                    <i class="fas fa-file-alt text-red-600 text-sm"></i>
+                                </div>
+                                {% elif assessment.activity_type == 'ASSIGNMENT' %}
+                                <div class="w-8 h-8 bg-blue-100 rounded flex items-center justify-center mr-3">
+                                    <i class="fas fa-tasks text-blue-600 text-sm"></i>
+                                </div>
+                                {% elif assessment.activity_type == 'PRACTICAL' %}
+                                <div class="w-8 h-8 bg-green-100 rounded flex items-center justify-center mr-3">
+                                    <i class="fas fa-tools text-green-600 text-sm"></i>
+                                </div>
+                                {% else %}
+                                <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center mr-3">
+                                    <i class="fas fa-clipboard text-gray-600 text-sm"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <p class="font-medium text-gray-900 text-sm">{{ assessment.title }}</p>
+                                    <p class="text-xs text-gray-500">{{ assessment.get_activity_type_display }} • {{ assessment.weight }}% weight</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                {% with result=assessment.results.first %}
+                                {% if result %}
+                                    {% if result.result == 'C' %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-check mr-1"></i>{{ result.percentage_score|floatformat:0 }}%
+                                    </span>
+                                    {% elif result.result == 'NYC' %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+                                        <i class="fas fa-times mr-1"></i>NYC
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                        Pending
+                                    </span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                                    Not Started
+                                </span>
+                                {% endif %}
+                                {% endwith %}
+                                <a href="{% url 'student_assessment' assessment.id %}" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                                    View <i class="fas fa-arrow-right ml-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="bg-gray-50 rounded-lg p-4 text-center text-gray-500 text-sm">
+                        <i class="fas fa-clipboard-list text-gray-300 text-xl mb-2"></i>
+                        <p>No assessments for this module yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="p-8 text-center text-gray-500">
+                <i class="fas fa-layer-group text-4xl text-gray-300 mb-3"></i>
+                <p>No modules found for this course.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

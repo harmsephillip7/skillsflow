@@ -1,0 +1,346 @@
+{% extends 'portals/workplace_officer/base.html' %}
+{% load static %}
+
+{% block title %}Disciplinary Cases - Workplace Officer Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-exclamation-triangle me-2"></i>Disciplinary Cases</h2>
+    <div class="d-flex gap-2">
+        <select class="form-select" id="statusFilter" style="width: auto;">
+            <option value="">All Statuses</option>
+            <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="in_progress" {% if selected_status == 'in_progress' %}selected{% endif %}>In Progress</option>
+            <option value="closed" {% if selected_status == 'closed' %}selected{% endif %}>Closed</option>
+        </select>
+        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#newCaseModal">
+            <i class="bi bi-plus-lg me-1"></i> Open New Case
+        </button>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card bg-warning bg-opacity-10">
+            <div class="stat-value text-warning">{{ stats.pending }}</div>
+            <div class="stat-label">Pending</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-info bg-opacity-10">
+            <div class="stat-value text-info">{{ stats.in_progress }}</div>
+            <div class="stat-label">In Progress</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-success bg-opacity-10">
+            <div class="stat-value text-success">{{ stats.closed }}</div>
+            <div class="stat-label">Closed</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-danger bg-opacity-10">
+            <div class="stat-value text-danger">{{ stats.total }}</div>
+            <div class="stat-label">Total Cases</div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Cases Alert -->
+{% if urgent_cases %}
+<div class="alert alert-danger alert-banner mb-4">
+    <i class="bi bi-exclamation-octagon me-2"></i>
+    <strong>{{ urgent_cases|length }} case{{ urgent_cases|length|pluralize }} require{{ urgent_cases|length|pluralize:"s," }} urgent attention.</strong>
+    <ul class="mb-0 mt-2">
+        {% for case in urgent_cases %}
+        <li>
+            <a href="{% url 'portals:workplace_officer_case_detail' case.id %}" class="text-danger">
+                {{ case.case_number }} - {{ case.enrollment.learner.user.get_full_name }}
+            </a>
+            ({{ case.days_open }} days open)
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Cases Table -->
+<div class="card">
+    <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs">
+            <li class="nav-item">
+                <a class="nav-link {% if not selected_status %}active{% endif %}" href="?status=">
+                    All Cases
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if selected_status == 'pending' %}active{% endif %}" href="?status=pending">
+                    Pending <span class="badge bg-warning ms-1">{{ stats.pending }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if selected_status == 'in_progress' %}active{% endif %}" href="?status=in_progress">
+                    In Progress <span class="badge bg-info ms-1">{{ stats.in_progress }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if selected_status == 'closed' %}active{% endif %}" href="?status=closed">
+                    Closed <span class="badge bg-success ms-1">{{ stats.closed }}</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Case #</th>
+                        <th>Learner</th>
+                        <th>Host Employer</th>
+                        <th>Type</th>
+                        <th>Opened</th>
+                        <th>Current Step</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in cases %}
+                    <tr>
+                        <td><strong>{{ case.case_number }}</strong></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle-sm bg-danger text-white me-2">
+                                    {{ case.enrollment.learner.user.first_name|slice:":1" }}{{ case.enrollment.learner.user.last_name|slice:":1" }}
+                                </div>
+                                <div>
+                                    <strong>{{ case.enrollment.learner.user.get_full_name }}</strong>
+                                    <br><small class="text-muted">{{ case.enrollment.learner.id_number|default:"" }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if case.placement %}
+                            {{ case.placement.host_employer.name }}
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ case.get_case_type_display }}</td>
+                        <td>
+                            {{ case.opened_date|date:"d M Y" }}
+                            <br><small class="text-muted">{{ case.opened_date|timesince }} ago</small>
+                        </td>
+                        <td>
+                            {% if case.current_step %}
+                            <span class="badge bg-{% if case.current_step == 'verbal_warning' %}info{% elif case.current_step == 'written_warning' %}warning{% elif case.current_step == 'final_warning' %}danger{% else %}dark{% endif %}">
+                                {{ case.get_current_step_display }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{% if case.status == 'closed' %}success{% elif case.status == 'pending' %}warning{% else %}info{% endif %}">
+                                {{ case.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'portals:workplace_officer_case_detail' case.id %}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if case.status != 'closed' %}
+                                <a href="{% url 'portals:workplace_officer_case_action' case.id %}" class="btn btn-sm btn-outline-danger" title="Add Action">
+                                    <i class="bi bi-plus-circle"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <i class="bi bi-shield-check display-4 text-success"></i>
+                            <p class="text-muted mt-2">No disciplinary cases found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if cases.has_other_pages %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if cases.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ cases.previous_page_number }}&status={{ selected_status }}">Previous</a>
+        </li>
+        {% endif %}
+        
+        {% for num in cases.paginator.page_range %}
+            {% if cases.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > cases.number|add:'-3' and num < cases.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}&status={{ selected_status }}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if cases.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ cases.next_page_number }}&status={{ selected_status }}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Summary by Type -->
+<div class="card mt-4">
+    <div class="card-header">
+        <i class="bi bi-pie-chart me-2"></i>Cases by Type
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <canvas id="caseTypeChart" height="200"></canvas>
+            </div>
+            <div class="col-md-6">
+                <h6 class="mb-3">Case Type Breakdown</h6>
+                <ul class="list-group list-group-flush">
+                    {% for type in case_types %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ type.label }}
+                        <span class="badge bg-primary">{{ type.count }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Case Modal -->
+<div class="modal fade" id="newCaseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Open New Disciplinary Case</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="newCaseForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Select Learner <span class="text-danger">*</span></label>
+                            <select class="form-select" name="placement" id="placementSelect" required>
+                                <option value="">Choose learner...</option>
+                                {% for placement in my_placements %}
+                                <option value="{{ placement.id }}">{{ placement.learner.get_full_name }} ({{ placement.host.company_name }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Incident Type <span class="text-danger">*</span></label>
+                            <select class="form-select" name="incident_type" required>
+                                <option value="">Select type...</option>
+                                <option value="ATTENDANCE">Attendance Issues</option>
+                                <option value="PERFORMANCE">Performance Issues</option>
+                                <option value="CONDUCT">Misconduct</option>
+                                <option value="SAFETY">Safety Violation</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Incident Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" name="incident_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description of Incident <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="description" rows="4" required placeholder="Provide detailed description of the incident or behaviour..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-exclamation-triangle me-1"></i> Open Case
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('newCaseForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var placementId = document.getElementById('placementSelect').value;
+    if (placementId) {
+        this.action = '{% url "portals:officer_disciplinary_create" placement_id=0 %}'.replace('/0/', '/' + placementId + '/');
+        this.submit();
+    }
+});
+</script>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar-circle-sm {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Status filter
+    document.getElementById('statusFilter').addEventListener('change', function() {
+        window.location.href = `?status=${this.value}`;
+    });
+    
+    // Case type chart
+    {% if case_types %}
+    const ctx = document.getElementById('caseTypeChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for type in case_types %}'{{ type.label }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for type in case_types %}{{ type.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: [
+                    '#4a90d9',
+                    '#66bb6a',
+                    '#ffca28',
+                    '#ef5350',
+                    '#9c27b0'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}

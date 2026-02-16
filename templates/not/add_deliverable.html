@@ -1,0 +1,270 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Add Deliverable - {{ notification.reference_number }}{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 text-sm text-gray-500">
+                <li><a href="{% url 'not_dashboard' %}" class="hover:text-blue-600">NOT Dashboard</a></li>
+                <li class="flex items-center"><svg class="w-4 h-4 mx-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg></li>
+                <li><a href="{% url 'not_detail' notification.pk %}" class="hover:text-blue-600">{{ notification.reference_number }}</a></li>
+                <li class="flex items-center"><svg class="w-4 h-4 mx-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg></li>
+                <li class="text-gray-700 font-medium">Add Deliverable</li>
+            </ol>
+        </nav>
+        <div class="flex items-center gap-3">
+            <div class="p-3 bg-indigo-100 rounded-xl">
+                <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Add Deliverable</h1>
+                <p class="text-gray-500 text-sm">{{ notification.title }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Form -->
+        <div class="lg:col-span-2">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Deliverable Details
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Title <span class="text-red-500">*</span></label>
+                                <input type="text" name="title" required
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                       placeholder="e.g., Quarterly Progress Report, Learner Registrations">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Deliverable Type <span class="text-red-500">*</span></label>
+                                <select name="deliverable_type" required
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select type...</option>
+                                    {% for value, label in type_choices %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Due Date <span class="text-red-500">*</span></label>
+                                <input type="date" name="due_date" required
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <textarea name="description" rows="3"
+                                          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                          placeholder="Describe the deliverable requirements..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assign To (Campus Employee)</label>
+                                <select name="assigned_to"
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select employee...</option>
+                                    {% for employee in campus_employees %}
+                                    <option value="{{ employee.id }}">
+                                        {{ employee.get_full_name|default:employee.email }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Assigning a person will create a task in their Task Hub.
+                                    {% if not campus_employees %}
+                                    <span class="text-yellow-600">Set a delivery campus on the project to see employees.</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Or Responsible Department</label>
+                                <select name="responsible_department"
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select department...</option>
+                                    {% for value, label in department_choices %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Submit To</label>
+                                <input type="text" name="submit_to"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                       placeholder="e.g., SETA, Client, Internal QA">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recurring Options -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Recurring Options
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="mb-4">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" name="is_recurring" id="is_recurring"
+                                       class="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500 transition-colors"
+                                       onchange="toggleRecurringOptions()">
+                                <span class="text-sm font-medium text-gray-700">This is a recurring deliverable</span>
+                            </label>
+                            <p class="text-xs text-gray-500 mt-1 ml-8">Check this to automatically create multiple deliverables at regular intervals</p>
+                        </div>
+                        
+                        <div id="recurring_options" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Recurrence Frequency <span class="text-red-500">*</span></label>
+                                <select name="recurrence_type" id="recurrence_type"
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white">
+                                    <option value="">Select frequency...</option>
+                                    {% for value, label in recurrence_choices %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Until Date <span class="text-red-500">*</span></label>
+                                <input type="date" name="recurrence_end_date" id="recurrence_end_date"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors">
+                                <p class="text-xs text-gray-500 mt-1">Recurring instances will be created up to this date</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add Deliverable
+                    </button>
+                    <a href="{% url 'not_detail' notification.pk %}" class="inline-flex items-center gap-2 px-6 py-3 bg-white text-gray-700 font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Recurring Info -->
+            <div class="bg-purple-50 rounded-xl shadow-sm border border-purple-200 overflow-hidden">
+                <div class="p-6">
+                    <h3 class="text-sm font-semibold text-purple-800 flex items-center gap-2 mb-4">
+                        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Recurring Deliverables
+                    </h3>
+                    <dl class="text-sm space-y-3">
+                        <div>
+                            <dt class="font-medium text-purple-900">Monthly</dt>
+                            <dd class="text-purple-700">Creates deliverable every month</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-purple-900">Quarterly</dt>
+                            <dd class="text-purple-700">Creates deliverable every 3 months</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-purple-900">Every 6 Months</dt>
+                            <dd class="text-purple-700">Creates deliverable twice a year</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-purple-900">Annually</dt>
+                            <dd class="text-purple-700">Creates deliverable once a year</dd>
+                        </div>
+                    </dl>
+                    <p class="text-xs text-purple-600 mt-4">
+                        <strong>Tip:</strong> The first due date you set becomes occurrence #1. Additional occurrences will be created automatically based on the frequency you select.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Deliverable Types Guide -->
+            <div class="bg-amber-50 rounded-xl shadow-sm border border-amber-200 overflow-hidden">
+                <div class="p-6">
+                    <h3 class="text-sm font-semibold text-amber-800 flex items-center gap-2 mb-4">
+                        <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                        Deliverable Types
+                    </h3>
+                    <dl class="text-sm space-y-3">
+                        <div>
+                            <dt class="font-medium text-amber-900">Inception Report</dt>
+                            <dd class="text-amber-700">Project kickoff documentation</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-amber-900">Progress Report</dt>
+                            <dd class="text-amber-700">Monthly/quarterly progress</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-amber-900">Learner Registration</dt>
+                            <dd class="text-amber-700">SETA/NLRD registration</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-amber-900">Assessment Report</dt>
+                            <dd class="text-amber-700">POE and assessment outcomes</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-amber-900">Completion Report</dt>
+                            <dd class="text-amber-700">Final project report</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-amber-900">Certificates</dt>
+                            <dd class="text-amber-700">SOA/Certificate issuance</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-amber-900">Financial Report</dt>
+                            <dd class="text-amber-700">Invoice and expense reports</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleRecurringOptions() {
+    const checkbox = document.getElementById('is_recurring');
+    const options = document.getElementById('recurring_options');
+    const recurrenceType = document.getElementById('recurrence_type');
+    const recurrenceEndDate = document.getElementById('recurrence_end_date');
+    
+    if (checkbox.checked) {
+        options.classList.remove('hidden');
+        recurrenceType.required = true;
+        recurrenceEndDate.required = true;
+    } else {
+        options.classList.add('hidden');
+        recurrenceType.required = false;
+        recurrenceEndDate.required = false;
+        recurrenceType.value = '';
+        recurrenceEndDate.value = '';
+    }
+}
+</script>
+{% endblock %}

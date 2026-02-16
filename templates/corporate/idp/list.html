@@ -1,0 +1,110 @@
+{% extends 'base/app_layout.html' %}
+
+{% block title %}IDPs - {{ employee.get_full_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:dashboard' %}" class="text-gray-700 hover:text-blue-600">Corporate</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:employee_database' client.pk %}" class="text-gray-700 hover:text-blue-600">Employees</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">{{ employee.get_full_name }} IDPs</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'corporate:employee_idp_create' employee.pk %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+    </svg>
+    New IDP
+</a>
+{% endblock %}
+
+{% block main_content %}
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="p-6 border-b border-gray-200">
+        <h2 class="text-xl font-bold text-gray-900">Individual Development Plans</h2>
+        <p class="text-sm text-gray-500 mt-1">History of development plans for {{ employee.get_full_name }}</p>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Training Needs</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sign-offs</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for idp in idps %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ idp.period_start|date:"M Y" }} - {{ idp.period_end|date:"M Y" }}</div>
+                        {% if idp.service_year %}
+                        <div class="text-xs text-gray-500">Linked to FY {{ idp.service_year.financial_year_display }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium 
+                            {% if idp.status == 'APPROVED' %}bg-green-100 text-green-800
+                            {% elif idp.status == 'DRAFT' %}bg-gray-100 text-gray-800
+                            {% elif idp.status == 'COMPLETED' %}bg-blue-100 text-blue-800
+                            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {{ idp.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ idp.training_needs.count }} needs identified
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div class="flex flex-col space-y-1">
+                            <span class="flex items-center">
+                                {% if idp.employee_sign_off_date %}
+                                <svg class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                                Employee
+                                {% else %}
+                                <svg class="w-4 h-4 text-gray-300 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                                Employee
+                                {% endif %}
+                            </span>
+                            <span class="flex items-center">
+                                {% if idp.manager_sign_off_date %}
+                                <svg class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                                Manager
+                                {% else %}
+                                <svg class="w-4 h-4 text-gray-300 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                                Manager
+                                {% endif %}
+                            </span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="{% url 'corporate:employee_idp_detail' idp.pk %}" class="text-blue-600 hover:text-blue-900">View Details</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                        No IDPs found for this employee.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,201 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Learners - Corporate Portal{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Learners</h1>
+        <p class="mt-1 text-sm text-gray-500">Track training progress for your employees</p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+        <a href="{% url 'portals:corporate_dashboard' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if no_client %}
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+    <i class="fas fa-exclamation-triangle text-amber-500 text-4xl mb-3"></i>
+    <h3 class="text-lg font-semibold text-amber-800">No Corporate Account Linked</h3>
+</div>
+{% else %}
+
+<div class="space-y-6">
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-gray-600"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.total_employees }}</p>
+                    <p class="text-xs text-gray-500">Total Employees</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-user-graduate text-blue-600"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.linked_learners }}</p>
+                    <p class="text-xs text-gray-500">In System</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-book-reader text-green-600"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.in_training }}</p>
+                    <p class="text-xs text-gray-500">In Training</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-award text-purple-600"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.completed }}</p>
+                    <p class="text-xs text-gray-500">Completed</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="border-b border-gray-200">
+            <nav class="flex -mb-px px-4">
+                <a href="?status=all" class="py-4 px-6 text-sm font-medium {% if status_filter == 'all' %}border-b-2 border-primary-500 text-primary-600{% else %}text-gray-500 hover:text-gray-700{% endif %}">
+                    All
+                </a>
+                <a href="?status=active" class="py-4 px-6 text-sm font-medium {% if status_filter == 'active' %}border-b-2 border-primary-500 text-primary-600{% else %}text-gray-500 hover:text-gray-700{% endif %}">
+                    In Training
+                </a>
+                <a href="?status=completed" class="py-4 px-6 text-sm font-medium {% if status_filter == 'completed' %}border-b-2 border-primary-500 text-primary-600{% else %}text-gray-500 hover:text-gray-700{% endif %}">
+                    Completed
+                </a>
+                <a href="?status=not_enrolled" class="py-4 px-6 text-sm font-medium {% if status_filter == 'not_enrolled' %}border-b-2 border-primary-500 text-primary-600{% else %}text-gray-500 hover:text-gray-700{% endif %}">
+                    Not Enrolled
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Learners Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% if learners %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Programme</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for l in learners %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            {% if l.learner %}
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-medium">
+                                    {{ l.learner.user.first_name.0 }}{{ l.learner.user.last_name.0 }}
+                                </div>
+                                <div class="ml-3">
+                                    <p class="font-medium text-gray-900">{{ l.learner.user.get_full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ l.employee.employee_number|default:l.learner.id_number }}</p>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="font-medium text-gray-900">{{ l.employee.first_name }} {{ l.employee.last_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ l.employee.employee_number|default:"No ID" }}</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {{ l.employee.department|default:"—" }}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if l.active_enrollment %}
+                            <p class="text-sm font-medium text-gray-900">{{ l.active_enrollment.qualification.title|truncatewords:5 }}</p>
+                            <p class="text-xs text-gray-500">{{ l.active_enrollment.cohort.name|default:"Individual" }}</p>
+                            {% else %}
+                            <span class="text-sm text-gray-400">Not enrolled</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if l.active_enrollment %}
+                            <div class="flex items-center justify-center">
+                                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="{% if l.progress >= 75 %}bg-green-500{% elif l.progress >= 50 %}bg-blue-500{% elif l.progress >= 25 %}bg-amber-500{% else %}bg-gray-400{% endif %} h-2 rounded-full" style="width: {{ l.progress }}%"></div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-900">{{ l.progress }}%</span>
+                            </div>
+                            {% else %}
+                            <span class="text-sm text-gray-400 text-center block">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if l.status == 'active' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <i class="fas fa-circle text-xs mr-1"></i>In Training
+                            </span>
+                            {% elif l.status == 'not_enrolled' or l.status == 'not_linked' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                Not Enrolled
+                            </span>
+                            {% elif l.completed_count > 0 %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                <i class="fas fa-check mr-1"></i>Completed {{ l.completed_count }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            {% if l.learner %}
+                            <a href="{% url 'portals:corporate_learner_detail' l.learner.id %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded transition">
+                                <i class="fas fa-eye mr-1"></i>View
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <i class="fas fa-users text-4xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900">No Learners Found</h3>
+            <p class="text-gray-500 mt-1">{% if status_filter != 'all' %}No learners match this filter.{% else %}No employees are linked to your company yet.{% endif %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

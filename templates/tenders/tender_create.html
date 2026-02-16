@@ -1,0 +1,254 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Add Tender - Tender Management{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'core:dashboard' %}" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100" title="Main Dashboard">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                    </a>
+                    <a href="{% url 'tenders:tender_list' %}" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100" title="All Tenders">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">Add Tender Manually</h1>
+                        <p class="text-sm text-gray-500">Enter details for a tender received outside automated scraping</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Basic Information</h2>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="reference_number" class="block text-sm font-medium text-gray-700 mb-1">Reference Number <span class="text-red-500">*</span></label>
+                            <input type="text" name="reference_number" id="reference_number" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500"
+                                placeholder="e.g., SETA/2026/001">
+                        </div>
+                        
+                        <div>
+                            <label for="priority" class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                            <select name="priority" id="priority"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                                {% for value, label in priority_choices %}
+                                <option value="{{ value }}" {% if value == 'MEDIUM' %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Tender Title <span class="text-red-500">*</span></label>
+                        <input type="text" name="title" id="title" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500"
+                            placeholder="Full tender title">
+                    </div>
+                    
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" id="description" rows="4"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500"
+                            placeholder="Full description of the tender..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="source_url" class="block text-sm font-medium text-gray-700 mb-1">Source URL</label>
+                        <input type="url" name="source_url" id="source_url"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500"
+                            placeholder="https://...">
+                        <p class="text-xs text-gray-500 mt-1">Link to original tender document or listing (if available)</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Classification -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Classification</h2>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="funder" class="block text-sm font-medium text-gray-700 mb-1">Funder / Organization</label>
+                            <input type="text" name="funder" id="funder"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500"
+                                placeholder="e.g., Department of Education">
+                        </div>
+                        
+                        <div>
+                            <label for="funder_type" class="block text-sm font-medium text-gray-700 mb-1">Funder Type</label>
+                            <select name="funder_type" id="funder_type"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                                <option value="">-- Select Type --</option>
+                                {% for value, label in funder_types %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="seta" class="block text-sm font-medium text-gray-700 mb-1">SETA</label>
+                            <select name="seta" id="seta"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                                <option value="">-- Select SETA (if applicable) --</option>
+                                {% for seta in setas %}
+                                <option value="{{ seta.pk }}">{{ seta.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="region" class="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                            <input type="text" name="region" id="region"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500"
+                                placeholder="e.g., Gauteng, National">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="segment" class="block text-sm font-medium text-gray-700 mb-1">Segment</label>
+                        <select name="segment" id="segment"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                            <option value="">-- Select Segment --</option>
+                            {% for segment in segments %}
+                            <option value="{{ segment.pk }}">{{ segment.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Used for probability forecasting and analytics</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dates -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Important Dates</h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label for="published_date" class="block text-sm font-medium text-gray-700 mb-1">Published Date</label>
+                            <input type="date" name="published_date" id="published_date"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                        </div>
+                        
+                        <div>
+                            <label for="opening_date" class="block text-sm font-medium text-gray-700 mb-1">Opening Date</label>
+                            <input type="date" name="opening_date" id="opening_date"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                        </div>
+                        
+                        <div>
+                            <label for="closing_date" class="block text-sm font-medium text-gray-700 mb-1">Closing Date</label>
+                            <input type="date" name="closing_date" id="closing_date"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                        </div>
+                        
+                        <div>
+                            <label for="expected_award_date" class="block text-sm font-medium text-gray-700 mb-1">Expected Award Date</label>
+                            <input type="date" name="expected_award_date" id="expected_award_date"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Value & Assignment -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Value & Assignment</h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="estimated_value" class="block text-sm font-medium text-gray-700 mb-1">Estimated Value (ZAR)</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2.5 text-gray-500">R</span>
+                                <input type="number" name="estimated_value" id="estimated_value" step="0.01" min="0"
+                                    class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500"
+                                    placeholder="0.00">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="assigned_to" class="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
+                            <select name="assigned_to" id="assigned_to"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                                <option value="">-- Unassigned --</option>
+                                {% for user in staff %}
+                                <option value="{{ user.pk }}">{{ user.get_full_name|default:user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Requirements & Notes -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Requirements & Notes</h2>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label for="requirements_summary" class="block text-sm font-medium text-gray-700 mb-1">Requirements Summary</label>
+                        <textarea name="requirements_summary" id="requirements_summary" rows="4"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500"
+                            placeholder="Key requirements for this tender..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="eligibility_notes" class="block text-sm font-medium text-gray-700 mb-1">Eligibility Notes</label>
+                        <textarea name="eligibility_notes" id="eligibility_notes" rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500"
+                            placeholder="Notes on eligibility criteria..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
+                        <textarea name="notes" id="notes" rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500"
+                            placeholder="Any internal notes about this tender..."></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex items-center justify-end space-x-3">
+                <a href="{% url 'tenders:tender_list' %}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="submit" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Create Tender
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

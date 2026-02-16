@@ -1,0 +1,82 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Offline - SkillsFlow{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-[60vh]">
+    <div class="text-center max-w-md mx-auto px-4">
+        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-wifi-slash text-4xl text-gray-400"></i>
+        </div>
+        
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">You're Offline</h1>
+        <p class="text-gray-500 mb-6">
+            It looks like you've lost your internet connection. Don't worry - you can still record attendance and it will sync when you're back online.
+        </p>
+        
+        <!-- Offline Features -->
+        <div class="bg-blue-50 rounded-xl p-6 text-left mb-6">
+            <h3 class="font-semibold text-blue-900 mb-3">
+                <i class="fas fa-check-circle text-blue-600 mr-2"></i>Available Offline
+            </h3>
+            <ul class="space-y-2 text-sm text-blue-800">
+                <li><i class="fas fa-check mr-2"></i>Record attendance</li>
+                <li><i class="fas fa-check mr-2"></i>View cached placement data</li>
+                <li><i class="fas fa-check mr-2"></i>Save logbook entries</li>
+                <li><i class="fas fa-check mr-2"></i>View cached learner list</li>
+            </ul>
+        </div>
+        
+        <!-- Pending Sync -->
+        <div id="pendingSyncInfo" class="mb-6"></div>
+        
+        <!-- Actions -->
+        <div class="space-y-3">
+            <button onclick="location.reload()" class="w-full px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition">
+                <i class="fas fa-sync mr-2"></i>Try Again
+            </button>
+            
+            <a href="/" class="block w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                <i class="fas fa-home mr-2"></i>Go to Homepage
+            </a>
+        </div>
+        
+        <!-- Connection Status -->
+        <div class="mt-8 text-sm text-gray-400">
+            <span id="connectionStatus">
+                <i class="fas fa-circle text-red-500 mr-1"></i> Offline
+            </span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Check for online status changes
+    window.addEventListener('online', () => {
+        document.getElementById('connectionStatus').innerHTML = 
+            '<i class="fas fa-circle text-green-500 mr-1"></i> Back Online!';
+        
+        // Redirect after a moment
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 1500);
+    });
+    
+    // Show pending sync count
+    if (window.WBLOffline) {
+        window.WBLOffline.getPendingCount().then(pending => {
+            if (pending.total > 0) {
+                document.getElementById('pendingSyncInfo').innerHTML = `
+                    <div class="bg-yellow-50 rounded-xl p-4">
+                        <p class="text-yellow-800">
+                            <i class="fas fa-cloud-upload-alt mr-2"></i>
+                            <strong>${pending.total} record(s)</strong> saved locally and will sync when online.
+                        </p>
+                    </div>
+                `;
+            }
+        });
+    }
+</script>
+{% endblock %}

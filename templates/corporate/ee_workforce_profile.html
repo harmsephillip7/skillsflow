@@ -1,0 +1,133 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}Workforce Profile - {{ client.company_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li><a href="{% url 'corporate:ee_clients_dashboard' %}" class="text-gray-700 hover:text-blue-600">EE Clients</a></li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li><a href="{% url 'corporate:ee_service_management' client.pk %}" class="text-gray-700 hover:text-blue-600">{{ client.company_name }}</a></li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">Workforce Profile</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-900">Workforce Profile</h1>
+    <p class="text-gray-500 mt-1">{{ client.company_name }} - EE Year {{ ee_service_year.reporting_year }}</p>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <p class="text-sm text-gray-500">Total Employees</p>
+        <p class="text-2xl font-bold text-gray-900">{{ totals.total|intcomma }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <p class="text-sm text-gray-500">Designated Groups</p>
+        <p class="text-2xl font-bold text-purple-600">{{ percentages.designated }}%</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <p class="text-sm text-gray-500">Female</p>
+        <p class="text-2xl font-bold text-pink-600">{{ percentages.female }}%</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <p class="text-sm text-gray-500">Snapshot Date</p>
+        <p class="text-2xl font-bold text-gray-900">{% if snapshot %}{{ snapshot.snapshot_date|date:"d M Y" }}{% else %}N/A{% endif %}</p>
+    </div>
+</div>
+
+<!-- Workforce Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+    <div class="p-4 border-b border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-900">Workforce by Occupational Level</h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th rowspan="2" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-r">Occupational Level</th>
+                    <th colspan="2" class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase bg-amber-50 border-r">African</th>
+                    <th colspan="2" class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase bg-orange-50 border-r">Coloured</th>
+                    <th colspan="2" class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase bg-yellow-50 border-r">Indian</th>
+                    <th colspan="2" class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase bg-gray-50 border-r">White</th>
+                    <th colspan="2" class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase bg-blue-50 border-r">Foreign</th>
+                    <th rowspan="2" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Total</th>
+                </tr>
+                <tr>
+                    <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 bg-amber-50">M</th>
+                    <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 bg-amber-50 border-r">F</th>
+                    <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 bg-orange-50">M</th>
+                    <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 bg-orange-50 border-r">F</th>
+                    <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 bg-yellow-50">M</th>
+                    <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 bg-yellow-50 border-r">F</th>
+                    <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 bg-gray-50">M</th>
+                    <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 bg-gray-50 border-r">F</th>
+                    <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 bg-blue-50">M</th>
+                    <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 bg-blue-50 border-r">F</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for data in occupational_data %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900 border-r">{{ data.get_occupational_level_display }}</td>
+                    <td class="px-2 py-3 text-sm text-center bg-amber-50/30">{{ data.african_male }}</td>
+                    <td class="px-2 py-3 text-sm text-center bg-amber-50/30 border-r">{{ data.african_female }}</td>
+                    <td class="px-2 py-3 text-sm text-center bg-orange-50/30">{{ data.coloured_male }}</td>
+                    <td class="px-2 py-3 text-sm text-center bg-orange-50/30 border-r">{{ data.coloured_female }}</td>
+                    <td class="px-2 py-3 text-sm text-center bg-yellow-50/30">{{ data.indian_male }}</td>
+                    <td class="px-2 py-3 text-sm text-center bg-yellow-50/30 border-r">{{ data.indian_female }}</td>
+                    <td class="px-2 py-3 text-sm text-center">{{ data.white_male }}</td>
+                    <td class="px-2 py-3 text-sm text-center border-r">{{ data.white_female }}</td>
+                    <td class="px-2 py-3 text-sm text-center bg-blue-50/30">{{ data.foreign_male }}</td>
+                    <td class="px-2 py-3 text-sm text-center bg-blue-50/30 border-r">{{ data.foreign_female }}</td>
+                    <td class="px-4 py-3 text-sm text-center font-semibold text-gray-900">{{ data.total_employees }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="12" class="px-4 py-8 text-center text-gray-500">
+                        No workforce data available. Import employee data to populate the workforce profile.
+                    </td>
+                </tr>
+                {% endfor %}
+                <!-- Totals Row -->
+                {% if occupational_data %}
+                <tr class="bg-gray-100 font-semibold">
+                    <td class="px-4 py-3 text-sm text-gray-900 border-r">TOTAL</td>
+                    <td class="px-2 py-3 text-sm text-center">{{ totals.african_male }}</td>
+                    <td class="px-2 py-3 text-sm text-center border-r">{{ totals.african_female }}</td>
+                    <td class="px-2 py-3 text-sm text-center">{{ totals.coloured_male }}</td>
+                    <td class="px-2 py-3 text-sm text-center border-r">{{ totals.coloured_female }}</td>
+                    <td class="px-2 py-3 text-sm text-center">{{ totals.indian_male }}</td>
+                    <td class="px-2 py-3 text-sm text-center border-r">{{ totals.indian_female }}</td>
+                    <td class="px-2 py-3 text-sm text-center">{{ totals.white_male }}</td>
+                    <td class="px-2 py-3 text-sm text-center border-r">{{ totals.white_female }}</td>
+                    <td class="px-2 py-3 text-sm text-center">{{ totals.foreign_male }}</td>
+                    <td class="px-2 py-3 text-sm text-center border-r">{{ totals.foreign_female }}</td>
+                    <td class="px-4 py-3 text-sm text-center font-bold text-gray-900">{{ totals.total }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="flex justify-between">
+    <a href="{% url 'corporate:ee_service_management' client.pk %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+        ← Back to EE Management
+    </a>
+    <div class="space-x-3">
+        <button class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            Export to Excel
+        </button>
+        <button class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+            Import Data
+        </button>
+    </div>
+</div>
+{% endblock %}

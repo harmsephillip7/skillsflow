@@ -1,0 +1,304 @@
+{% comment %}
+Digital Signature Pad Component
+Include this template in any form that requires signature capture.
+
+Usage:
+{% include 'components/signature_pad.html' %}
+
+Requirements:
+- Parent template must have a form with id="signature-form" or pass form_id
+- Include signature_pad.js library (CDN included below)
+- Submit button should have id="submit-signature" or be disabled until signature drawn
+
+JavaScript API:
+- signaturePad: The SignaturePad instance
+- getSignatureData(): Returns base64 PNG data
+- clearSignature(): Clears the signature
+- isSignatureEmpty(): Returns true if no signature drawn
+{% endcomment %}
+
+<div class="signature-capture-container bg-white rounded-lg border border-gray-200 p-6" id="signature-container">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-medium text-gray-900">
+            <svg class="inline-block w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+            </svg>
+            Digital Signature
+        </h3>
+        <span class="text-sm text-gray-500">Draw your signature below</span>
+    </div>
+
+    <!-- Signature Canvas -->
+    <div class="relative mb-4">
+        <canvas 
+            id="signature-canvas" 
+            class="w-full border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-crosshair"
+            style="height: 150px; touch-action: none;"
+        ></canvas>
+        
+        <!-- Placeholder text (shown when empty) -->
+        <div id="signature-placeholder" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span class="text-gray-400 text-sm">Sign here using mouse or touch</span>
+        </div>
+        
+        <!-- Lock icon overlay (shown when signature is locked) -->
+        <div id="signature-locked-overlay" class="hidden absolute inset-0 bg-gray-100 bg-opacity-80 flex items-center justify-center rounded-lg">
+            <div class="text-center">
+                <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                <p class="text-gray-600 font-medium">Signature Locked</p>
+                <p class="text-gray-500 text-sm">Contact admin to unlock</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex space-x-2">
+            <button type="button" id="clear-signature" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                Clear
+            </button>
+            <button type="button" id="undo-signature" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                </svg>
+                Undo
+            </button>
+        </div>
+        <div class="text-sm text-gray-500">
+            <span id="signature-status" class="text-gray-400">No signature</span>
+        </div>
+    </div>
+
+    <!-- POPIA Consent Section -->
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h4 class="text-sm font-medium text-amber-800">POPIA Consent Required</h4>
+                <p class="mt-1 text-sm text-amber-700" id="popia-consent-text">
+                    I consent to SkillsFlow storing and using my digital signature for the purpose of 
+                    generating compliance documents, agreements, and certificates on my behalf. 
+                    I understand that my signature will be securely stored in accordance with the 
+                    Protection of Personal Information Act (POPIA) and will only be used for official 
+                    training-related documentation. I confirm that I am the person whose signature is 
+                    being captured and that this digital signature has the same legal effect as my 
+                    handwritten signature.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consent Checkbox -->
+    <div class="flex items-start mb-4">
+        <div class="flex items-center h-5">
+            <input 
+                id="popia-consent-checkbox" 
+                name="popia_consent" 
+                type="checkbox" 
+                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                required
+            >
+        </div>
+        <div class="ml-3 text-sm">
+            <label for="popia-consent-checkbox" class="font-medium text-gray-700">
+                I have read, understand, and agree to the above consent statement
+            </label>
+            <p class="text-gray-500">Your signature will be locked after submission and cannot be changed without admin approval.</p>
+        </div>
+    </div>
+
+    <!-- Hidden input to store base64 signature data -->
+    <input type="hidden" id="signature-data" name="signature_data" value="">
+    <input type="hidden" id="popia-consent-text-hidden" name="popia_consent_text" value="">
+
+    <!-- Info box -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+        <strong>Note:</strong> Your signature will be standardized to 400×150 pixels with a transparent background 
+        for consistent use across all compliance documents.
+    </div>
+</div>
+
+<!-- Signature Pad JS Library (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
+<script>
+(function() {
+    'use strict';
+    
+    // Initialize Signature Pad
+    const canvas = document.getElementById('signature-canvas');
+    const placeholder = document.getElementById('signature-placeholder');
+    const statusText = document.getElementById('signature-status');
+    const clearBtn = document.getElementById('clear-signature');
+    const undoBtn = document.getElementById('undo-signature');
+    const consentCheckbox = document.getElementById('popia-consent-checkbox');
+    const signatureDataInput = document.getElementById('signature-data');
+    const consentTextInput = document.getElementById('popia-consent-text-hidden');
+    const consentText = document.getElementById('popia-consent-text');
+    const lockedOverlay = document.getElementById('signature-locked-overlay');
+    
+    // Check if signature is locked (set by Django template)
+    const isLocked = {{ signature_locked|yesno:"true,false,false" }};
+    
+    // Store the consent text
+    if (consentTextInput && consentText) {
+        consentTextInput.value = consentText.textContent.trim();
+    }
+    
+    // Set up canvas size for proper resolution
+    function resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * ratio;
+        canvas.height = rect.height * ratio;
+        canvas.getContext('2d').scale(ratio, ratio);
+        
+        // Set canvas style dimensions
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+    }
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    // Initialize SignaturePad
+    const signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgba(0, 0, 0, 0)', // Transparent background
+        penColor: 'rgb(0, 0, 0)',
+        velocityFilterWeight: 0.7,
+        minWidth: 0.5,
+        maxWidth: 2.5,
+        throttle: 16,
+        minPointDistance: 3,
+    });
+    
+    // Make available globally
+    window.signaturePad = signaturePad;
+    
+    // Show locked overlay if signature is locked
+    if (isLocked && lockedOverlay) {
+        lockedOverlay.classList.remove('hidden');
+        signaturePad.off(); // Disable drawing
+        if (clearBtn) clearBtn.disabled = true;
+        if (undoBtn) undoBtn.disabled = true;
+        if (consentCheckbox) consentCheckbox.disabled = true;
+    }
+    
+    // Update status and placeholder
+    function updateStatus() {
+        if (isLocked) {
+            statusText.textContent = 'Locked';
+            statusText.className = 'text-amber-600 font-medium';
+            return;
+        }
+        
+        if (signaturePad.isEmpty()) {
+            placeholder.classList.remove('hidden');
+            statusText.textContent = 'No signature';
+            statusText.className = 'text-gray-400';
+            signatureDataInput.value = '';
+        } else {
+            placeholder.classList.add('hidden');
+            statusText.textContent = 'Signature captured';
+            statusText.className = 'text-green-600 font-medium';
+            // Update hidden input with base64 data
+            signatureDataInput.value = signaturePad.toDataURL('image/png');
+        }
+    }
+    
+    // Event listeners
+    signaturePad.addEventListener('endStroke', updateStatus);
+    
+    clearBtn.addEventListener('click', function() {
+        if (!isLocked) {
+            signaturePad.clear();
+            updateStatus();
+        }
+    });
+    
+    undoBtn.addEventListener('click', function() {
+        if (!isLocked) {
+            const data = signaturePad.toData();
+            if (data && data.length > 0) {
+                data.pop(); // Remove last stroke
+                signaturePad.fromData(data);
+                updateStatus();
+            }
+        }
+    });
+    
+    // Form submission validation
+    const form = canvas.closest('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (isLocked) {
+                return true; // Allow submission if already locked (viewing)
+            }
+            
+            if (signaturePad.isEmpty()) {
+                e.preventDefault();
+                alert('Please provide your signature before submitting.');
+                return false;
+            }
+            
+            if (!consentCheckbox.checked) {
+                e.preventDefault();
+                alert('Please accept the POPIA consent to continue.');
+                return false;
+            }
+            
+            // Update the hidden input with final signature data
+            signatureDataInput.value = signaturePad.toDataURL('image/png');
+            return true;
+        });
+    }
+    
+    // Public API
+    window.getSignatureData = function() {
+        return signaturePad.isEmpty() ? null : signaturePad.toDataURL('image/png');
+    };
+    
+    window.clearSignature = function() {
+        if (!isLocked) {
+            signaturePad.clear();
+            updateStatus();
+        }
+    };
+    
+    window.isSignatureEmpty = function() {
+        return signaturePad.isEmpty();
+    };
+    
+    // Initial status
+    updateStatus();
+    
+})();
+</script>
+
+<style>
+#signature-canvas {
+    background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px),
+                      linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.signature-capture-container {
+    max-width: 600px;
+}
+
+@media (max-width: 640px) {
+    #signature-canvas {
+        height: 120px !important;
+    }
+}
+</style>

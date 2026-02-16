@@ -1,0 +1,467 @@
+{% extends "portals/mentor/base.html" %}
+{% load static %}
+
+{% block page_title %}Dashboard - Mentor Portal{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="welcome-section">
+            <h1>Welcome, {{ request.user.first_name }}</h1>
+            <p class="text-muted">Here's an overview of your learners' progress</p>
+        </div>
+        <div class="quick-actions">
+            <a href="{% url 'portals:mentor_bulk_verify' %}" class="btn btn-success" style="position: relative;">
+                <i class="fas fa-check-double"></i> Bulk Verify
+                {% if unverified_attendance > 0 %}
+                <span style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">
+                    {{ unverified_attendance }}
+                </span>
+                {% endif %}
+            </a>
+            <a href="#" class="btn btn-info" onclick="alert('Calendar feature coming soon for mentors!'); return false;">
+                <i class="fas fa-calendar"></i> Calendar
+            </a>
+            <a href="{% url 'portals:mentor_learners' %}" class="btn btn-primary">
+                <i class="fas fa-users"></i> View Learners
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon bg-primary">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ placements.count|default:0 }}</h3>
+                <p>Active Learners</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon bg-success">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ attendance_today|default:0 }}</h3>
+                <p>Present Today</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon bg-warning">
+                <i class="fas fa-book-open"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ pending_logbooks|default:0 }}</h3>
+                <p>Logbooks to Review</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon bg-danger">
+                <i class="fas fa-clipboard-check"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ unverified_attendance|default:0 }}</h3>
+                <p>Attendance to Verify</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon bg-info">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ pending_modules|default:0 }}</h3>
+                <p>Modules Pending Sign-off</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="dashboard-grid">
+        <!-- Learner List -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h2><i class="fas fa-user-graduate"></i> My Learners</h2>
+            </div>
+            <div class="card-body">
+                {% if placements %}
+                <div class="learner-list">
+                    {% for placement in placements %}
+                    <div class="learner-item">
+                        <div class="learner-avatar">
+                            {% if placement.learner.profile_picture %}
+                            <img src="{{ placement.learner.profile_picture.url }}" alt="">
+                            {% else %}
+                            <div class="avatar-placeholder">
+                                {{ placement.learner.first_name.0 }}{{ placement.learner.last_name.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="learner-info">
+                            <h4>{{ placement.learner.get_full_name }}</h4>
+                            <p class="text-muted">{{ placement.position|default:"Learner" }}</p>
+                        </div>
+                        <div class="learner-status">
+                            {% if placement.today_attendance %}
+                            <span class="badge badge-success">Present</span>
+                            {% else %}
+                            <span class="badge badge-secondary">No Record</span>
+                            {% endif %}
+                        </div>
+                        <div class="learner-actions">
+                            <a href="{% url 'portals:mentor_attendance_entry' placement.id %}" 
+                               class="btn btn-sm btn-outline-primary" title="Record Attendance">
+                                <i class="fas fa-clock"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-user-slash"></i>
+                    <p>No learners assigned to you yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h2><i class="fas fa-history"></i> Recent Activity</h2>
+            </div>
+            <div class="card-body">
+                {% if recent_activity %}
+                <div class="activity-list">
+                    {% for activity in recent_activity %}
+                    <div class="activity-item">
+                        <div class="activity-icon {{ activity.icon_class }}">
+                            <i class="fas {{ activity.icon }}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p>{{ activity.description }}</p>
+                            <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No recent activity to display.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Pending Actions -->
+        <div class="dashboard-card full-width">
+            <div class="card-header">
+                <h2><i class="fas fa-bell"></i> Pending Actions</h2>
+            </div>
+            <div class="card-body">
+                <div class="pending-grid">
+                    <!-- Pending Logbooks -->
+                    <div class="pending-section">
+                        <h3><i class="fas fa-book"></i> Logbooks Awaiting Review</h3>
+                        {% if pending_logbook_list %}
+                        <ul class="pending-list">
+                            {% for logbook in pending_logbook_list %}
+                            <li>
+                                <a href="{% url 'portals:mentor_logbook_detail' logbook.id %}">
+                                    <strong>{{ logbook.placement.learner.get_full_name }}</strong>
+                                    <span>{{ logbook.month }}/{{ logbook.year }}</span>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted">No logbooks pending review.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Pending Modules -->
+                    <div class="pending-section">
+                        <h3><i class="fas fa-tasks"></i> Modules Awaiting Sign-off</h3>
+                        {% if pending_module_list %}
+                        <ul class="pending-list">
+                            {% for module in pending_module_list %}
+                            <li>
+                                <a href="{% url 'portals:mentor_modules' module.placement.id %}">
+                                    <strong>{{ module.placement.learner.get_full_name }}</strong>
+                                    <span>{{ module.module_name }}</span>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted">No modules pending sign-off.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Unverified Attendance -->
+                    <div class="pending-section">
+                        <h3><i class="fas fa-clock"></i> Attendance to Verify</h3>
+                        {% if unverified_attendance %}
+                        <ul class="pending-list">
+                            {% for att in unverified_attendance %}
+                            <li>
+                                <a href="{% url 'portals:mentor_attendance_entry' att.placement.id %}">
+                                    <strong>{{ att.placement.learner.get_full_name }}</strong>
+                                    <span>{{ att.date|date:"d M Y" }}</span>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted">All attendance records verified.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.dashboard-container {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.welcome-section h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    color: #1e3c72;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+}
+
+.stat-icon.bg-primary { background: #2c5aa0; }
+.stat-icon.bg-success { background: #27ae60; }
+.stat-icon.bg-warning { background: #f39c12; }
+.stat-icon.bg-info { background: #3498db; }
+
+.stat-content h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.stat-content p {
+    margin: 0;
+    color: #666;
+    font-size: 0.875rem;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.dashboard-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.dashboard-card.full-width {
+    grid-column: 1 / -1;
+}
+
+.card-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #eee;
+    background: #f8f9fa;
+}
+
+.card-header h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+.learner-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.learner-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.learner-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.learner-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #2c5aa0;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.learner-info {
+    flex: 1;
+}
+
+.learner-info h4 {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.learner-info p {
+    margin: 0;
+    font-size: 0.8rem;
+}
+
+.badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.badge-success { background: #d4edda; color: #155724; }
+.badge-secondary { background: #e2e3e5; color: #383d41; }
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #999;
+}
+
+.empty-state i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.pending-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.pending-section h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pending-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pending-list li {
+    margin-bottom: 0.5rem;
+}
+
+.pending-list a {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.2s;
+}
+
+.pending-list a:hover {
+    background: #e9ecef;
+}
+
+.pending-list span {
+    color: #666;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+{% endblock %}

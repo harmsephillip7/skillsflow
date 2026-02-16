@@ -1,0 +1,306 @@
+{% extends 'crm/crm_base.html' %}
+{% load static %}
+
+{% block title %}Leads - CRM - SkillsFlow{% endblock %}
+
+{% block page_title %}Leads{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:dashboard' %}" class="text-gray-500 hover:text-gray-700">CRM</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Leads</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'crm:bulk_messaging' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>
+        Bulk Messaging
+    </a>
+    <a href="{% url 'crm:lead_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        Add Lead
+    </a>
+</div>
+{% endblock %}
+
+{% block crm_content %}
+<div class="space-y-6">
+    
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <form method="get" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <!-- Search -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                    <input type="text" name="search" value="{{ current_filters.search }}" 
+                           placeholder="Name, email, phone..."
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                
+                <!-- Status -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                        <option value="">All Statuses</option>
+                        {% for value, label in statuses %}
+                        <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Lead Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Lead Type</label>
+                    <select name="lead_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                        <option value="">All Types</option>
+                        {% for value, label in lead_types %}
+                        <option value="{{ value }}" {% if current_filters.lead_type == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Source -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Source</label>
+                    <select name="source" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                        <option value="">All Sources</option>
+                        {% for source in sources %}
+                        <option value="{{ source.pk }}" {% if current_filters.source == source.pk|stringformat:"s" %}selected{% endif %}>{{ source.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Priority -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <select name="priority" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                        <option value="">All Priorities</option>
+                        {% for value, label in priorities %}
+                        <option value="{{ value }}" {% if current_filters.priority == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Quick Filters -->
+            <div class="flex flex-wrap items-center gap-2 pt-2 border-t">
+                <span class="text-sm text-gray-500">Quick:</span>
+                <a href="?filter=follow_up_today" class="px-3 py-1 text-sm rounded-full {% if current_filters.filter == 'follow_up_today' %}bg-primary-100 text-primary-700{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                    Follow-ups Today
+                </a>
+                <a href="?filter=follow_up_overdue" class="px-3 py-1 text-sm rounded-full {% if current_filters.filter == 'follow_up_overdue' %}bg-red-100 text-red-700{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                    Overdue
+                </a>
+                <a href="?filter=school_leavers" class="px-3 py-1 text-sm rounded-full {% if current_filters.filter == 'school_leavers' %}bg-blue-100 text-blue-700{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                    School Leavers
+                </a>
+                <a href="?filter=minors" class="px-3 py-1 text-sm rounded-full {% if current_filters.filter == 'minors' %}bg-yellow-100 text-yellow-700{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                    Under 18
+                </a>
+                <a href="?filter=consent" class="px-3 py-1 text-sm rounded-full {% if current_filters.filter == 'consent' %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                    With Consent
+                </a>
+                <a href="?assigned=me" class="px-3 py-1 text-sm rounded-full {% if current_filters.assigned == 'me' %}bg-purple-100 text-purple-700{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                    My Leads
+                </a>
+                <a href="?assigned=unassigned" class="px-3 py-1 text-sm rounded-full {% if current_filters.assigned == 'unassigned' %}bg-orange-100 text-orange-700{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                    Unassigned
+                </a>
+                
+                <div class="ml-auto flex items-center gap-2">
+                    <button type="submit" class="px-4 py-1.5 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors">
+                        Apply Filters
+                    </button>
+                    <a href="{% url 'crm:lead_list' %}" class="px-4 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
+                        Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Leads Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lead</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Follow-up</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for lead in leads %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="h-10 w-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-semibold">
+                                        {{ lead.first_name|slice:":1" }}{{ lead.last_name|slice:":1" }}
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <a href="{% url 'crm:lead_detail' lead.pk %}" class="text-sm font-medium text-gray-900 hover:text-primary-600">
+                                        {{ lead.first_name }} {{ lead.last_name }}
+                                    </a>
+                                    {% if lead.lead_type == 'SCHOOL_LEAVER' and lead.date_of_birth %}
+                                    <p class="text-xs text-gray-500">
+                                        Age: {{ lead.age }}
+                                        {% if lead.is_minor %}
+                                        <span class="ml-1 text-yellow-600">(Minor)</span>
+                                        {% endif %}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ lead.phone }}</div>
+                            <div class="text-sm text-gray-500">{{ lead.email|default:"-" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if lead.lead_type == 'SCHOOL_LEAVER' %}bg-blue-100 text-blue-800
+                                {% elif lead.lead_type == 'ADULT' %}bg-green-100 text-green-800
+                                {% elif lead.lead_type == 'CORPORATE' %}bg-purple-100 text-purple-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ lead.get_lead_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ lead.source.name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if lead.status == 'NEW' %}bg-blue-100 text-blue-800
+                                {% elif lead.status == 'CONTACTED' %}bg-cyan-100 text-cyan-800
+                                {% elif lead.status == 'QUALIFIED' %}bg-teal-100 text-teal-800
+                                {% elif lead.status == 'PROPOSAL' %}bg-indigo-100 text-indigo-800
+                                {% elif lead.status == 'NEGOTIATION' %}bg-purple-100 text-purple-800
+                                {% elif lead.status == 'REGISTERED' %}bg-yellow-100 text-yellow-800
+                                {% elif lead.status == 'ENROLLED' %}bg-green-100 text-green-800
+                                {% elif lead.status == 'LOST' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ lead.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if lead.assigned_to %}
+                            {{ lead.assigned_to.get_full_name|default:lead.assigned_to.username }}
+                            {% else %}
+                            <span class="text-orange-500">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            {% if lead.next_follow_up %}
+                                {% if lead.next_follow_up.date < today %}
+                                <span class="text-red-600 font-medium">{{ lead.next_follow_up|date:"d M" }} (Overdue)</span>
+                                {% elif lead.next_follow_up.date == today %}
+                                <span class="text-yellow-600 font-medium">Today {{ lead.next_follow_up|time:"H:i" }}</span>
+                                {% else %}
+                                <span class="text-gray-500">{{ lead.next_follow_up|date:"d M H:i" }}</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{% url 'crm:lead_detail' lead.pk %}" class="text-primary-600 hover:text-primary-900 mr-3">View</a>
+                            <a href="{% url 'crm:lead_update' lead.pk %}" class="text-gray-600 hover:text-gray-900">Edit</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No leads found</h3>
+                            <p class="mt-1 text-sm text-gray-500">Get started by adding your first lead.</p>
+                            <div class="mt-6">
+                                <a href="{% url 'crm:lead_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    Add Lead
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Previous</a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Next</a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Showing <span class="font-medium">{{ page_obj.start_index }}</span> to 
+                        <span class="font-medium">{{ page_obj.end_index }}</span> of 
+                        <span class="font-medium">{{ page_obj.paginator.count }}</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                        </a>
+                        {% endif %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num == page_obj.number %}
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary-50 text-sm font-medium text-primary-600">{{ num }}</span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+</div>
+{% endblock %}

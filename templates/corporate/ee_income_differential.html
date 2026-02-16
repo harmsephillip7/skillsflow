@@ -1,0 +1,218 @@
+{% extends 'base/app_layout.html' %}
+
+{% block title %}Income Differentials - {{ client.company_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li><a href="{% url 'corporate:ee_clients_dashboard' %}" class="text-gray-700 hover:text-blue-600">EE Clients</a></li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li><a href="{% url 'corporate:ee_service_management' client.pk %}" class="text-gray-700 hover:text-blue-600">{{ client.company_name }}</a></li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">Income Differentials (EEA4)</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div class="mb-8 flex justify-between items-center">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Income Differential Statement</h1>
+        <p class="text-gray-500 mt-1">{{ client.company_name }} - EE Year {{ ee_service_year.reporting_year }} (EEA4)</p>
+    </div>
+    <button onclick="document.getElementById('addModal').classList.remove('hidden')" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        Add Income Record
+    </button>
+</div>
+
+<!-- Info Box -->
+<div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8">
+    <div class="flex">
+        <svg class="w-6 h-6 text-blue-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div class="text-sm text-blue-800">
+            <p class="font-medium mb-1">EEA4 - Statement of Remuneration and Benefits</p>
+            <p>This report compares income levels across designated groups within each occupational level. Differentials exceeding 20% may indicate potential discrimination and should be investigated.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Income Differentials by Occupational Level -->
+{% regroup differentials by occupational_level as level_groups %}
+{% for level in level_groups %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
+    <div class="p-4 border-b border-gray-100 bg-gray-50">
+        <h2 class="text-lg font-semibold text-gray-900">{{ level.grouper }}</h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade/Band</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Lowest</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Highest</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Average</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Differential</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Justification</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for record in level.list %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {{ record.grade_band|default:"Not Specified" }}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-right">
+                        R {{ record.lowest_salary|floatformat:0|default:"0" }}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-right">
+                        R {{ record.highest_salary|floatformat:0|default:"0" }}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-right">
+                        R {{ record.average_salary|floatformat:0|default:"0" }}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                        {% if record.differential_percentage > 20 %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                            {{ record.differential_percentage|floatformat:1 }}%
+                        </span>
+                        {% elif record.differential_percentage > 10 %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                            {{ record.differential_percentage|floatformat:1 }}%
+                        </span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                            {{ record.differential_percentage|floatformat:1 }}%
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600 max-w-xs">
+                        <p class="truncate" title="{{ record.justification }}">{{ record.justification|default:"-"|truncatechars:50 }}</p>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-right text-sm">
+                        <button class="text-blue-600 hover:text-blue-800" onclick="editRecord({{ record.pk }})" title="Edit">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% empty %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+    <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    <p class="text-gray-500">No income differential records yet.</p>
+    <p class="text-gray-400 text-sm mt-1">Add records to track remuneration analysis for EEA4 reporting.</p>
+    <button onclick="document.getElementById('addModal').classList.remove('hidden')" class="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+        Add First Record
+    </button>
+</div>
+{% endfor %}
+
+<!-- Summary Statistics -->
+{% if differentials %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Summary</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-gray-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-gray-900">{{ differentials|length }}</p>
+            <p class="text-sm text-gray-500">Total Records</p>
+        </div>
+        <div class="bg-red-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-red-600">{% with high_count=differentials|dictsort:"differential_percentage"|last %}{{ high_count.differential_percentage|floatformat:1 }}%{% endwith %}</p>
+            <p class="text-sm text-gray-500">Highest Differential</p>
+        </div>
+        <div class="bg-yellow-50 rounded-lg p-4 text-center">
+            {% regroup differentials by occupational_level as level_summary %}
+            <p class="text-2xl font-bold text-yellow-600">{{ level_summary|length }}</p>
+            <p class="text-sm text-gray-500">Levels Analysed</p>
+        </div>
+        <div class="bg-green-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-green-600">-</p>
+            <p class="text-sm text-gray-500">Fully Justified</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Add Modal -->
+<div id="addModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-xl bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Add Income Differential Record</h3>
+            <form method="post" action="{% url 'corporate:ee_add_income_differential' client.pk ee_service_year.pk %}">
+                {% csrf_token %}
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Occupational Level</label>
+                        <select name="occupational_level" class="w-full rounded-lg border-gray-300" required>
+                            <option value="TOP_MANAGEMENT">Top Management</option>
+                            <option value="SENIOR_MANAGEMENT">Senior Management</option>
+                            <option value="PROFESSIONALLY_QUALIFIED">Professionally Qualified</option>
+                            <option value="SKILLED_TECHNICAL">Skilled Technical</option>
+                            <option value="SEMI_SKILLED">Semi-Skilled</option>
+                            <option value="UNSKILLED">Unskilled</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Grade/Band</label>
+                        <input type="text" name="grade_band" class="w-full rounded-lg border-gray-300" placeholder="e.g., Patterson C, Peromnes 10">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Lowest Salary (R)</label>
+                        <input type="number" name="lowest_salary" class="w-full rounded-lg border-gray-300" step="0.01" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Highest Salary (R)</label>
+                        <input type="number" name="highest_salary" class="w-full rounded-lg border-gray-300" step="0.01" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Average Salary (R)</label>
+                        <input type="number" name="average_salary" class="w-full rounded-lg border-gray-300" step="0.01">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Differential (%)</label>
+                        <input type="number" name="differential_percentage" class="w-full rounded-lg border-gray-300" step="0.01" required>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Justification (if >10%)</label>
+                    <textarea name="justification" rows="3" class="w-full rounded-lg border-gray-300" placeholder="Explain any significant differentials..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="document.getElementById('addModal').classList.add('hidden')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                        Add Record
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="mt-6">
+    <a href="{% url 'corporate:ee_service_management' client.pk %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+        ← Back to EE Management
+    </a>
+</div>
+
+<script>
+function editRecord(pk) {
+    // TODO: Implement edit modal
+    alert('Edit functionality coming soon');
+}
+</script>
+{% endblock %}

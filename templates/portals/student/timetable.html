@@ -1,0 +1,266 @@
+{% extends 'base/app_layout.html' %}
+{% load static admin_tags %}
+
+{% block title %}My Timetable - Learner Portal{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                <li><a href="{% url 'student_dashboard' %}" class="hover:text-primary-600">Dashboard</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li class="text-gray-900">My Timetable</li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">My Timetable</h1>
+        <p class="mt-1 text-sm text-gray-500">Your class schedule and upcoming sessions</p>
+    </div>
+    <div class="mt-4 sm:mt-0 flex gap-2">
+        <button class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition" onclick="printTimetable()">
+            <i class="fas fa-print mr-2"></i>Print
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Week Navigation -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between">
+            <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div class="text-center">
+                <h3 class="font-semibold text-gray-900">{{ current_week_start|date:"d M" }} - {{ current_week_end|date:"d M Y" }}</h3>
+                <p class="text-sm text-gray-500">Week {{ week_number }}</p>
+            </div>
+            <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Timetable Grid -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" id="timetable">
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[800px]">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="w-20 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Monday</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Tuesday</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Wednesday</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Thursday</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Friday</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for time_slot in time_slots %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">
+                            {{ time_slot }}
+                        </td>
+                        {% for day in days %}
+                        <td class="px-2 py-2">
+                            {% with session=schedule|get_item:time_slot|get_item:day %}
+                            {% if session %}
+                            <div class="bg-primary-50 border-l-4 border-primary-500 rounded-r-lg p-3 h-full">
+                                <p class="font-medium text-primary-900 text-sm">{{ session.module }}</p>
+                                <p class="text-xs text-primary-700 mt-1">{{ session.cohort }}</p>
+                                <div class="mt-2 flex items-center gap-2 text-xs text-primary-600">
+                                    <span><i class="fas fa-map-marker-alt"></i> {{ session.venue|default:"TBA" }}</span>
+                                </div>
+                                {% if session.facilitator %}
+                                <p class="text-xs text-primary-600 mt-1">
+                                    <i class="fas fa-user"></i> {{ session.facilitator }}
+                                </p>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% empty %}
+                    <!-- Default time slots if none configured -->
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">08:00 - 10:00</td>
+                        <td colspan="5" class="px-4 py-3"></td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">10:00 - 10:30</td>
+                        <td colspan="5" class="px-4 py-3 text-center text-sm text-gray-400">Break</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">10:30 - 12:30</td>
+                        <td colspan="5" class="px-4 py-3"></td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">12:30 - 13:30</td>
+                        <td colspan="5" class="px-4 py-3 text-center text-sm text-gray-400">Lunch</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">13:30 - 15:30</td>
+                        <td colspan="5" class="px-4 py-3"></td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">15:30 - 16:00</td>
+                        <td colspan="5" class="px-4 py-3 text-center text-sm text-gray-400">Break</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">16:00 - 17:00</td>
+                        <td colspan="5" class="px-4 py-3"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Today's Schedule Highlight -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-900">
+                <i class="fas fa-sun text-amber-500 mr-2"></i>Today's Schedule
+            </h3>
+        </div>
+        <div class="p-6">
+            {% if today_sessions %}
+            <div class="space-y-4">
+                {% for session in today_sessions %}
+                <div class="flex items-center bg-gray-50 rounded-lg p-4">
+                    <div class="w-16 text-center">
+                        <p class="text-lg font-bold text-primary-600">{{ session.start_time }}</p>
+                        <p class="text-xs text-gray-500">{{ session.end_time }}</p>
+                    </div>
+                    <div class="w-1 h-12 bg-primary-500 rounded-full mx-4"></div>
+                    <div class="flex-1">
+                        <h4 class="font-medium text-gray-900">{{ session.module }}</h4>
+                        <p class="text-sm text-gray-500">{{ session.cohort }}</p>
+                        <div class="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                            <span><i class="fas fa-map-marker-alt mr-1"></i>{{ session.venue|default:"TBA" }}</span>
+                            {% if session.facilitator %}
+                            <span><i class="fas fa-user mr-1"></i>{{ session.facilitator }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        {% if session.is_current %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 animate-pulse">
+                            <i class="fas fa-circle text-xs mr-2"></i>Now
+                        </span>
+                        {% elif session.is_upcoming %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                            <i class="fas fa-clock mr-2"></i>Upcoming
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                            <i class="fas fa-check mr-2"></i>Completed
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-calendar-check text-3xl text-gray-400"></i>
+                </div>
+                <h4 class="font-medium text-gray-900 mb-1">No Classes Today</h4>
+                <p class="text-sm text-gray-500">Enjoy your day off or catch up on your studies!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Upcoming Sessions This Week -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-900">
+                <i class="fas fa-calendar-week text-primary-600 mr-2"></i>This Week's Highlights
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for enrollment in enrollments %}
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center mb-3">
+                        <div class="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-book text-primary-600"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-medium text-gray-900 truncate">{{ enrollment.cohort.qualification.title }}</h4>
+                            <p class="text-xs text-gray-500">{{ enrollment.cohort.name }}</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between text-gray-600">
+                            <span>Sessions this week</span>
+                            <span class="font-medium">{{ enrollment.sessions_this_week|default:0 }}</span>
+                        </div>
+                        <div class="flex justify-between text-gray-600">
+                            <span>Upcoming assessments</span>
+                            <span class="font-medium text-amber-600">{{ enrollment.upcoming_assessments|default:0 }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-full text-center py-4 text-gray-500">
+                    <p>No enrolled courses found.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="bg-gray-50 rounded-xl p-4">
+        <h4 class="font-medium text-gray-700 mb-3">Legend</h4>
+        <div class="flex flex-wrap gap-4 text-sm">
+            <div class="flex items-center">
+                <div class="w-4 h-4 bg-primary-500 rounded mr-2"></div>
+                <span class="text-gray-600">Class Session</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-4 h-4 bg-amber-500 rounded mr-2"></div>
+                <span class="text-gray-600">Assessment Due</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                <span class="text-gray-600">Practical Session</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-4 h-4 bg-gray-400 rounded mr-2"></div>
+                <span class="text-gray-600">Break/Lunch</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function printTimetable() {
+    window.print();
+}
+</script>
+
+<style media="print">
+    @page {
+        size: landscape;
+    }
+    body * {
+        visibility: hidden;
+    }
+    #timetable, #timetable * {
+        visibility: visible;
+    }
+    #timetable {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,379 @@
+{% extends 'crm/crm_base.html' %}
+{% load static humanize %}
+
+{% block title %}Analytics Dashboard - CRM - SkillsFlow{% endblock %}
+
+{% block page_title %}CRM Analytics{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:dashboard' %}" class="text-gray-500 hover:text-gray-700">CRM</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Analytics</span>
+</li>
+{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block crm_content %}
+<div class="space-y-6">
+    
+    <!-- Top KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Pipeline Value -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Pipeline Value</p>
+                    <p class="mt-1 text-2xl font-bold text-gray-900">R{{ pipeline_metrics.total_value|floatformat:0|intcomma }}</p>
+                    <p class="mt-1 text-sm text-primary-600">{{ pipeline_metrics.total_count }} opportunities</p>
+                </div>
+                <div class="h-12 w-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Win Rate -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Win Rate (90 days)</p>
+                    <p class="mt-1 text-2xl font-bold {% if win_rate >= 40 %}text-green-600{% elif win_rate >= 20 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                        {{ win_rate }}%
+                    </p>
+                    <p class="mt-1 text-sm text-gray-500">{{ wins_this_month }} won this month</p>
+                </div>
+                <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Inbox Stats -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Open Conversations</p>
+                    <p class="mt-1 text-2xl font-bold text-gray-900">{{ inbox_stats.open }}</p>
+                    <p class="mt-1 text-sm {% if inbox_stats.unread_total > 0 %}text-red-600{% else %}text-gray-500{% endif %}">
+                        {{ inbox_stats.unread_total }} unread messages
+                    </p>
+                </div>
+                <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- New Leads -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">New Leads (This Month)</p>
+                    <p class="mt-1 text-2xl font-bold text-gray-900">{{ lead_metrics.new_this_month }}</p>
+                    <p class="mt-1 text-sm text-gray-500">{{ lead_metrics.hot_leads }} hot leads</p>
+                </div>
+                <div class="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Pipeline Funnel -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Pipeline Stages</h3>
+            <div class="space-y-3">
+                {% for stage in pipeline_by_stage %}
+                <div>
+                    <div class="flex items-center justify-between text-sm mb-1">
+                        <span class="font-medium text-gray-700">{{ stage.label }}</span>
+                        <span class="text-gray-500">{{ stage.count }} (R{{ stage.value|floatformat:0|intcomma }})</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="bg-primary-500 h-3 rounded-full transition-all" 
+                             style="width: {% widthratio stage.count pipeline_metrics.total_count 100 %}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Channel Distribution -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Channel Performance</h3>
+            <canvas id="channelChart" height="200"></canvas>
+        </div>
+    </div>
+    
+    <!-- Second Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Lead Trend -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Lead Trend (30 Days)</h3>
+            <canvas id="leadTrendChart" height="120"></canvas>
+        </div>
+        
+        <!-- Application Metrics -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Applications</h3>
+            
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                    <span class="text-yellow-700">Pending</span>
+                    <span class="text-xl font-bold text-yellow-700">{{ application_metrics.pending }}</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <span class="text-blue-700">Under Review</span>
+                    <span class="text-xl font-bold text-blue-700">{{ application_metrics.under_review }}</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <span class="text-green-700">Approved</span>
+                    <span class="text-xl font-bold text-green-700">{{ application_metrics.approved }}</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                    <span class="text-purple-700">Enrolled</span>
+                    <span class="text-xl font-bold text-purple-700">{{ application_metrics.enrolled }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Channel Details & Campaign Performance -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Channel Details Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Channel Breakdown</h3>
+            
+            <table class="min-w-full">
+                <thead>
+                    <tr class="text-xs text-gray-500 uppercase">
+                        <th class="text-left pb-3">Channel</th>
+                        <th class="text-right pb-3">Conversations</th>
+                        <th class="text-right pb-3">Sent</th>
+                        <th class="text-right pb-3">Received</th>
+                        <th class="text-right pb-3">Unread</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for channel in channel_metrics %}
+                    <tr>
+                        <td class="py-2">
+                            <span class="inline-flex items-center">
+                                {% if channel.channel == 'whatsapp' %}
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                {% elif channel.channel == 'sms' %}
+                                <span class="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                                {% elif channel.channel == 'email' %}
+                                <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                {% elif channel.channel == 'facebook' %}
+                                <span class="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
+                                {% elif channel.channel == 'instagram' %}
+                                <span class="w-2 h-2 bg-pink-500 rounded-full mr-2"></span>
+                                {% endif %}
+                                {{ channel.label }}
+                            </span>
+                        </td>
+                        <td class="py-2 text-right text-gray-600">{{ channel.conversations }}</td>
+                        <td class="py-2 text-right text-gray-600">{{ channel.messages_sent }}</td>
+                        <td class="py-2 text-right text-gray-600">{{ channel.messages_received }}</td>
+                        <td class="py-2 text-right">
+                            {% if channel.unread > 0 %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                {{ channel.unread }}
+                            </span>
+                            {% else %}
+                            <span class="text-gray-400">0</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Campaign Performance -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Campaign Performance (30 Days)</h3>
+            
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <div class="text-3xl font-bold text-gray-900">{{ campaign_performance.total_sent|default:0 }}</div>
+                    <div class="text-sm text-gray-500">Messages Sent</div>
+                </div>
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <div class="text-3xl font-bold text-green-600">{{ campaign_performance.delivery_rate|default:0 }}%</div>
+                    <div class="text-sm text-gray-500">Delivery Rate</div>
+                </div>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Campaigns Sent</span>
+                    <span class="font-medium">{{ campaign_metrics.sent }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Scheduled</span>
+                    <span class="font-medium">{{ campaign_metrics.scheduled }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Pending Approval</span>
+                    <span class="font-medium {% if campaign_metrics.pending_approval > 0 %}text-yellow-600{% endif %}">
+                        {{ campaign_metrics.pending_approval }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if agent_performance %}
+    <!-- Agent Leaderboard -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Agent Leaderboard (30 Days)</h3>
+        
+        <table class="min-w-full">
+            <thead>
+                <tr class="text-xs text-gray-500 uppercase border-b border-gray-200">
+                    <th class="text-left py-3 px-2">#</th>
+                    <th class="text-left py-3 px-2">Agent</th>
+                    <th class="text-right py-3 px-2">Conversations</th>
+                    <th class="text-right py-3 px-2">Messages Sent</th>
+                    <th class="text-right py-3 px-2">Deals Won</th>
+                    <th class="text-right py-3 px-2">Revenue</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for perf in agent_performance %}
+                <tr class="{% if forloop.first %}bg-yellow-50{% endif %}">
+                    <td class="py-3 px-2">
+                        {% if forloop.counter == 1 %}
+                        <span class="text-yellow-500">🏆</span>
+                        {% elif forloop.counter == 2 %}
+                        <span class="text-gray-400">🥈</span>
+                        {% elif forloop.counter == 3 %}
+                        <span class="text-orange-400">🥉</span>
+                        {% else %}
+                        <span class="text-gray-400">{{ forloop.counter }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-3 px-2">
+                        <div class="flex items-center">
+                            <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-medium mr-2">
+                                {{ perf.agent.first_name|slice:":1" }}{{ perf.agent.last_name|slice:":1" }}
+                            </div>
+                            <span class="font-medium">{{ perf.agent.get_full_name }}</span>
+                        </div>
+                    </td>
+                    <td class="py-3 px-2 text-right">{{ perf.conversations }}</td>
+                    <td class="py-3 px-2 text-right">{{ perf.messages_sent }}</td>
+                    <td class="py-3 px-2 text-right">{{ perf.opportunities_won }}</td>
+                    <td class="py-3 px-2 text-right font-semibold text-green-600">R{{ perf.revenue_won|floatformat:0|intcomma }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Channel Distribution Chart
+    const channelCtx = document.getElementById('channelChart').getContext('2d');
+    new Chart(channelCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [
+                {% for channel in channel_metrics %}
+                '{{ channel.label }}'{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            datasets: [{
+                data: [
+                    {% for channel in channel_metrics %}
+                    {{ channel.messages_sent|add:channel.messages_received }}{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ],
+                backgroundColor: [
+                    '#22c55e', // WhatsApp - green
+                    '#a855f7', // SMS - purple
+                    '#3b82f6', // Email - blue
+                    '#2563eb', // Facebook - darker blue
+                    '#ec4899', // Instagram - pink
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Lead Trend Chart
+    const leadTrendCtx = document.getElementById('leadTrendChart').getContext('2d');
+    new Chart(leadTrendCtx, {
+        type: 'line',
+        data: {
+            labels: [
+                {% for item in lead_trend %}
+                '{{ item.date|date:"M d" }}'{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'New Leads',
+                data: [
+                    {% for item in lead_trend %}
+                    {{ item.count }}{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ],
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

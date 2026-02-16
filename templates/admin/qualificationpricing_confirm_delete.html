@@ -1,0 +1,68 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}Delete Pricing - {{ qualification.short_title }}{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div>
+        <nav class="flex items-center text-sm text-gray-500 mb-2">
+            <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a href="{% url 'academics:qualification_detail' qualification.pk %}" class="hover:text-primary-600">{{ qualification.short_title }}</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="text-gray-700">Delete Pricing</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">Delete Pricing</h1>
+    </div>
+    
+    <!-- Delete Confirmation Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden max-w-2xl">
+        <div class="p-6">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-medium text-gray-900">
+                        Delete pricing for {{ object.academic_year }}?
+                    </h3>
+                    <div class="mt-2 text-sm text-gray-500">
+                        <p>You are about to delete the following pricing record:</p>
+                        <ul class="mt-2 space-y-1">
+                            <li><strong>Qualification:</strong> {{ qualification.short_title }}</li>
+                            <li><strong>Academic Year:</strong> {{ object.academic_year }}</li>
+                            <li><strong>Total Price:</strong> R {{ object.total_price|floatformat:2 }}</li>
+                            <li><strong>Effective:</strong> {{ object.effective_from }} {% if object.effective_to %}to {{ object.effective_to }}{% else %}(Current){% endif %}</li>
+                        </ul>
+                        <p class="mt-3 text-red-600 font-medium">This action cannot be undone.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="px-6 py-4 bg-gray-50 flex items-center justify-end space-x-3">
+            <a href="{% url 'academics:qualification_detail' qualification.pk %}" 
+               class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50">
+                Cancel
+            </a>
+            <form method="post" class="inline">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="px-6 py-2.5 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700">
+                    Delete Pricing
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

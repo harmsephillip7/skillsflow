@@ -1,0 +1,140 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
+        <p class="mt-1 text-sm text-gray-500">
+            For qualification: {{ qualification.short_title }}
+        </p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+        <a href="{% url 'academics:qualification_detail' qualification.pk %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Qualification
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="space-y-6">
+    {% csrf_token %}
+    
+    <!-- Basic Information -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-book text-purple-600 mr-2"></i>Material Details
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label for="id_title" class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                {{ form.title }}
+                {% if form.title.errors %}<p class="mt-1 text-sm text-red-600">{{ form.title.errors.0 }}</p>{% endif %}
+            </div>
+            <div>
+                <label for="id_material_type" class="block text-sm font-medium text-gray-700 mb-1">Material Type *</label>
+                {{ form.material_type }}
+            </div>
+            <div class="md:col-span-2">
+                <label for="id_description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                {{ form.description }}
+            </div>
+        </div>
+    </div>
+    
+    <!-- File Upload -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-upload text-blue-600 mr-2"></i>File Upload
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label for="id_file" class="block text-sm font-medium text-gray-700 mb-1">Upload File</label>
+                {{ form.file }}
+                <p class="mt-1 text-xs text-gray-500">Accepted: PDF, Word, PowerPoint, Excel, ZIP</p>
+                {% if object.file %}
+                <p class="mt-2 text-sm text-gray-600">
+                    Current file: <a href="{{ object.file.url }}" target="_blank" class="text-purple-600 hover:underline">{{ object.file.name|slice:"-30:" }}</a>
+                </p>
+                {% endif %}
+            </div>
+            <div>
+                <label for="id_external_url" class="block text-sm font-medium text-gray-700 mb-1">Or External URL</label>
+                {{ form.external_url }}
+                <p class="mt-1 text-xs text-gray-500">Link to external resource (e.g., Google Drive, YouTube)</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Version Control -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-code-branch text-green-600 mr-2"></i>Version Control
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label for="id_version" class="block text-sm font-medium text-gray-700 mb-1">Version</label>
+                {{ form.version }}
+                <p class="mt-1 text-xs text-gray-500">e.g., 1.0, 2.1</p>
+            </div>
+            <div>
+                <label for="id_next_review_date" class="block text-sm font-medium text-gray-700 mb-1">Next Review Date</label>
+                {{ form.next_review_date }}
+            </div>
+            
+            {% if show_archive_option %}
+            <div class="md:col-span-2 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <div class="flex items-start space-x-3">
+                    {{ form.archive_previous }}
+                    <div>
+                        <label for="id_archive_previous" class="text-sm font-medium text-amber-800">Archive Previous Version</label>
+                        <p class="text-xs text-amber-700">{{ form.archive_previous.help_text }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="md:col-span-2">
+                <label for="id_version_notes" class="block text-sm font-medium text-gray-700 mb-1">Version Notes</label>
+                {{ form.version_notes }}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-check-circle text-gray-600 mr-2"></i>Status
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+                {{ form.is_current }}
+                <div>
+                    <label for="id_is_current" class="text-sm font-medium text-gray-700">Current Version</label>
+                    <p class="text-xs text-gray-500">This is the active version for learners</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3 p-4 bg-green-50 rounded-lg">
+                {{ form.approved }}
+                <div>
+                    <label for="id_approved" class="text-sm font-medium text-gray-700">Approved for Use</label>
+                    <p class="text-xs text-gray-500">Material has been reviewed and approved</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Form Actions -->
+    <div class="flex items-center justify-end space-x-4">
+        <a href="{% url 'academics:qualification_detail' qualification.pk %}" class="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+            Cancel
+        </a>
+        <button type="submit" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+            <i class="fas fa-save mr-2"></i>{{ submit_text }}
+        </button>
+    </div>
+</form>
+{% endblock %}

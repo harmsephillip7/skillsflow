@@ -1,0 +1,28 @@
+Meeting Cancellation Notice
+===========================
+
+Dear {{ member.display_name }},
+
+The following Training Committee Meeting has been CANCELLED.
+
+CANCELLED MEETING DETAILS
+-------------------------
+Meeting: {{ meeting.title }}
+Original Date: {{ meeting.scheduled_date|date:"l, d F Y" }}
+Original Time: {{ meeting.scheduled_time|time:"H:i" }}
+
+{% if reason %}
+REASON FOR CANCELLATION
+-----------------------
+{{ reason }}
+{% endif %}
+
+Please remove this meeting from your calendar. A cancellation event has been attached to this email.
+
+You will be notified when a new meeting is scheduled.
+
+Kind regards,
+SkillsFlow Corporate Services
+
+---
+This is an automated message from SkillsFlow.

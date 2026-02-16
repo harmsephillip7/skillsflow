@@ -1,0 +1,209 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}CRM Pipeline{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex mb-4" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li><a href="{% url 'corporate:dashboard' %}" class="text-gray-500 hover:text-gray-700">Corporate</a></li>
+        <li class="flex items-center">
+            <svg class="w-4 h-4 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+            <span class="text-gray-700 font-medium">CRM Pipeline</span>
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div x-data="pipelineBoard()" class="h-full">
+    <!-- Header -->
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">CRM Pipeline</h1>
+            <p class="text-gray-600">{{ total_clients }} clients • R {{ total_value|floatformat:0 }} potential revenue</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div class="relative">
+                <input type="text" placeholder="Search clients..." 
+                       class="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                       x-model="searchQuery" @input="filterClients()">
+                <svg class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+            <a href="{% url 'corporate:client_create' %}" 
+               class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Add Client
+            </a>
+        </div>
+    </div>
+    
+    <!-- Pipeline Board -->
+    <div class="flex space-x-4 overflow-x-auto pb-4" style="min-height: 70vh;">
+        {% for stage in stages %}
+        <div class="flex-shrink-0 w-80 bg-gray-100 rounded-lg p-3"
+             @dragover.prevent
+             @drop="dropClient($event, '{{ stage.code }}')"
+             data-stage="{{ stage.code }}">
+            
+            <!-- Stage Header -->
+            <div class="flex items-center justify-between mb-4 px-2">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 rounded-full mr-2
+                        {% if stage.code == 'LEAD' %}bg-gray-500
+                        {% elif stage.code == 'CONTACTED' %}bg-blue-500
+                        {% elif stage.code == 'PROPOSAL' %}bg-yellow-500
+                        {% elif stage.code == 'NEGOTIATION' %}bg-orange-500
+                        {% elif stage.code == 'WON' %}bg-green-500
+                        {% elif stage.code == 'LOST' %}bg-red-500
+                        {% else %}bg-gray-400{% endif %}"></div>
+                    <h3 class="font-medium text-gray-700">{{ stage.name }}</h3>
+                </div>
+                <span class="px-2 py-1 bg-white text-xs font-medium text-gray-600 rounded-full">
+                    {{ stage.clients|length }}
+                </span>
+            </div>
+            
+            <!-- Stage Value -->
+            <div class="mb-3 px-2 text-sm text-gray-500">
+                R {{ stage.total_value|floatformat:0|intcomma }}
+            </div>
+            
+            <!-- Client Cards -->
+            <div class="space-y-3 min-h-[200px]">
+                {% for client in stage.clients %}
+                <div class="bg-white rounded-lg shadow-sm p-4 cursor-move hover:shadow-md transition-shadow"
+                     draggable="true"
+                     @dragstart="dragStart($event, {{ client.id }}, '{{ stage.code }}')"
+                     @dragend="dragEnd($event)"
+                     data-client-id="{{ client.id }}">
+                    
+                    <div class="flex items-start justify-between mb-2">
+                        <a href="{% url 'corporate:client_360' client.id %}" 
+                           class="font-medium text-gray-900 hover:text-primary-600 text-sm">
+                            {{ client.company_name }}
+                        </a>
+                        <button class="text-gray-400 hover:text-gray-600" @click="showClientMenu({{ client.id }})">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    {% if client.potential_monthly_value %}
+                    <p class="text-sm text-gray-600 mb-2">R {{ client.potential_monthly_value|floatformat:0 }}/month</p>
+                    {% endif %}
+                    
+                    <!-- Services Interest -->
+                    {% if client.interested_services %}
+                    <div class="flex flex-wrap gap-1 mb-2">
+                        {% for service in client.interested_services %}
+                        <span class="px-2 py-0.5 text-xs rounded-full bg-primary-100 text-primary-700">
+                            {{ service }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex items-center justify-between text-xs text-gray-500 mt-3 pt-2 border-t border-gray-100">
+                        {% if client.account_manager %}
+                        <div class="flex items-center">
+                            <div class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-xs">
+                                {{ client.account_manager.first_name.0 }}
+                            </div>
+                            <span class="ml-1">{{ client.account_manager.first_name }}</span>
+                        </div>
+                        {% else %}
+                        <span class="text-gray-400">Unassigned</span>
+                        {% endif %}
+                        
+                        {% if client.last_contact_date %}
+                        <span title="Last contact">{{ client.last_contact_date|timesince }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Onboarding Progress (for Won clients) -->
+                    {% if stage.code == 'WON' and client.onboarding_progress %}
+                    <div class="mt-3 pt-2 border-t border-gray-100">
+                        <div class="flex items-center justify-between text-xs mb-1">
+                            <span class="text-gray-500">Onboarding</span>
+                            <span class="text-gray-700">{{ client.onboarding_progress }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5">
+                            <div class="bg-green-500 h-1.5 rounded-full" style="width: {{ client.onboarding_progress }}%"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-gray-400 text-sm">
+                    No clients
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function pipelineBoard() {
+    return {
+        searchQuery: '',
+        draggedClientId: null,
+        draggedFromStage: null,
+        
+        dragStart(event, clientId, stageCode) {
+            this.draggedClientId = clientId;
+            this.draggedFromStage = stageCode;
+            event.target.classList.add('opacity-50');
+            event.dataTransfer.effectAllowed = 'move';
+        },
+        
+        dragEnd(event) {
+            event.target.classList.remove('opacity-50');
+            this.draggedClientId = null;
+            this.draggedFromStage = null;
+        },
+        
+        async dropClient(event, newStageCode) {
+            if (!this.draggedClientId || this.draggedFromStage === newStageCode) return;
+            
+            try {
+                const response = await fetch('{% url "corporate:crm_pipeline_update_stage" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        client_id: this.draggedClientId,
+                        new_stage: newStageCode
+                    })
+                });
+                
+                if (response.ok) {
+                    // Reload to show updated board
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Failed to update stage:', error);
+            }
+        },
+        
+        filterClients() {
+            // Client-side filtering could be implemented here
+            // or use HTMX to reload with search query
+        },
+        
+        showClientMenu(clientId) {
+            // Show context menu for quick actions
+        }
+    }
+}
+</script>
+{% endblock %}

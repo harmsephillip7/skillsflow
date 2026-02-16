@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "buildCommand": "pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput",
+  "builds": [
+    {
+      "src": "config/wsgi.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb",
+        "runtime": "python3.12"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "config/wsgi.py"
+    }
+  ],
+  "build": {
+    "env": {
+      "DJANGO_SETTINGS_MODULE": "config.settings"
+    }
+  },
+  "crons": [
+    {
+      "path": "/academics/api/cron/expire-accreditations/",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}

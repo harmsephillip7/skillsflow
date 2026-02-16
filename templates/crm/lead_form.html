@@ -1,0 +1,307 @@
+{% extends 'crm/crm_base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - CRM - SkillsFlow{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:dashboard' %}" class="text-gray-500 hover:text-gray-700">CRM</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:lead_list' %}" class="text-gray-500 hover:text-gray-700">Leads</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ title }}</span>
+</li>
+{% endblock %}
+
+{% block crm_content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <form method="post" class="divide-y divide-gray-200">
+            {% csrf_token %}
+            
+            <!-- Contact Information -->
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                        <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                        {% if form.first_name.errors %}<p class="mt-1 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                        <input type="text" name="last_name" value="{{ form.last_name.value|default:'' }}" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                        <input type="tel" name="phone" value="{{ form.phone.value|default:'' }}" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone (Secondary)</label>
+                        <input type="tel" name="phone_secondary" value="{{ form.phone_secondary.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" name="email" value="{{ form.email.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
+                        <input type="tel" name="whatsapp_number" value="{{ form.whatsapp_number.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="prefers_whatsapp" {% if form.prefers_whatsapp.value %}checked{% endif %}
+                                   class="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            <span class="ml-2 text-sm text-gray-700">Prefers WhatsApp communication</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lead Type & DOB -->
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Lead Details</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Lead Type *</label>
+                        <select name="lead_type" required id="lead_type_select"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                            <option value="ADULT" {% if form.lead_type.value == 'ADULT' %}selected{% endif %}>Adult Learner</option>
+                            <option value="SCHOOL_LEAVER" {% if form.lead_type.value == 'SCHOOL_LEAVER' %}selected{% endif %}>School Leaver</option>
+                            <option value="CORPORATE" {% if form.lead_type.value == 'CORPORATE' %}selected{% endif %}>Corporate/Employer</option>
+                            <option value="REFERRAL" {% if form.lead_type.value == 'REFERRAL' %}selected{% endif %}>Referral</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                        <input type="date" name="date_of_birth" value="{{ form.date_of_birth.value|date:'Y-m-d'|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                        <p class="mt-1 text-xs text-gray-500">Important for school leavers to track age</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Source *</label>
+                        <select name="source" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Select source...</option>
+                            {% for source in sources %}
+                            <option value="{{ source.pk }}" {% if form.source.value == source.pk %}selected{% endif %}>{{ source.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- School Leaver Fields -->
+            <div class="p-6" id="school_leaver_section" style="display: none;">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
+                    </svg>
+                    School Details
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">School Name</label>
+                        <input type="text" name="school_name" value="{{ form.school_name.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Grade</label>
+                        <input type="text" name="grade" value="{{ form.grade.value|default:'' }}" placeholder="e.g., Grade 11"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Expected Matric Year</label>
+                        <input type="number" name="expected_matric_year" value="{{ form.expected_matric_year.value|default:'' }}" 
+                               min="2024" max="2035"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+                
+                <!-- Parent/Guardian -->
+                <h4 class="text-md font-medium text-gray-800 mt-6 mb-3">Parent/Guardian Details</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Parent/Guardian Name</label>
+                        <input type="text" name="parent_name" value="{{ form.parent_name.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
+                        <input type="text" name="parent_relationship" value="{{ form.parent_relationship.value|default:'' }}" 
+                               placeholder="e.g., Mother, Father, Guardian"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Parent Phone</label>
+                        <input type="tel" name="parent_phone" value="{{ form.parent_phone.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Parent Email</label>
+                        <input type="email" name="parent_email" value="{{ form.parent_email.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Qualification Interest -->
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Interest & Employment</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Qualification Interest</label>
+                        <select name="qualification_interest"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Select qualification...</option>
+                            {{ form.qualification_interest }}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Highest Qualification</label>
+                        <input type="text" name="highest_qualification" value="{{ form.highest_qualification.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Employment Status</label>
+                        <input type="text" name="employment_status" value="{{ form.employment_status.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Employer Name</label>
+                        <input type="text" name="employer_name" value="{{ form.employer_name.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pipeline & Assignment (Edit only) -->
+            {% if object %}
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Pipeline & Assignment</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select name="status"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                            {% for value, label in statuses %}
+                            <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                        <select name="priority"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                            <option value="LOW" {% if form.priority.value == 'LOW' %}selected{% endif %}>Low</option>
+                            <option value="MEDIUM" {% if form.priority.value == 'MEDIUM' %}selected{% endif %}>Medium</option>
+                            <option value="HIGH" {% if form.priority.value == 'HIGH' %}selected{% endif %}>High</option>
+                            <option value="URGENT" {% if form.priority.value == 'URGENT' %}selected{% endif %}>Urgent</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                        {{ form.assigned_to }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Next Follow-up</label>
+                        <input type="datetime-local" name="next_follow_up" 
+                               value="{{ form.next_follow_up.value|date:'Y-m-d\TH:i'|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Follow-up Notes</label>
+                        <input type="text" name="follow_up_notes" value="{{ form.follow_up_notes.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Priority</h3>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <select name="priority"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500 max-w-xs">
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM" selected>Medium</option>
+                        <option value="HIGH">High</option>
+                        <option value="URGENT">Urgent</option>
+                    </select>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Notes & Consent -->
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Notes & Consent</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea name="notes" rows="4"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">{{ form.notes.value|default:'' }}</textarea>
+                    </div>
+                    <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="consent_bulk_messaging" {% if form.consent_bulk_messaging.value %}checked{% endif %}
+                                   class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-500 focus:ring-green-500">
+                            <span class="ml-2 text-sm text-gray-700">
+                                <strong>Consent to receive bulk messages</strong><br>
+                                <span class="text-xs text-gray-500">The lead has agreed to receive monthly promotional messages via SMS/WhatsApp</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="p-6 bg-gray-50 flex justify-end space-x-3">
+                <a href="{% url 'crm:lead_list' %}" class="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Cancel
+                </a>
+                <button type="submit" class="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    {% if object %}Update Lead{% else %}Create Lead{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Show/hide school leaver section based on lead type
+document.addEventListener('DOMContentLoaded', function() {
+    const leadTypeSelect = document.getElementById('lead_type_select');
+    const schoolLeaverSection = document.getElementById('school_leaver_section');
+    
+    function toggleSchoolLeaverSection() {
+        if (leadTypeSelect.value === 'SCHOOL_LEAVER') {
+            schoolLeaverSection.style.display = 'block';
+        } else {
+            schoolLeaverSection.style.display = 'none';
+        }
+    }
+    
+    leadTypeSelect.addEventListener('change', toggleSchoolLeaverSection);
+    toggleSchoolLeaverSection(); // Initial state
+});
+</script>
+{% endblock %}

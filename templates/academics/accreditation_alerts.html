@@ -1,0 +1,174 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}Accreditation Alerts{% endblock %}
+
+{% block page_title %}Accreditation Alerts{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'academics:qualification_list' %}" class="text-primary-600 hover:text-primary-800">Academics</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Alerts</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'academics:qualification_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+        Qualifications
+    </a>
+    <a href="{% url 'academics:compliance_dashboard' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+        Compliance
+    </a>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="unresolved" {% if status_filter == "unresolved" %}selected{% endif %}>Unresolved</option>
+                    <option value="resolved" {% if status_filter == "resolved" %}selected{% endif %}>Resolved</option>
+                    <option value="all" {% if status_filter == "all" %}selected{% endif %}>All</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <select name="type" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Types</option>
+                    <option value="qualification" {% if type_filter == "qualification" %}selected{% endif %}>Qualifications</option>
+                    <option value="compliance" {% if type_filter == "compliance" %}selected{% endif %}>Compliance Documents</option>
+                </select>
+            </div>
+            <div>
+                <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                    Filter
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Alerts List -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">
+                {% if status_filter == 'unresolved' %}Unresolved{% elif status_filter == 'resolved' %}Resolved{% else %}All{% endif %} Alerts
+            </h3>
+            <p class="text-sm text-gray-500 mt-1">Track expiring accreditations and compliance documents</p>
+        </div>
+        
+        {% if alerts %}
+        <div class="divide-y divide-gray-100">
+            {% for alert in alerts %}
+            <div class="px-6 py-4 {% if not alert.resolved %}{% if alert.alert_type == 'EXPIRED' %}bg-red-50{% elif alert.alert_type == '1_MONTH' %}bg-amber-50{% else %}bg-yellow-50{% endif %}{% endif %}">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-start">
+                        <!-- Alert Icon -->
+                        <div class="flex-shrink-0 mr-4">
+                            {% if alert.alert_type == 'EXPIRED' %}
+                            <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-red-100">
+                                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                            </span>
+                            {% elif alert.alert_type == '1_MONTH' %}
+                            <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
+                                <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-yellow-100">
+                                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                </svg>
+                            </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium
+                                    {% if alert.alert_type == 'EXPIRED' %}bg-red-100 text-red-800
+                                    {% elif alert.alert_type == '1_MONTH' %}bg-amber-100 text-amber-800
+                                    {% elif alert.alert_type == '3_MONTHS' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                    {{ alert.get_alert_type_display }}
+                                </span>
+                                <span class="text-xs text-gray-500">{{ alert.alert_date|date:"d M Y" }}</span>
+                            </div>
+                            
+                            <h4 class="text-sm font-medium text-gray-900 mt-1">
+                                {% if alert.qualification %}
+                                <a href="{% url 'academics:qualification_detail' alert.qualification.pk %}" class="hover:text-primary-600">
+                                    {{ alert.qualification.short_title }}
+                                </a>
+                                <span class="text-gray-400 font-normal text-xs ml-1">(Qualification)</span>
+                                {% elif alert.compliance_document %}
+                                {{ alert.compliance_document.title }}
+                                <span class="text-gray-400 font-normal text-xs ml-1">(Compliance Document)</span>
+                                {% endif %}
+                            </h4>
+                            
+                            <p class="text-sm text-gray-600 mt-1">{{ alert.message }}</p>
+                            
+                            {% if alert.acknowledged %}
+                            <p class="text-xs text-gray-500 mt-2">
+                                Acknowledged by {{ alert.acknowledged_by.get_full_name }} on {{ alert.acknowledged_at|date:"d M Y" }}
+                            </p>
+                            {% if alert.action_taken %}
+                            <p class="text-xs text-gray-600 mt-1">Action: {{ alert.action_taken|truncatewords:20 }}</p>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="text-right">
+                        {% if alert.resolved %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            ✓ Resolved
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            Pending
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="px-6 py-16 text-center">
+            <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">No alerts</h3>
+            <p class="mt-2 text-sm text-gray-500">
+                {% if status_filter == 'unresolved' %}All accreditations and compliance documents are up to date!
+                {% else %}No alerts match your current filters.{% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

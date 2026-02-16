@@ -1,0 +1,349 @@
+{% extends 'portals/workplace_officer/base.html' %}
+{% load static %}
+
+{% block title %}Stipends - Workplace Officer Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-cash-stack me-2"></i>Stipend Management</h2>
+    <div class="d-flex gap-2">
+        <select class="form-select" id="monthFilter" style="width: auto;">
+            <option value="">All Months</option>
+            {% for month in available_months %}
+            <option value="{{ month.value }}" {% if month.value == selected_month %}selected{% endif %}>{{ month.label }}</option>
+            {% endfor %}
+        </select>
+        <select class="form-select" id="statusFilter" style="width: auto;">
+            <option value="">All Statuses</option>
+            <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending Review</option>
+            <option value="approved" {% if selected_status == 'approved' %}selected{% endif %}>Approved</option>
+            <option value="paid" {% if selected_status == 'paid' %}selected{% endif %}>Paid</option>
+            <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>Rejected</option>
+        </select>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card bg-warning bg-opacity-10">
+            <div class="stat-value text-warning">{{ stats.pending }}</div>
+            <div class="stat-label">Pending Review</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-info bg-opacity-10">
+            <div class="stat-value text-info">{{ stats.approved }}</div>
+            <div class="stat-label">Approved</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-success bg-opacity-10">
+            <div class="stat-value text-success">{{ stats.paid }}</div>
+            <div class="stat-label">Paid</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-primary bg-opacity-10">
+            <div class="stat-value text-primary">R {{ stats.total_amount|floatformat:0 }}</div>
+            <div class="stat-label">Total This Month</div>
+        </div>
+    </div>
+</div>
+
+<!-- Pending Review Alert -->
+{% if pending_stipends %}
+<div class="alert alert-warning alert-banner mb-4">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    <strong>{{ pending_stipends|length }} stipend{{ pending_stipends|length|pluralize }} require{{ pending_stipends|length|pluralize:"s," }} your review.</strong>
+    Please verify attendance records and approve or reject each stipend calculation.
+</div>
+{% endif %}
+
+<!-- Stipends Table -->
+<div class="card">
+    <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs">
+            <li class="nav-item">
+                <a class="nav-link {% if not selected_status or selected_status == 'pending' %}active{% endif %}" href="?status=pending&month={{ selected_month }}">
+                    Pending <span class="badge bg-warning ms-1">{{ stats.pending }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if selected_status == 'approved' %}active{% endif %}" href="?status=approved&month={{ selected_month }}">
+                    Approved <span class="badge bg-info ms-1">{{ stats.approved }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if selected_status == 'paid' %}active{% endif %}" href="?status=paid&month={{ selected_month }}">
+                    Paid <span class="badge bg-success ms-1">{{ stats.paid }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if selected_status == 'all' %}active{% endif %}" href="?status=all&month={{ selected_month }}">
+                    All
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>
+                            <input type="checkbox" class="form-check-input" id="selectAll">
+                        </th>
+                        <th>Learner</th>
+                        <th>Host Employer</th>
+                        <th>Period</th>
+                        <th>Days Worked</th>
+                        <th>Leave</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stipend in stipends %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="form-check-input stipend-checkbox" value="{{ stipend.id }}">
+                        </td>
+                        <td>
+                            <strong>{{ stipend.placement.learner.user.get_full_name }}</strong>
+                            <br><small class="text-muted">{{ stipend.placement.learner.id_number|default:"" }}</small>
+                        </td>
+                        <td>{{ stipend.placement.host_employer.name }}</td>
+                        <td>{{ stipend.month|date:"M Y" }}</td>
+                        <td>
+                            <span class="{% if stipend.days_worked < 15 %}text-warning{% else %}text-success{% endif %}">
+                                {{ stipend.days_worked }}
+                            </span>
+                        </td>
+                        <td>{{ stipend.leave_days }}</td>
+                        <td>R {{ stipend.daily_rate|floatformat:2 }}</td>
+                        <td><strong>R {{ stipend.calculated_amount|floatformat:2 }}</strong></td>
+                        <td>
+                            <span class="badge bg-{% if stipend.status == 'paid' %}success{% elif stipend.status == 'approved' %}info{% elif stipend.status == 'pending' %}warning{% else %}danger{% endif %}">
+                                {{ stipend.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if stipend.status == 'pending' %}
+                            <div class="btn-group">
+                                <a href="{% url 'portals:workplace_officer_stipend_review' stipend.id %}" class="btn btn-sm btn-outline-primary" title="Review">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-success approve-btn" data-id="{{ stipend.id }}" title="Approve">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger reject-btn" data-id="{{ stipend.id }}" title="Reject">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                            {% else %}
+                            <a href="{% url 'portals:workplace_officer_stipend_detail' stipend.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5">
+                            <i class="bi bi-cash-coin display-4 text-muted"></i>
+                            <p class="text-muted mt-2">No stipend records found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if pending_stipends %}
+    <div class="card-footer">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted"><span id="selectedCount">0</span> selected</span>
+            <div class="btn-group">
+                <button type="button" class="btn btn-success" id="bulkApprove" disabled>
+                    <i class="bi bi-check-all me-1"></i> Approve Selected
+                </button>
+                <button type="button" class="btn btn-danger" id="bulkReject" disabled>
+                    <i class="bi bi-x-lg me-1"></i> Reject Selected
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Summary by Host Employer -->
+<div class="card mt-4">
+    <div class="card-header">
+        <i class="bi bi-building me-2"></i>Summary by Host Employer
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Host Employer</th>
+                        <th>Learners</th>
+                        <th>Total Days</th>
+                        <th>Total Amount</th>
+                        <th>Pending</th>
+                        <th>Approved</th>
+                        <th>Paid</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for summary in employer_summary %}
+                    <tr>
+                        <td><strong>{{ summary.host_employer }}</strong></td>
+                        <td>{{ summary.learner_count }}</td>
+                        <td>{{ summary.total_days }}</td>
+                        <td>R {{ summary.total_amount|floatformat:2 }}</td>
+                        <td>{{ summary.pending_count }}</td>
+                        <td>{{ summary.approved_count }}</td>
+                        <td>{{ summary.paid_count }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reject Stipend</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="rejectForm">
+                    <input type="hidden" id="rejectStipendId" name="stipend_id">
+                    <div class="mb-3">
+                        <label class="form-label">Reason for Rejection</label>
+                        <textarea class="form-control" name="rejection_reason" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmReject">Reject Stipend</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Filter changes
+    document.getElementById('monthFilter').addEventListener('change', function() {
+        const status = document.getElementById('statusFilter').value;
+        window.location.href = `?month=${this.value}&status=${status}`;
+    });
+    
+    document.getElementById('statusFilter').addEventListener('change', function() {
+        const month = document.getElementById('monthFilter').value;
+        window.location.href = `?month=${month}&status=${this.value}`;
+    });
+    
+    // Select all functionality
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.stipend-checkbox');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+        updateSelectedCount();
+    });
+    
+    document.querySelectorAll('.stipend-checkbox').forEach(function(cb) {
+        cb.addEventListener('change', updateSelectedCount);
+    });
+    
+    function updateSelectedCount() {
+        const count = document.querySelectorAll('.stipend-checkbox:checked').length;
+        document.getElementById('selectedCount').textContent = count;
+        document.getElementById('bulkApprove').disabled = count === 0;
+        document.getElementById('bulkReject').disabled = count === 0;
+    }
+    
+    // Single approve
+    document.querySelectorAll('.approve-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            if (confirm('Are you sure you want to approve this stipend?')) {
+                approveStipend(id);
+            }
+        });
+    });
+    
+    // Single reject
+    document.querySelectorAll('.reject-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.getElementById('rejectStipendId').value = this.dataset.id;
+            new bootstrap.Modal(document.getElementById('rejectModal')).show();
+        });
+    });
+    
+    // Bulk approve
+    document.getElementById('bulkApprove').addEventListener('click', function() {
+        const ids = Array.from(document.querySelectorAll('.stipend-checkbox:checked')).map(cb => cb.value);
+        if (confirm(`Are you sure you want to approve ${ids.length} stipends?`)) {
+            // Submit bulk approve
+            console.log('Bulk approve:', ids);
+        }
+    });
+    
+    function approveStipend(id) {
+        // AJAX call to approve
+        fetch(`/portals/workplace-officer/stipends/${id}/approve/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error approving stipend');
+            }
+        });
+    }
+    
+    document.getElementById('confirmReject').addEventListener('click', function() {
+        const id = document.getElementById('rejectStipendId').value;
+        const reason = document.querySelector('#rejectForm textarea').value;
+        
+        fetch(`/portals/workplace-officer/stipends/${id}/reject/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error rejecting stipend');
+            }
+        });
+    });
+</script>
+{% endblock %}

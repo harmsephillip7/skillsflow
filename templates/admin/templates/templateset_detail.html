@@ -1,0 +1,358 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}{{ template_set.name }}{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="flex items-center text-sm text-gray-500 mb-2">
+                <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <a href="{% url 'admin:templateset_list' %}" class="hover:text-primary-600">Template Sets</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="text-gray-700">{{ template_set.name }}</span>
+            </nav>
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold text-gray-900">{{ template_set.name }}</h1>
+                {% if template_set.is_active %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                {% else %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Archived</span>
+                {% endif %}
+            </div>
+            {% if template_set.description %}
+            <p class="text-gray-500 mt-1">{{ template_set.description }}</p>
+            {% endif %}
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'admin:templateset_edit' pk=template_set.pk %}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Edit Set
+            </a>
+            <a href="{% url 'admin:tasktemplate_create' set_pk=template_set.pk %}" 
+               class="inline-flex items-center px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-xl hover:bg-rose-700 transition shadow-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Task Template
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+            <p class="text-2xl font-bold text-gray-900">{{ stats.total_templates }}</p>
+            <p class="text-xs text-gray-500">Total Templates</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+            <p class="text-2xl font-bold text-green-600">{{ stats.active_templates }}</p>
+            <p class="text-xs text-gray-500">Active</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+            <p class="text-2xl font-bold text-purple-600">{{ stats.status_triggers }}</p>
+            <p class="text-xs text-gray-500">Status Triggers</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+            <p class="text-2xl font-bold text-amber-600">{{ stats.date_triggers }}</p>
+            <p class="text-xs text-gray-500">Date Triggers</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+            <p class="text-2xl font-bold text-cyan-600">{{ stats.recurring_triggers }}</p>
+            <p class="text-xs text-gray-500">Recurring</p>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Applicability Criteria -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-900">Applicability Criteria</h3>
+                    <p class="text-sm text-gray-500">This template set applies to projects matching these criteria</p>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">Project Types</h4>
+                            <div class="flex flex-wrap gap-1">
+                                {% if template_set.project_types %}
+                                    {% for pt in template_set.project_types %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ project_type_choices|default_if_none:"" }}{% for key, val in project_type_choices.items %}{% if key == pt %}{{ val }}{% endif %}{% endfor %}
+                                    </span>
+                                    {% endfor %}
+                                {% else %}
+                                <span class="text-sm text-gray-500 italic">All project types</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">Funder Types</h4>
+                            <div class="flex flex-wrap gap-1">
+                                {% if template_set.funder_types %}
+                                    {% for ft in template_set.funder_types %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        {% for key, val in funder_type_choices.items %}{% if key == ft %}{{ val }}{% endif %}{% endfor %}
+                                    </span>
+                                    {% endfor %}
+                                {% else %}
+                                <span class="text-sm text-gray-500 italic">All funder types</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">Qualification Types</h4>
+                            <div class="flex flex-wrap gap-1">
+                                {% if template_set.qualification_types %}
+                                    {% for qt in template_set.qualification_types %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                        {% for key, val in qualification_type_choices.items %}{% if key == qt %}{{ val }}{% endif %}{% endfor %}
+                                    </span>
+                                    {% endfor %}
+                                {% else %}
+                                <span class="text-sm text-gray-500 italic">All qualification types</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">Duration Range</h4>
+                            {% if template_set.min_duration_months or template_set.max_duration_months %}
+                            <p class="text-sm text-gray-600">
+                                {% if template_set.min_duration_months %}{{ template_set.min_duration_months }} months{% else %}Any{% endif %}
+                                — 
+                                {% if template_set.max_duration_months %}{{ template_set.max_duration_months }} months{% else %}Any{% endif %}
+                            </p>
+                            {% else %}
+                            <span class="text-sm text-gray-500 italic">Any duration</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Own Templates -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Task Templates</h3>
+                        <p class="text-sm text-gray-500">{{ own_templates|length }} template{{ own_templates|length|pluralize }} in this set</p>
+                    </div>
+                    <a href="{% url 'admin:tasktemplate_create' set_pk=template_set.pk %}" 
+                       class="inline-flex items-center px-3 py-1.5 bg-rose-600 text-white text-sm font-medium rounded-lg hover:bg-rose-700 transition">
+                        <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add
+                    </a>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for template in own_templates %}
+                    <div class="p-4 hover:bg-gray-50 transition">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-medium text-gray-900">{{ template.name }}</h4>
+                                    {% if template.trigger_type == 'status' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">Status</span>
+                                    {% elif template.trigger_type == 'date' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Date</span>
+                                    {% elif template.trigger_type == 'recurring' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-cyan-100 text-cyan-800">Recurring</span>
+                                    {% endif %}
+                                    {% if not template.is_active %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">Archived</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-sm text-gray-500 mt-1">{{ template.task_title_template }}</p>
+                                <div class="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                                    <span>Assigned: {{ template.get_assigned_role_display }}</span>
+                                    <span>Priority: {{ template.get_task_priority_display }}</span>
+                                    <span>Sequence: {{ template.sequence }}</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2 ml-4">
+                                <a href="{% url 'admin:tasktemplate_edit' pk=template.pk %}" 
+                                   class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                   title="Edit">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </a>
+                                {% if template.is_active %}
+                                <a href="{% url 'admin:tasktemplate_archive' pk=template.pk %}" 
+                                   class="p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                                   title="Archive">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                                    </svg>
+                                </a>
+                                {% else %}
+                                <form method="post" action="{% url 'admin:tasktemplate_restore' pk=template.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" 
+                                            class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
+                                            title="Restore">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <p class="mt-4 text-gray-500">No task templates yet</p>
+                        <a href="{% url 'admin:tasktemplate_create' set_pk=template_set.pk %}" class="mt-2 inline-flex items-center text-rose-600 hover:text-rose-700">
+                            <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Add your first task template
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Set Info -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-900">Set Information</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <dt class="text-sm text-gray-500">Parent Set</dt>
+                        <dd class="mt-1">
+                            {% if template_set.parent_set %}
+                            <a href="{% url 'admin:templateset_detail' pk=template_set.parent_set.pk %}" class="text-rose-600 hover:underline">
+                                {{ template_set.parent_set.name }}
+                            </a>
+                            {% else %}
+                            <span class="text-gray-400">None (base set)</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Auto-Apply</dt>
+                        <dd class="mt-1">
+                            {% if template_set.auto_apply %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Yes</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">No</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Version</dt>
+                        <dd class="mt-1 text-gray-900">{{ template_set.version }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Created</dt>
+                        <dd class="mt-1 text-gray-900">{{ template_set.created_at|date:"d M Y H:i" }}</dd>
+                    </div>
+                    {% if template_set.created_by %}
+                    <div>
+                        <dt class="text-sm text-gray-500">Created By</dt>
+                        <dd class="mt-1 text-gray-900">{{ template_set.created_by.get_full_name|default:template_set.created_by.email }}</dd>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Inherited Templates -->
+            {% if inherited_templates %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-900">Inherited Templates</h3>
+                    <p class="text-sm text-gray-500">From parent set(s)</p>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for template in inherited_templates %}
+                    <div class="p-4 bg-gray-50">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-gray-600">{{ template.name }}</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-600">Inherited</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1 italic">From {{ template.template_set.name }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Child Sets -->
+            {% if child_sets %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-900">Child Sets</h3>
+                    <p class="text-sm text-gray-500">Sets inheriting from this one</p>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for child in child_sets %}
+                    <a href="{% url 'admin:templateset_detail' pk=child.pk %}" class="block p-4 hover:bg-gray-50 transition">
+                        <p class="font-medium text-gray-900">{{ child.name }}</p>
+                        <p class="text-xs text-gray-500">{{ child.templates.count }} templates</p>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-900">Actions</h3>
+                </div>
+                <div class="p-4 space-y-2">
+                    <a href="{% url 'admin:templateset_edit' pk=template_set.pk %}" 
+                       class="w-full flex items-center justify-center px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        Edit Template Set
+                    </a>
+                    {% if template_set.is_active %}
+                    <a href="{% url 'admin:templateset_archive' pk=template_set.pk %}" 
+                       class="w-full flex items-center justify-center px-4 py-2 border border-amber-200 text-amber-700 rounded-lg hover:bg-amber-50 transition">
+                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                        </svg>
+                        Archive Set
+                    </a>
+                    {% else %}
+                    <form method="post" action="{% url 'admin:templateset_restore' pk=template_set.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" 
+                                class="w-full flex items-center justify-center px-4 py-2 border border-green-200 text-green-700 rounded-lg hover:bg-green-50 transition">
+                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Restore Set
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

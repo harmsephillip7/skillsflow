@@ -1,0 +1,350 @@
+{% extends "portals/student/base.html" %}
+{% load static %}
+
+{% block page_title %}Stipend - {{ stipend.get_month_display }} {{ stipend.year }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 pb-20">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
+        <div class="px-4 py-6">
+            <div class="flex items-center gap-2 mb-2">
+                <a href="{% url 'portals:student_stipend_history' %}" class="text-purple-100 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <h1 class="text-2xl font-bold">{{ stipend.get_month_display }} {{ stipend.year }}</h1>
+            </div>
+            <p class="text-purple-100 text-sm">Stipend Details</p>
+        </div>
+    </header>
+
+    <div class="px-4 -mt-4">
+        <!-- Status Card -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Status</p>
+                    <span class="px-3 py-1 text-sm font-medium rounded-full
+                        {% if stipend.status == 'PAID' %}bg-green-100 text-green-700
+                        {% elif stipend.status == 'APPROVED' %}bg-blue-100 text-blue-700
+                        {% elif stipend.status == 'PENDING' %}bg-amber-100 text-amber-700
+                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                        {{ stipend.get_status_display }}
+                    </span>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-500">Final Amount</p>
+                    <p class="text-3xl font-bold text-purple-600">R{{ stipend.final_amount|floatformat:2 }}</p>
+                </div>
+            </div>
+            
+            <!-- Dispute Status or Button -->
+            {% if active_dispute %}
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-amber-800">Dispute Submitted</p>
+                        <p class="text-xs text-amber-600">Status: {{ active_dispute.get_status_display }}</p>
+                    </div>
+                    <a href="{% url 'portals:student_dispute_detail' active_dispute.id %}" class="text-sm text-amber-600 hover:text-amber-700 font-medium">
+                        View Dispute →
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <button onclick="openDisputeModal()" class="w-full px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg font-medium text-sm transition">
+                    ⚠️ Dispute This Calculation
+                </button>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Attendance Summary -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <h3 class="font-semibold text-gray-900 mb-3">Attendance Summary</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="p-3 bg-gray-50 rounded-lg">
+                    <p class="text-2xl font-bold text-emerald-600">{{ stipend.days_worked }}</p>
+                    <p class="text-sm text-gray-500">Days Worked</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-lg">
+                    <p class="text-2xl font-bold text-amber-600">{{ stipend.days_absent }}</p>
+                    <p class="text-sm text-gray-500">Days Absent</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-lg">
+                    <p class="text-2xl font-bold text-blue-600">{{ stipend.leave_days_used }}</p>
+                    <p class="text-sm text-gray-500">Leave Days Used</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-lg">
+                    <p class="text-2xl font-bold text-purple-600">{{ stipend.sick_days_used }}</p>
+                    <p class="text-sm text-gray-500">Sick Days Used</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculation Breakdown -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <h3 class="font-semibold text-gray-900 mb-3">Calculation Breakdown</h3>
+            
+            <div class="space-y-3">
+                <!-- Base Amount -->
+                <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                    <span class="text-gray-600">Base Stipend Amount</span>
+                    <span class="font-medium text-gray-900">R{{ stipend.base_amount|floatformat:2 }}</span>
+                </div>
+                
+                <!-- Daily Rate -->
+                <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                    <span class="text-gray-600">Daily Rate</span>
+                    <span class="font-medium text-gray-900">R{{ stipend.daily_rate|floatformat:2 }}</span>
+                </div>
+                
+                <!-- Days Worked Calculation -->
+                <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                    <span class="text-gray-600">{{ stipend.days_worked }} days × R{{ stipend.daily_rate|floatformat:2 }}</span>
+                    <span class="font-medium text-green-600">R{{ stipend.earned_amount|floatformat:2 }}</span>
+                </div>
+                
+                <!-- Deductions Section -->
+                {% if stipend.total_deductions > 0 %}
+                <div class="py-2">
+                    <p class="text-sm font-medium text-gray-700 mb-2">Deductions</p>
+                    
+                    {% if stipend.absence_deduction > 0 %}
+                    <div class="flex items-center justify-between py-1 pl-4">
+                        <span class="text-gray-500 text-sm">Absence Deduction</span>
+                        <span class="text-red-600">-R{{ stipend.absence_deduction|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if stipend.late_deduction > 0 %}
+                    <div class="flex items-center justify-between py-1 pl-4">
+                        <span class="text-gray-500 text-sm">Late Arrival Deduction</span>
+                        <span class="text-red-600">-R{{ stipend.late_deduction|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if stipend.other_deductions > 0 %}
+                    <div class="flex items-center justify-between py-1 pl-4">
+                        <span class="text-gray-500 text-sm">Other Deductions</span>
+                        <span class="text-red-600">-R{{ stipend.other_deductions|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex items-center justify-between py-2 pl-4 border-t border-gray-100 mt-2">
+                        <span class="text-gray-600">Total Deductions</span>
+                        <span class="font-medium text-red-600">-R{{ stipend.total_deductions|floatformat:2 }}</span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Final Amount -->
+                <div class="flex items-center justify-between py-3 bg-purple-50 rounded-lg px-4 -mx-4 mt-4">
+                    <span class="font-semibold text-gray-900">Final Amount</span>
+                    <span class="text-2xl font-bold text-purple-600">R{{ stipend.final_amount|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Information -->
+        {% if stipend.status == 'PAID' %}
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="font-medium text-green-800">Payment Completed</h4>
+                    <p class="text-sm text-green-700 mt-1">
+                        Paid on {{ stipend.payment_date|date:"d F Y" }}
+                        {% if stipend.payment_reference %}
+                        <br>Reference: {{ stipend.payment_reference }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% elif stipend.status == 'APPROVED' %}
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="font-medium text-blue-800">Awaiting Payment</h4>
+                    <p class="text-sm text-blue-700 mt-1">
+                        Your stipend has been approved and is awaiting payment processing.
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% elif stipend.status == 'PENDING' %}
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="font-medium text-amber-800">Pending Approval</h4>
+                    <p class="text-sm text-amber-700 mt-1">
+                        Your stipend is awaiting review and approval.
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Notes -->
+        {% if stipend.notes %}
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <h3 class="font-semibold text-gray-900 mb-2">Notes</h3>
+            <p class="text-sm text-gray-600">{{ stipend.notes }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Calculated Info -->
+        <div class="bg-gray-100 rounded-xl p-4 text-center">
+            <p class="text-xs text-gray-500">
+                Calculated on {{ stipend.calculated_at|date:"d M Y" }} at {{ stipend.calculated_at|time:"H:i" }}
+                {% if stipend.calculated_by %}
+                by {{ stipend.calculated_by.get_full_name }}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Dispute Modal -->
+<div id="disputeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Dispute Stipend Calculation</h3>
+                <button onclick="closeDisputeModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p class="text-sm text-amber-800">
+                    <strong>Period:</strong> {{ stipend.get_month_display }} {{ stipend.year }}<br>
+                    <strong>Amount:</strong> R{{ stipend.final_amount|floatformat:2 }}
+                </p>
+            </div>
+            
+            <form id="disputeForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Reason for Dispute <span class="text-red-500">*</span>
+                    </label>
+                    <textarea id="disputeReason" rows="6" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        placeholder="Please explain why you are disputing this calculation. Include details such as incorrect attendance records, missing leave days, calculation errors, etc."></textarea>
+                    <p class="mt-1 text-xs text-gray-500">Be specific about what you believe is incorrect.</p>
+                </div>
+                
+                <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="text-sm text-blue-800">
+                        ℹ️ After submission, an officer will review your dispute within 3 working days. You'll be notified of the outcome.
+                    </p>
+                </div>
+                
+                <div id="disputeError" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
+                <div id="disputeSuccess" class="hidden mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800"></div>
+                
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeDisputeModal()" 
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
+                        Cancel
+                    </button>
+                    <button type="submit" id="submitDispute"
+                        class="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium">
+                        Submit Dispute
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openDisputeModal() {
+    document.getElementById('disputeModal').classList.remove('hidden');
+    document.getElementById('disputeReason').value = '';
+    document.getElementById('disputeError').classList.add('hidden');
+    document.getElementById('disputeSuccess').classList.add('hidden');
+}
+
+function closeDisputeModal() {
+    document.getElementById('disputeModal').classList.add('hidden');
+}
+
+document.getElementById('disputeForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const reason = document.getElementById('disputeReason').value.trim();
+    if (!reason) {
+        document.getElementById('disputeError').textContent = 'Please provide a reason for the dispute.';
+        document.getElementById('disputeError').classList.remove('hidden');
+        return;
+    }
+    
+    const submitBtn = document.getElementById('submitDispute');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    
+    try {
+        const response = await fetch("{% url 'portals:student_submit_dispute' stipend.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ reason: reason })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            document.getElementById('disputeSuccess').textContent = data.message;
+            document.getElementById('disputeSuccess').classList.remove('hidden');
+            document.getElementById('disputeError').classList.add('hidden');
+            
+            // Reload page after 2 seconds to show dispute status
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            document.getElementById('disputeError').textContent = data.error || 'Failed to submit dispute.';
+            document.getElementById('disputeError').classList.remove('hidden');
+            document.getElementById('disputeSuccess').classList.add('hidden');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Dispute';
+        }
+    } catch (error) {
+        document.getElementById('disputeError').textContent = 'Network error. Please try again.';
+        document.getElementById('disputeError').classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Dispute';
+    }
+});
+
+// Close modal on outside click
+document.getElementById('disputeModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDisputeModal();
+    }
+});
+</script>
+{% endblock %}

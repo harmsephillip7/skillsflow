@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quote {{ quote.quote_number }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9pt;
+                color: #666;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #333;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30pt;
+            padding-bottom: 20pt;
+            border-bottom: 2pt solid #2563eb;
+        }
+        
+        .logo-section {
+            flex: 1;
+        }
+        
+        .logo {
+            max-height: 50pt;
+            max-width: 150pt;
+        }
+        
+        .company-name {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        
+        .quote-info {
+            text-align: right;
+        }
+        
+        .quote-info h1 {
+            font-size: 24pt;
+            color: #2563eb;
+            margin-bottom: 5pt;
+        }
+        
+        .quote-number {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .quote-dates {
+            margin-top: 10pt;
+            font-size: 9pt;
+            color: #666;
+        }
+        
+        .section {
+            margin-bottom: 20pt;
+        }
+        
+        .section-title {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10pt;
+            padding-bottom: 5pt;
+            border-bottom: 1pt solid #e5e7eb;
+        }
+        
+        .client-info {
+            background: #f9fafb;
+            padding: 15pt;
+            border-radius: 5pt;
+        }
+        
+        .client-name {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .client-details {
+            margin-top: 5pt;
+            font-size: 9pt;
+            color: #666;
+        }
+        
+        .details-grid {
+            display: table;
+            width: 100%;
+            margin-top: 10pt;
+        }
+        
+        .details-row {
+            display: table-row;
+        }
+        
+        .details-cell {
+            display: table-cell;
+            padding: 5pt 10pt 5pt 0;
+            width: 50%;
+        }
+        
+        .details-label {
+            font-size: 8pt;
+            color: #666;
+            text-transform: uppercase;
+        }
+        
+        .details-value {
+            font-size: 10pt;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        table.items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10pt;
+        }
+        
+        table.items th {
+            background: #f3f4f6;
+            padding: 10pt 8pt;
+            text-align: left;
+            font-size: 8pt;
+            font-weight: bold;
+            color: #374151;
+            text-transform: uppercase;
+            border-bottom: 1pt solid #e5e7eb;
+        }
+        
+        table.items th.right {
+            text-align: right;
+        }
+        
+        table.items td {
+            padding: 10pt 8pt;
+            border-bottom: 1pt solid #e5e7eb;
+            font-size: 10pt;
+        }
+        
+        table.items td.right {
+            text-align: right;
+        }
+        
+        table.items td.description {
+            max-width: 200pt;
+        }
+        
+        .item-type {
+            font-size: 8pt;
+            color: #6b7280;
+        }
+        
+        .discount-note {
+            font-size: 8pt;
+            color: #059669;
+        }
+        
+        table.items tfoot td {
+            padding: 8pt;
+            border-bottom: none;
+        }
+        
+        table.items tfoot tr.subtotal td {
+            border-top: 1pt solid #e5e7eb;
+        }
+        
+        table.items tfoot tr.total td {
+            background: #2563eb;
+            color: white;
+            font-size: 12pt;
+            font-weight: bold;
+            padding: 12pt 8pt;
+        }
+        
+        .payment-schedule {
+            margin-top: 20pt;
+            background: #f9fafb;
+            padding: 15pt;
+            border-radius: 5pt;
+        }
+        
+        .payment-schedule h3 {
+            font-size: 10pt;
+            font-weight: bold;
+            margin-bottom: 10pt;
+        }
+        
+        .payment-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8pt 0;
+            border-bottom: 1pt solid #e5e7eb;
+            font-size: 9pt;
+        }
+        
+        .payment-item:last-child {
+            border-bottom: none;
+        }
+        
+        .terms {
+            margin-top: 30pt;
+            padding-top: 15pt;
+            border-top: 1pt solid #e5e7eb;
+        }
+        
+        .terms h3 {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8pt;
+        }
+        
+        .terms p {
+            font-size: 8pt;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8pt;
+            color: #9ca3af;
+            padding-top: 10pt;
+            border-top: 1pt solid #e5e7eb;
+        }
+        
+        .validity-banner {
+            background: #fef3c7;
+            border: 1pt solid #f59e0b;
+            border-radius: 5pt;
+            padding: 10pt;
+            text-align: center;
+            margin-bottom: 20pt;
+        }
+        
+        .validity-banner strong {
+            color: #b45309;
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Header -->
+    <div class="header">
+        <div class="logo-section">
+            {% if brand and brand.logo %}
+            <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" class="logo">
+            {% else %}
+            <div class="company-name">{{ brand.name|default:"SkillsFlow" }}</div>
+            {% endif %}
+            {% if quote.campus %}
+            <div style="margin-top: 10pt; font-size: 9pt; color: #666;">
+                {{ quote.campus.name }}<br>
+                {% if quote.campus.address %}{{ quote.campus.address }}<br>{% endif %}
+                {% if quote.campus.phone %}Tel: {{ quote.campus.phone }}<br>{% endif %}
+                {% if quote.campus.email %}Email: {{ quote.campus.email }}{% endif %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="quote-info">
+            <h1>QUOTE</h1>
+            <div class="quote-number">{{ quote.quote_number }}</div>
+            <div class="quote-dates">
+                Date: {{ quote.quote_date|date:"d F Y" }}<br>
+                Valid Until: {{ quote.valid_until|date:"d F Y" }}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Validity Banner -->
+    <div class="validity-banner">
+        <strong>This quote is valid for 48 hours</strong> - expires {{ quote.valid_until|date:"d F Y" }}
+    </div>
+    
+    <!-- Client Info -->
+    <div class="section">
+        <div class="section-title">Quote For</div>
+        <div class="client-info">
+            <div class="client-name">{{ client_name }}</div>
+            {% if quote.lead %}
+            <div class="client-details">
+                {% if quote.lead.email %}Email: {{ quote.lead.email }}<br>{% endif %}
+                {% if quote.lead.phone %}Phone: {{ quote.lead.phone }}{% endif %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="details-grid">
+            <div class="details-row">
+                <div class="details-cell">
+                    <div class="details-label">Academic Year</div>
+                    <div class="details-value">{{ quote.academic_year }}</div>
+                </div>
+                <div class="details-cell">
+                    <div class="details-label">Payment Plan</div>
+                    <div class="details-value">{{ quote.get_payment_plan_display }}</div>
+                </div>
+            </div>
+            {% if quote.intake %}
+            <div class="details-row">
+                <div class="details-cell">
+                    <div class="details-label">Intake</div>
+                    <div class="details-value">{{ quote.intake.code }}</div>
+                </div>
+                <div class="details-cell">
+                    <div class="details-label">Start Date</div>
+                    <div class="details-value">{{ quote.intake.start_date|date:"d F Y" }}</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Line Items -->
+    <div class="section">
+        <div class="section-title">Quote Items</div>
+        <table class="items">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th class="right">Qty</th>
+                    <th class="right">Unit Price</th>
+                    <th class="right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in quote.line_items.all %}
+                <tr>
+                    <td class="description">
+                        {{ item.description }}
+                        <div class="item-type">{{ item.get_item_type_display }}</div>
+                        {% if item.discount_reason %}
+                        <div class="discount-note">{{ item.discount_reason }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="right">{{ item.quantity }}</td>
+                    <td class="right">R {{ item.unit_price|floatformat:2 }}</td>
+                    <td class="right">R {{ item.line_total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="subtotal">
+                    <td colspan="3" class="right">Subtotal</td>
+                    <td class="right">R {{ quote.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% if quote.vat_amount > 0 %}
+                <tr>
+                    <td colspan="3" class="right">VAT ({{ quote.vat_rate }}%)</td>
+                    <td class="right">R {{ quote.vat_amount|floatformat:2 }}</td>
+                </tr>
+                {% endif %}
+                <tr class="total">
+                    <td colspan="3" class="right">TOTAL</td>
+                    <td class="right">R {{ quote.total|floatformat:2 }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    
+    <!-- Payment Schedule -->
+    {% if payment_schedule %}
+    <div class="payment-schedule">
+        <h3>Payment Schedule - {{ quote.get_payment_plan_display }}</h3>
+        {% for schedule in payment_schedule %}
+        <div class="payment-item">
+            <div>
+                <strong>{{ schedule.description }}</strong><br>
+                <span style="color: #666;">Due: {{ schedule.due_date|date:"d F Y" }}</span>
+            </div>
+            <div style="font-weight: bold;">R {{ schedule.amount|floatformat:2 }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Terms -->
+    {% if quote.terms %}
+    <div class="terms">
+        <h3>Terms & Conditions</h3>
+        <p>{{ quote.terms }}</p>
+    </div>
+    {% endif %}
+    
+    <!-- Accept Online -->
+    {% if public_url %}
+    <div style="margin-top: 20pt; padding: 15pt; background: #ecfdf5; border: 1pt solid #10b981; border-radius: 5pt; text-align: center;">
+        <p style="font-size: 10pt; font-weight: bold; color: #047857;">Accept This Quote Online</p>
+        <p style="font-size: 9pt; color: #065f46; margin-top: 5pt;">
+            Visit: {{ public_url }}
+        </p>
+    </div>
+    {% endif %}
+    
+</body>
+</html>

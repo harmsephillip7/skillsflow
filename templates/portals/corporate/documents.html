@@ -1,0 +1,131 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Documents - Corporate Portal{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Documents</h1>
+        <p class="mt-1 text-sm text-gray-500">Project documents, reports, and deliverables</p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+        <a href="{% url 'portals:corporate_dashboard' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if no_client %}
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+    <i class="fas fa-exclamation-triangle text-amber-500 text-4xl mb-3"></i>
+    <h3 class="text-lg font-semibold text-amber-800">No Corporate Account Linked</h3>
+</div>
+{% else %}
+
+<div class="space-y-6">
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex flex-wrap gap-4">
+            <!-- Project Filter -->
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-xs font-medium text-gray-500 mb-1">Filter by Project</label>
+                <select onchange="window.location.href='?project=' + this.value + '{% if doc_type_filter %}&type={{ doc_type_filter }}{% endif %}'" class="w-full border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Projects</option>
+                    {% for project in projects %}
+                    <option value="{{ project.id }}" {% if selected_project.id == project.id %}selected{% endif %}>{{ project.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Type Filter -->
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-xs font-medium text-gray-500 mb-1">Filter by Type</label>
+                <select onchange="window.location.href='?type=' + this.value + '{% if selected_project %}&project={{ selected_project.id }}{% endif %}'" class="w-full border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Types</option>
+                    {% for type_code, type_name in document_types %}
+                    <option value="{{ type_code }}" {% if doc_type_filter == type_code %}selected{% endif %}>{{ type_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents List -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-900">
+                <i class="fas fa-folder-open text-primary-600 mr-2"></i>
+                {% if selected_project %}{{ selected_project.name }}{% else %}All Documents{% endif %}
+                {% if doc_type_filter %}<span class="text-gray-400 font-normal ml-2">• {{ doc_type_filter }}</span>{% endif %}
+            </h3>
+        </div>
+        
+        {% if documents %}
+        <div class="divide-y divide-gray-100">
+            {% for doc in documents %}
+            <div class="px-6 py-4 hover:bg-gray-50 transition">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center min-w-0">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center 
+                            {% if doc.document_type == 'CONTRACT' %}bg-blue-100{% elif doc.document_type == 'REPORT' %}bg-purple-100{% elif doc.document_type == 'EVIDENCE' %}bg-green-100{% elif doc.document_type == 'DELIVERABLE' %}bg-amber-100{% else %}bg-gray-100{% endif %}">
+                            {% if doc.document_type == 'CONTRACT' %}
+                            <i class="fas fa-file-contract text-blue-600"></i>
+                            {% elif doc.document_type == 'REPORT' %}
+                            <i class="fas fa-chart-bar text-purple-600"></i>
+                            {% elif doc.document_type == 'EVIDENCE' %}
+                            <i class="fas fa-clipboard-check text-green-600"></i>
+                            {% elif doc.document_type == 'DELIVERABLE' %}
+                            <i class="fas fa-box text-amber-600"></i>
+                            {% else %}
+                            <i class="fas fa-file text-gray-600"></i>
+                            {% endif %}
+                        </div>
+                        <div class="ml-4 min-w-0">
+                            <p class="font-medium text-gray-900 truncate">{{ doc.name }}</p>
+                            <div class="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                                <span>{{ doc.get_document_type_display }}</span>
+                                <span>•</span>
+                                <span>{{ doc.upload_date|date:"d M Y" }}</span>
+                                {% if doc.project %}
+                                <span>•</span>
+                                <span>{{ doc.project.name|truncatewords:3 }}</span>
+                                {% endif %}
+                            </div>
+                            {% if doc.description %}
+                            <p class="text-sm text-gray-500 mt-1 truncate">{{ doc.description }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 ml-4">
+                        {% if doc.milestone %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                            {{ doc.milestone.name|truncatewords:3 }}
+                        </span>
+                        {% endif %}
+                        <a href="{{ doc.file.url }}" target="_blank" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-white hover:bg-primary-600 border border-primary-600 rounded transition">
+                            <i class="fas fa-download mr-1"></i>Download
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-12 text-center text-gray-500">
+            <i class="fas fa-folder-open text-4xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900">No Documents Found</h3>
+            <p class="mt-1">{% if selected_project or doc_type_filter %}No documents match your filters.{% else %}No documents have been uploaded yet.{% endif %}</p>
+            {% if selected_project or doc_type_filter %}
+            <a href="{% url 'portals:corporate_documents' %}" class="mt-4 inline-flex items-center text-primary-600 hover:text-primary-700">
+                <i class="fas fa-times mr-2"></i>Clear filters
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

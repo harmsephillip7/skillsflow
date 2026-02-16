@@ -1,0 +1,200 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Trade Test Booking - {{ booking.learner }} - SkillsFlow{% endblock %}
+
+{% block page_title %}Trade Test Booking{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:dashboard' %}" class="text-primary-600 hover:text-primary-800">Corporate</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:trade_test_list' %}" class="text-primary-600 hover:text-primary-800">Trade Tests</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ booking.trade }}</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+{% if booking.status == 'confirmed' and not result %}
+<a href="{% url 'corporate:record_trade_test_result' booking.pk %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-all duration-200">
+    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    Record Result
+</a>
+{% endif %}
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    
+    <!-- Header Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-start justify-between">
+            <div class="flex items-start space-x-4">
+                <div class="flex-shrink-0 h-16 w-16 bg-orange-100 rounded-xl flex items-center justify-center">
+                    <svg class="h-8 w-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">{{ booking.learner }}</h2>
+                    <p class="text-sm text-gray-500 mt-1">{{ booking.trade }}</p>
+                    <div class="flex items-center space-x-4 mt-2">
+                        <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if booking.status == 'confirmed' %}bg-green-100 text-green-800
+                            {% elif booking.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% elif booking.status == 'completed' %}bg-blue-100 text-blue-800
+                            {% elif booking.status == 'cancelled' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ booking.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-500">Test Date</p>
+                <p class="text-xl font-bold text-gray-900">{{ booking.test_date|date:"d M Y" }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Details Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Booking Details -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Booking Details</h3>
+            <dl class="space-y-3">
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase">Venue</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ booking.venue.name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase">Venue Type</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ booking.venue.get_venue_type_display }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase">Booking Reference</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ booking.booking_reference|default:"-" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase">Created</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ booking.created_at|date:"d M Y, H:i" }}</dd>
+                </div>
+            </dl>
+        </div>
+        
+        <!-- Venue Details -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Venue Information</h3>
+            <dl class="space-y-3">
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase">Address</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                        {% if booking.venue.address %}
+                        {{ booking.venue.address }}<br>
+                        {{ booking.venue.city }}{% if booking.venue.province %}, {{ booking.venue.province }}{% endif %}
+                        {% else %}
+                        {{ booking.venue.city }}{% if booking.venue.province %}, {{ booking.venue.province }}{% endif %}
+                        {% endif %}
+                    </dd>
+                </div>
+                {% if booking.venue.contact_phone %}
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase">Contact Phone</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ booking.venue.contact_phone }}</dd>
+                </div>
+                {% endif %}
+                {% if booking.venue.contact_email %}
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase">Contact Email</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                        <a href="mailto:{{ booking.venue.contact_email }}" class="text-primary-600 hover:text-primary-800">{{ booking.venue.contact_email }}</a>
+                    </dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+    </div>
+    
+    <!-- Result Section -->
+    {% if result %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Test Result</h3>
+        
+        <div class="flex items-center justify-between p-4 rounded-lg
+            {% if result.result == 'pass' %}bg-green-50
+            {% elif result.result == 'fail' %}bg-red-50
+            {% else %}bg-yellow-50{% endif %}">
+            <div class="flex items-center space-x-4">
+                {% if result.result == 'pass' %}
+                <div class="flex-shrink-0 p-3 bg-green-100 rounded-full">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                {% elif result.result == 'fail' %}
+                <div class="flex-shrink-0 p-3 bg-red-100 rounded-full">
+                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                {% else %}
+                <div class="flex-shrink-0 p-3 bg-yellow-100 rounded-full">
+                    <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                {% endif %}
+                <div>
+                    <p class="text-2xl font-bold 
+                        {% if result.result == 'pass' %}text-green-700
+                        {% elif result.result == 'fail' %}text-red-700
+                        {% else %}text-yellow-700{% endif %}">
+                        {{ result.get_result_display }}
+                    </p>
+                    {% if result.percentage_score %}
+                    <p class="text-sm text-gray-600">Score: {{ result.percentage_score }}%</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% if result.certificate_number %}
+            <div class="text-right">
+                <p class="text-xs text-gray-500 uppercase">Certificate Number</p>
+                <p class="text-lg font-semibold text-gray-900">{{ result.certificate_number }}</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        {% if result.notes %}
+        <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+            <p class="text-xs text-gray-500 uppercase mb-2">Notes</p>
+            <p class="text-sm text-gray-700">{{ result.notes }}</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Notes -->
+    {% if booking.notes %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
+        <div class="prose prose-sm max-w-none text-gray-600">
+            {{ booking.notes|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

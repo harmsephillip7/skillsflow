@@ -1,0 +1,159 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Edit Host Employer{% else %}New Host Employer{% endif %} - SkillsFlow{% endblock %}
+
+{% block page_title %}{% if object %}Edit Host Employer{% else %}New Host Employer{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:dashboard' %}" class="text-primary-600 hover:text-primary-800">Corporate</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:host_employer_list' %}" class="text-primary-600 hover:text-primary-800">Host Employers</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{% if object %}Edit{% else %}New{% endif %}</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto">
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label for="id_name" class="block text-sm font-medium text-gray-700">Host Employer Name *</label>
+                    <input type="text" name="name" id="id_name" value="{{ form.name.value|default:'' }}" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label for="id_client" class="block text-sm font-medium text-gray-700">Corporate Client</label>
+                    {{ form.client }}
+                </div>
+                
+                <div>
+                    <label for="id_seta" class="block text-sm font-medium text-gray-700">SETA</label>
+                    <input type="text" name="seta" id="id_seta" value="{{ form.seta.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div>
+                    <label for="id_max_learner_capacity" class="block text-sm font-medium text-gray-700">Max Learner Capacity *</label>
+                    <input type="number" name="max_learner_capacity" id="id_max_learner_capacity" 
+                           value="{{ form.max_learner_capacity.value|default:'10' }}" min="1" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label for="id_trades_offered" class="block text-sm font-medium text-gray-700">Trades Offered</label>
+                    <input type="text" name="trades_offered" id="id_trades_offered" value="{{ form.trades_offered.value|default:'' }}"
+                           placeholder="e.g., Electrician, Fitter, Plumber"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div>
+                    <label for="id_approval_status" class="block text-sm font-medium text-gray-700">Approval Status</label>
+                    {{ form.approval_status }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Workplace Address -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Workplace Address</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label for="id_workplace_address" class="block text-sm font-medium text-gray-700">Street Address</label>
+                    <textarea name="workplace_address" id="id_workplace_address" rows="2"
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">{{ form.workplace_address.value|default:'' }}</textarea>
+                </div>
+                
+                <div>
+                    <label for="id_city" class="block text-sm font-medium text-gray-700">City *</label>
+                    <input type="text" name="city" id="id_city" value="{{ form.city.value|default:'' }}" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div>
+                    <label for="id_province" class="block text-sm font-medium text-gray-700">Province *</label>
+                    <select name="province" id="id_province" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        <option value="">Select Province</option>
+                        <option value="Eastern Cape" {% if form.province.value == 'Eastern Cape' %}selected{% endif %}>Eastern Cape</option>
+                        <option value="Free State" {% if form.province.value == 'Free State' %}selected{% endif %}>Free State</option>
+                        <option value="Gauteng" {% if form.province.value == 'Gauteng' %}selected{% endif %}>Gauteng</option>
+                        <option value="KwaZulu-Natal" {% if form.province.value == 'KwaZulu-Natal' %}selected{% endif %}>KwaZulu-Natal</option>
+                        <option value="Limpopo" {% if form.province.value == 'Limpopo' %}selected{% endif %}>Limpopo</option>
+                        <option value="Mpumalanga" {% if form.province.value == 'Mpumalanga' %}selected{% endif %}>Mpumalanga</option>
+                        <option value="North West" {% if form.province.value == 'North West' %}selected{% endif %}>North West</option>
+                        <option value="Northern Cape" {% if form.province.value == 'Northern Cape' %}selected{% endif %}>Northern Cape</option>
+                        <option value="Western Cape" {% if form.province.value == 'Western Cape' %}selected{% endif %}>Western Cape</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Primary Contact -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Primary Contact</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="id_primary_contact_name" class="block text-sm font-medium text-gray-700">Contact Name</label>
+                    <input type="text" name="primary_contact_name" id="id_primary_contact_name" value="{{ form.primary_contact_name.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div>
+                    <label for="id_primary_contact_email" class="block text-sm font-medium text-gray-700">Contact Email</label>
+                    <input type="email" name="primary_contact_email" id="id_primary_contact_email" value="{{ form.primary_contact_email.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div>
+                    <label for="id_primary_contact_phone" class="block text-sm font-medium text-gray-700">Contact Phone</label>
+                    <input type="tel" name="primary_contact_phone" id="id_primary_contact_phone" value="{{ form.primary_contact_phone.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notes -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
+            
+            <div>
+                <textarea name="notes" id="id_notes" rows="4"
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">{{ form.notes.value|default:'' }}</textarea>
+            </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="flex items-center justify-end space-x-4">
+            <a href="{% url 'corporate:host_employer_list' %}" class="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 transition-all">
+                {% if object %}Update{% else %}Create{% endif %} Host Employer
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

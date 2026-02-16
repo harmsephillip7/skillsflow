@@ -1,0 +1,555 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{{ learner.user.get_full_name }} - Year Progress{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                <li><a href="{% url 'portals:facilitator_dashboard' %}" class="hover:text-primary-600">Dashboard</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                {% if enrollment.cohort %}
+                <li><a href="{% url 'portals:facilitator_cohort_detail' enrollment.cohort.id %}" class="hover:text-primary-600">{{ enrollment.cohort.name }}</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                {% endif %}
+                <li class="text-gray-900">{{ learner.user.get_full_name }}</li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">Year-Based Progress</h1>
+        <p class="mt-1 text-sm text-gray-500">QCTO progress tracking for {{ learner.user.first_name }}</p>
+    </div>
+    <div class="mt-4 sm:mt-0 flex gap-2">
+        <button onclick="window.print()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium">
+            <i class="fas fa-print mr-2"></i>Print Report
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Learner Summary Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-primary-500 to-primary-700 p-6">
+            <div class="flex items-center">
+                <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mr-6">
+                    <span class="text-3xl font-bold text-white">{{ learner.user.first_name|slice:":1" }}{{ learner.user.last_name|slice:":1" }}</span>
+                </div>
+                <div class="text-white flex-1">
+                    <h2 class="text-2xl font-bold">{{ learner.user.get_full_name }}</h2>
+                    <p class="text-primary-100">{{ learner.id_number|default:"-" }}</p>
+                    <p class="text-primary-100 text-sm mt-1">{{ qualification.title }}</p>
+                </div>
+                <div class="text-right text-white">
+                    <div class="text-4xl font-bold">Year {{ current_year }}</div>
+                    <p class="text-primary-100 text-sm">Current Study Year</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Summary Stats -->
+        <div class="p-6">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase">Overall Progress</p>
+                    <p class="text-2xl font-bold text-primary-600 mt-1">{{ overall_progress }}%</p>
+                </div>
+                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase">Institutional</p>
+                    <p class="text-2xl font-bold text-blue-600 mt-1">{{ institutional_total.progress_percent }}%</p>
+                    <p class="text-xs text-gray-400">{{ institutional_total.completed }}/{{ institutional_total.total }}</p>
+                </div>
+                <div class="text-center p-4 bg-amber-50 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase">Workplace</p>
+                    <p class="text-2xl font-bold text-amber-600 mt-1">{{ workplace_total.modules_progress_percent }}%</p>
+                    <p class="text-xs text-gray-400">{{ workplace_total.modules_completed }}/{{ workplace_total.modules_total }}</p>
+                </div>
+                <div class="text-center p-4 bg-green-50 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase">Competent</p>
+                    <p class="text-2xl font-bold text-green-600 mt-1">{{ competent_count }}</p>
+                </div>
+                <div class="text-center p-4 bg-red-50 rounded-lg">
+                    <p class="text-xs text-gray-500 uppercase">NYC</p>
+                    <p class="text-2xl font-bold text-red-600 mt-1">{{ nyc_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Year Tabs -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="border-b border-gray-100">
+            <nav class="flex -mb-px" aria-label="Year tabs">
+                {% for year_num, year_info in years.items %}
+                <a href="?year={{ year_num }}" 
+                   class="flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition
+                          {% if selected_year == year_num %}border-primary-500 text-primary-600 bg-primary-50{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+                    <span class="block text-lg font-bold">Year {{ year_num }}</span>
+                    <span class="block text-xs {% if selected_year == year_num %}text-primary-500{% else %}text-gray-400{% endif %}">
+                        {{ year_info.completed_modules }}/{{ year_info.total_modules }} modules
+                    </span>
+                    {% if year_num == current_year %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800 mt-1">
+                        Current
+                    </span>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </nav>
+        </div>
+        
+        {% if year_data %}
+        <!-- Year Progress Overview -->
+        <div class="p-6 border-b border-gray-100 bg-gray-50">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <p class="text-xs text-gray-500 uppercase mb-1">Year {{ selected_year }} Progress</p>
+                    <div class="flex items-center">
+                        <div class="flex-1 bg-gray-200 rounded-full h-3 mr-3">
+                            <div class="h-3 rounded-full bg-primary-500" style="width: {{ year_data.progress_percent }}%"></div>
+                        </div>
+                        <span class="font-bold text-gray-900">{{ year_data.progress_percent }}%</span>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase mb-1">Institutional Progress</p>
+                    <div class="flex items-center">
+                        <div class="flex-1 bg-gray-200 rounded-full h-3 mr-3">
+                            <div class="h-3 rounded-full bg-blue-500" style="width: {{ year_data.institutional_progress }}%"></div>
+                        </div>
+                        <span class="font-bold text-blue-600">{{ year_data.institutional_progress }}%</span>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase mb-1">Workplace Progress</p>
+                    <div class="flex items-center">
+                        <div class="flex-1 bg-gray-200 rounded-full h-3 mr-3">
+                            <div class="h-3 rounded-full bg-amber-500" style="width: {{ year_data.workplace_progress }}%"></div>
+                        </div>
+                        <span class="font-bold text-amber-600">{{ year_data.workplace_progress }}%</span>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-500 uppercase mb-1">Modules Status</p>
+                    <span class="text-green-600 font-medium">{{ year_data.completed_modules }} ✓</span>
+                    <span class="text-blue-600 font-medium ml-2">{{ year_data.in_progress_modules }} ◐</span>
+                    <span class="text-gray-400 font-medium ml-2">{{ year_data.not_started_modules }} ○</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Institutional Leg (Knowledge + Practical) -->
+                <div>
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-book text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900">Institutional Component</h3>
+                            <p class="text-sm text-gray-500">Knowledge & Practical Modules</p>
+                        </div>
+                    </div>
+                    
+                    {% if year_data.institutional_modules %}
+                    <div class="space-y-3">
+                        {% for item in year_data.institutional_modules %}
+                        <div class="border border-gray-200 rounded-lg p-4 {% if item.is_overridden %}bg-yellow-50 border-yellow-300{% elif item.overall_status == 'COMPETENT' %}bg-green-50 border-green-200{% elif item.overall_status == 'IN_PROGRESS' %}bg-blue-50 border-blue-200{% endif %}">
+                            <div class="flex items-start justify-between mb-2">
+                                <div>
+                                    <h4 class="font-medium text-gray-900">{{ item.module.title }}</h4>
+                                    <p class="text-xs text-gray-500">{{ item.module.code }} • {{ item.module.get_module_type_display }} • {{ item.module.credits }} credits</p>
+                                </div>
+                                {% if item.is_overridden %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-hand-paper mr-1"></i>Manual
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Assessment Status Grid -->
+                            <div class="grid grid-cols-2 gap-3 mt-3">
+                                <div class="bg-white rounded p-2 border border-gray-100">
+                                    <p class="text-xs text-gray-500 mb-1">Formative</p>
+                                    {% if item.formative_status == 'COMPETENT' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-check mr-1"></i>Competent
+                                    </span>
+                                    {% elif item.formative_status == 'IN_PROGRESS' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                        <i class="fas fa-spinner mr-1"></i>In Progress
+                                    </span>
+                                    {% elif item.formative_status == 'NYC' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                        <i class="fas fa-times mr-1"></i>NYC
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                                        <i class="fas fa-circle mr-1"></i>Not Started
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div class="bg-white rounded p-2 border border-gray-100">
+                                    <p class="text-xs text-gray-500 mb-1">Summative</p>
+                                    {% if item.summative_status == 'COMPETENT' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-check mr-1"></i>Competent
+                                    </span>
+                                    {% elif item.summative_status == 'IN_PROGRESS' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                        <i class="fas fa-spinner mr-1"></i>In Progress
+                                    </span>
+                                    {% elif item.summative_status == 'NYC' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                        <i class="fas fa-times mr-1"></i>NYC
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                                        <i class="fas fa-circle mr-1"></i>Not Started
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Overall Status & Actions -->
+                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                                <div>
+                                    <span class="text-xs text-gray-500 mr-2">Overall:</span>
+                                    {% if item.overall_status == 'COMPETENT' %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-green-500 text-white">
+                                        <i class="fas fa-check-circle mr-1"></i>Competent
+                                    </span>
+                                    {% elif item.overall_status == 'IN_PROGRESS' %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-blue-500 text-white">
+                                        <i class="fas fa-sync mr-1"></i>In Progress
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-gray-200 text-gray-700">
+                                        <i class="fas fa-hourglass-start mr-1"></i>Not Started
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% if item.progress %}
+                                <button type="button" 
+                                        onclick="openOverrideModal({{ item.progress.id }}, '{{ item.module.title|escapejs }}', '{{ item.formative_status }}', '{{ item.summative_status }}', '{{ item.overall_status }}', {{ item.is_overridden|yesno:'true,false' }})"
+                                        class="text-xs text-gray-500 hover:text-primary-600">
+                                    <i class="fas fa-edit mr-1"></i>{% if item.is_overridden %}Edit Override{% else %}Override{% endif %}
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-book text-4xl text-gray-300 mb-3"></i>
+                        <p>No institutional modules for Year {{ selected_year }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Workplace Leg -->
+                <div>
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-briefcase text-amber-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900">Workplace Component</h3>
+                            <p class="text-sm text-gray-500">Work-Based Learning Modules</p>
+                        </div>
+                    </div>
+                    
+                    {% if year_data.workplace_modules %}
+                    <div class="space-y-3">
+                        {% for item in year_data.workplace_modules %}
+                        <div class="border border-gray-200 rounded-lg p-4 {% if item.is_overridden %}bg-yellow-50 border-yellow-300{% elif item.overall_status == 'COMPETENT' %}bg-green-50 border-green-200{% elif item.overall_status == 'IN_PROGRESS' %}bg-amber-50 border-amber-200{% endif %}">
+                            <div class="flex items-start justify-between mb-2">
+                                <div>
+                                    <h4 class="font-medium text-gray-900">{{ item.module.title }}</h4>
+                                    <p class="text-xs text-gray-500">{{ item.module.code }} • {{ item.module.credits }} credits</p>
+                                </div>
+                                {% if item.is_overridden %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-hand-paper mr-1"></i>Manual
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Assessment Status -->
+                            <div class="grid grid-cols-2 gap-3 mt-3">
+                                <div class="bg-white rounded p-2 border border-gray-100">
+                                    <p class="text-xs text-gray-500 mb-1">Formative</p>
+                                    {% if item.formative_status == 'COMPETENT' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-check mr-1"></i>Competent
+                                    </span>
+                                    {% elif item.formative_status == 'IN_PROGRESS' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                        <i class="fas fa-spinner mr-1"></i>In Progress
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                                        <i class="fas fa-circle mr-1"></i>Not Started
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div class="bg-white rounded p-2 border border-gray-100">
+                                    <p class="text-xs text-gray-500 mb-1">Summative</p>
+                                    {% if item.summative_status == 'COMPETENT' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-check mr-1"></i>Competent
+                                    </span>
+                                    {% elif item.summative_status == 'IN_PROGRESS' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                        <i class="fas fa-spinner mr-1"></i>In Progress
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                                        <i class="fas fa-circle mr-1"></i>Not Started
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Overall & Actions -->
+                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                                <div>
+                                    <span class="text-xs text-gray-500 mr-2">Overall:</span>
+                                    {% if item.overall_status == 'COMPETENT' %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-green-500 text-white">
+                                        <i class="fas fa-check-circle mr-1"></i>Competent
+                                    </span>
+                                    {% elif item.overall_status == 'IN_PROGRESS' %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-amber-500 text-white">
+                                        <i class="fas fa-sync mr-1"></i>In Progress
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-sm font-medium bg-gray-200 text-gray-700">
+                                        <i class="fas fa-hourglass-start mr-1"></i>Not Started
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% if item.progress %}
+                                <button type="button" 
+                                        onclick="openOverrideModal({{ item.progress.id }}, '{{ item.module.title|escapejs }}', '{{ item.formative_status }}', '{{ item.summative_status }}', '{{ item.overall_status }}', {{ item.is_overridden|yesno:'true,false' }})"
+                                        class="text-xs text-gray-500 hover:text-primary-600">
+                                    <i class="fas fa-edit mr-1"></i>{% if item.is_overridden %}Edit Override{% else %}Override{% endif %}
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-briefcase text-4xl text-gray-300 mb-3"></i>
+                        <p>No workplace modules for Year {{ selected_year }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-16">
+            <i class="fas fa-calendar-alt text-4xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900">No Data for Year {{ selected_year }}</h3>
+            <p class="text-gray-500 mt-1">This qualification doesn't have modules assigned to Year {{ selected_year }}</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Workplace Stints Progress -->
+    {% if stint_progress %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-900">
+                <i class="fas fa-calendar-check text-amber-600 mr-2"></i>Workplace Stints Progress
+            </h3>
+            <p class="text-sm text-gray-500 mt-1">Track workplace placement time requirements</p>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {% for sp in stint_progress %}
+                <div class="border border-gray-200 rounded-lg p-4 {% if sp.is_complete %}bg-green-50 border-green-200{% elif sp.days_completed > 0 %}bg-amber-50 border-amber-200{% endif %}">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-medium text-gray-900">{{ sp.stint.title }}</h4>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                            Year {{ sp.stint.year_level }}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-500">{{ sp.days_completed }} / {{ sp.days_required }} days</span>
+                            <span class="font-medium {% if sp.is_complete %}text-green-600{% else %}text-gray-900{% endif %}">{{ sp.progress_percent }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="h-2 rounded-full transition-all {% if sp.is_complete %}bg-green-500{% elif sp.progress_percent > 50 %}bg-amber-500{% else %}bg-gray-400{% endif %}" 
+                                 style="width: {{ sp.progress_percent }}%"></div>
+                        </div>
+                    </div>
+                    {% if sp.is_complete %}
+                    <div class="text-center">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                            <i class="fas fa-check-circle mr-1"></i>Complete
+                        </span>
+                    </div>
+                    {% elif sp.placements %}
+                    <div class="text-xs text-gray-500">
+                        <i class="fas fa-building mr-1"></i>{{ sp.placements.count }} placement(s)
+                    </div>
+                    {% else %}
+                    <div class="text-xs text-gray-400">
+                        <i class="fas fa-info-circle mr-1"></i>No placements yet
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Legend -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-sm font-semibold text-gray-900 mb-4">Progress Legend</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="flex items-center">
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-500 text-white mr-2">
+                    <i class="fas fa-check-circle mr-1"></i>Competent
+                </span>
+                <span class="text-sm text-gray-500">Module completed</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-500 text-white mr-2">
+                    <i class="fas fa-sync mr-1"></i>In Progress
+                </span>
+                <span class="text-sm text-gray-500">Started, not complete</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700 mr-2">
+                    <i class="fas fa-hourglass-start mr-1"></i>Not Started
+                </span>
+                <span class="text-sm text-gray-500">No activity yet</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 mr-2">
+                    <i class="fas fa-hand-paper mr-1"></i>Manual
+                </span>
+                <span class="text-sm text-gray-500">Manually overridden</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manual Override Modal -->
+<div id="overrideModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-xl bg-white">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Manual Override</h3>
+            <button onclick="closeOverrideModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form method="post" id="overrideForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" id="overrideAction" value="override">
+            <input type="hidden" name="module_progress_id" id="moduleProgressId">
+            <input type="hidden" name="year" value="{{ selected_year }}">
+            
+            <p class="text-sm text-gray-600 mb-4">Module: <strong id="moduleTitle"></strong></p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Formative Status</label>
+                    <select name="formative_status" id="formativeStatus" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <option value="">-- No Change --</option>
+                        <option value="NOT_STARTED">Not Started</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPETENT">Competent</option>
+                        <option value="NYC">Not Yet Competent</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Summative Status</label>
+                    <select name="summative_status" id="summativeStatus" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <option value="">-- No Change --</option>
+                        <option value="NOT_STARTED">Not Started</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPETENT">Competent</option>
+                        <option value="NYC">Not Yet Competent</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Overall Status</label>
+                    <select name="overall_status" id="overallStatus" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <option value="">-- No Change --</option>
+                        <option value="NOT_STARTED">Not Started</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPETENT">Competent</option>
+                        <option value="NYC">Not Yet Competent</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Override Reason</label>
+                    <textarea name="override_reason" rows="3" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500" placeholder="Explain reason for manual override..."></textarea>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+                <button type="button" id="clearOverrideBtn" onclick="clearOverride()" class="text-sm text-red-600 hover:text-red-800 hidden">
+                    <i class="fas fa-trash mr-1"></i>Clear Override
+                </button>
+                <div class="flex space-x-3 ml-auto">
+                    <button type="button" onclick="closeOverrideModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                        Apply Override
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openOverrideModal(progressId, moduleTitle, formativeStatus, summativeStatus, overallStatus, isOverridden) {
+    document.getElementById('moduleProgressId').value = progressId;
+    document.getElementById('moduleTitle').textContent = moduleTitle;
+    document.getElementById('overrideAction').value = 'override';
+    
+    // Set current values
+    document.getElementById('formativeStatus').value = formativeStatus;
+    document.getElementById('summativeStatus').value = summativeStatus;
+    document.getElementById('overallStatus').value = overallStatus;
+    
+    // Show/hide clear button
+    document.getElementById('clearOverrideBtn').classList.toggle('hidden', !isOverridden);
+    
+    document.getElementById('overrideModal').classList.remove('hidden');
+}
+
+function closeOverrideModal() {
+    document.getElementById('overrideModal').classList.add('hidden');
+}
+
+function clearOverride() {
+    document.getElementById('overrideAction').value = 'clear_override';
+    document.getElementById('overrideForm').submit();
+}
+
+// Close modal on outside click
+document.getElementById('overrideModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeOverrideModal();
+    }
+});
+</script>
+{% endblock %}

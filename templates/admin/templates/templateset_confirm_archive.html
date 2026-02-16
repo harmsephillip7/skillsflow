@@ -1,0 +1,86 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}Archive Template Set{% endblock %}
+
+{% block main_content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <nav class="flex items-center text-sm text-gray-500 mb-2">
+            <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a href="{% url 'admin:templateset_list' %}" class="hover:text-primary-600">Template Sets</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="text-gray-700">Archive</span>
+        </nav>
+    </div>
+    
+    <!-- Confirmation Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-8 text-center">
+            <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold text-gray-900 mb-2">Archive Template Set?</h2>
+            <p class="text-gray-600 mb-4">
+                Are you sure you want to archive <span class="font-semibold">{{ object.name }}</span>?
+            </p>
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
+                <h4 class="text-sm font-medium text-amber-800 mb-2">What happens when you archive:</h4>
+                <ul class="text-sm text-amber-700 space-y-1">
+                    <li class="flex items-start">
+                        <svg class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        The template set will no longer be used for new projects
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Existing projects using this template are not affected
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        You can restore this template set at any time
+                    </li>
+                </ul>
+            </div>
+            
+            {% if object.templates.count > 0 %}
+            <div class="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+                <p class="text-sm text-gray-700">
+                    <span class="font-medium">{{ object.templates.count }}</span> task template{{ object.templates.count|pluralize }} will also be archived.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+            <a href="{% url 'admin:templateset_list' %}" 
+               class="px-4 py-2.5 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-white transition">
+                Cancel
+            </a>
+            <form method="post" class="inline">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="px-4 py-2.5 bg-amber-600 text-white font-medium rounded-lg hover:bg-amber-700 transition flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                    </svg>
+                    Archive Template Set
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,338 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Learner Kanban Board - SkillsFlow{% endblock %}
+
+{% block main_content %}
+<div class="flex flex-col h-full" x-data="kanbanBoard()">
+    <!-- Page Header -->
+    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Learner Kanban Board</h1>
+                <p class="mt-1 text-sm text-gray-500">Drag and drop learners to update their enrollment status</p>
+            </div>
+            
+            <!-- View Switcher -->
+            <div class="flex items-center space-x-3">
+                <div class="flex bg-gray-100 rounded-lg p-1">
+                    <a href="{% url 'learners:list' %}" class="px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                        </svg>
+                        List
+                    </a>
+                    <span class="px-3 py-1.5 text-sm font-medium rounded-md bg-white shadow text-primary-700">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                        </svg>
+                        Kanban
+                    </span>
+                    <a href="{% url 'learners:pivot' %}" class="px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        Pivot
+                    </a>
+                </div>
+                
+                <a href="{% url 'learners:bulk_import' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    Import/Export
+                </a>
+            </div>
+        </div>
+        
+        <!-- Filters -->
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+            <form method="get" class="flex flex-wrap items-center gap-3" id="filterForm">
+                <!-- Search -->
+                <div class="relative">
+                    <input type="text" 
+                           name="search" 
+                           value="{{ search }}"
+                           placeholder="Search learners..."
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500 w-64">
+                    <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                
+                <!-- Qualification Filter -->
+                <select name="qualification" 
+                        onchange="this.form.submit()"
+                        class="border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Qualifications</option>
+                    {% for qual in qualifications %}
+                    <option value="{{ qual.id }}" {% if selected_qualification == qual.id|stringformat:"s" %}selected{% endif %}>
+                        {{ qual.title }}
+                    </option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Campus Filter -->
+                <select name="campus"
+                        onchange="this.form.submit()"
+                        class="border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Campuses</option>
+                    {% for campus in campuses %}
+                    <option value="{{ campus.id }}" {% if selected_campus == campus.id|stringformat:"s" %}selected{% endif %}>
+                        {{ campus.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Clear filters -->
+                {% if search or selected_qualification or selected_campus %}
+                <a href="{% url 'learners:kanban' %}" class="text-sm text-gray-500 hover:text-gray-700">
+                    Clear filters
+                </a>
+                {% endif %}
+            </form>
+            
+            <!-- Stats -->
+            <div class="ml-auto flex items-center space-x-4 text-sm text-gray-500">
+                <span>{{ total_enrollments }} total enrollments</span>
+                {% if withdrawn_count > 0 %}
+                <span class="text-red-500">{{ withdrawn_count }} withdrawn</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Kanban Board -->
+    <div class="flex-1 overflow-x-auto p-6 bg-gray-50">
+        <div class="flex space-x-4 h-full min-w-max">
+            {% for column in kanban_columns %}
+            <div class="kanban-column flex flex-col w-80 bg-white rounded-xl shadow-sm border border-gray-200"
+                 data-status="{{ column.status }}">
+                <!-- Column Header -->
+                <div class="flex-shrink-0 px-4 py-3 border-b border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            {% if column.color == 'slate' %}
+                            <span class="w-3 h-3 rounded-full bg-slate-500"></span>
+                            {% elif column.color == 'amber' %}
+                            <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                            {% elif column.color == 'blue' %}
+                            <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                            {% elif column.color == 'indigo' %}
+                            <span class="w-3 h-3 rounded-full bg-indigo-500"></span>
+                            {% elif column.color == 'green' %}
+                            <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                            {% elif column.color == 'orange' %}
+                            <span class="w-3 h-3 rounded-full bg-orange-500"></span>
+                            {% elif column.color == 'teal' %}
+                            <span class="w-3 h-3 rounded-full bg-teal-500"></span>
+                            {% elif column.color == 'emerald' %}
+                            <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                            {% endif %}
+                            <h3 class="font-semibold text-gray-900">{{ column.label }}</h3>
+                        </div>
+                        <span class="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+                            {{ column.count }}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Column Cards -->
+                <div class="kanban-cards flex-1 overflow-y-auto p-3 space-y-3"
+                     @dragover.prevent
+                     @drop="handleDrop($event, '{{ column.status }}')">
+                    {% for enrollment in column.enrollments %}
+                    <div class="kanban-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm cursor-move hover:shadow-md transition-shadow"
+                         draggable="true"
+                         @dragstart="handleDragStart($event, {{ enrollment.id }})"
+                         @dragend="handleDragEnd($event)"
+                         data-enrollment-id="{{ enrollment.id }}">
+                        <!-- Learner Info -->
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-medium text-gray-900 truncate">
+                                    {{ enrollment.learner.first_name }} {{ enrollment.learner.last_name }}
+                                </h4>
+                                <p class="text-sm text-gray-500 truncate">
+                                    {{ enrollment.qualification.title|truncatechars:30 }}
+                                </p>
+                            </div>
+                            <div class="flex-shrink-0 ml-2">
+                                {% if enrollment.learner.id_photo %}
+                                <img src="{{ enrollment.learner.id_photo.url }}" 
+                                     alt="{{ enrollment.learner.full_name }}"
+                                     class="w-8 h-8 rounded-full object-cover">
+                                {% else %}
+                                <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                                    <span class="text-xs font-medium text-primary-700">
+                                        {{ enrollment.learner.first_name|slice:":1" }}{{ enrollment.learner.last_name|slice:":1" }}
+                                    </span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Details -->
+                        <div class="mt-3 space-y-2">
+                            {% if enrollment.enrollment_number %}
+                            <div class="flex items-center text-xs text-gray-500">
+                                <svg class="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>
+                                </svg>
+                                {{ enrollment.enrollment_number }}
+                            </div>
+                            {% endif %}
+                            
+                            {% if enrollment.campus %}
+                            <div class="flex items-center text-xs text-gray-500">
+                                <svg class="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                {{ enrollment.campus.name }}
+                            </div>
+                            {% endif %}
+                            
+                            {% if enrollment.enrollment_date %}
+                            <div class="flex items-center text-xs text-gray-500">
+                                <svg class="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                Enrolled: {{ enrollment.enrollment_date|date:"d M Y" }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Footer with quick actions -->
+                        <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                            {% if enrollment.funding_type %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
+                                {% if enrollment.funding_type == 'BURSARY' %}bg-purple-100 text-purple-700
+                                {% elif enrollment.funding_type == 'LEARNERSHIP' %}bg-green-100 text-green-700
+                                {% elif enrollment.funding_type == 'EMPLOYER' %}bg-blue-100 text-blue-700
+                                {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                {{ enrollment.get_funding_type_display }}
+                            </span>
+                            {% else %}
+                            <span></span>
+                            {% endif %}
+                            
+                            <a href="{% url 'learners:detail' enrollment.learner.id %}" 
+                               class="text-xs text-primary-600 hover:text-primary-800 font-medium"
+                               @click.stop>
+                                View →
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8 text-gray-400">
+                        <svg class="w-10 h-10 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                        </svg>
+                        <p class="text-sm">No learners</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div x-show="showToast" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 transform translate-y-2"
+         x-transition:enter-end="opacity-100 transform translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 transform translate-y-0"
+         x-transition:leave-end="opacity-0 transform translate-y-2"
+         class="fixed bottom-6 right-6 z-50">
+        <div :class="toastType === 'success' ? 'bg-green-500' : 'bg-red-500'"
+             class="px-6 py-3 rounded-lg shadow-lg text-white flex items-center space-x-3">
+            <svg x-show="toastType === 'success'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <svg x-show="toastType === 'error'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            <span x-text="toastMessage"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+function kanbanBoard() {
+    return {
+        draggedEnrollmentId: null,
+        showToast: false,
+        toastMessage: '',
+        toastType: 'success',
+        
+        handleDragStart(event, enrollmentId) {
+            this.draggedEnrollmentId = enrollmentId;
+            event.target.classList.add('opacity-50');
+            event.dataTransfer.effectAllowed = 'move';
+        },
+        
+        handleDragEnd(event) {
+            event.target.classList.remove('opacity-50');
+        },
+        
+        async handleDrop(event, newStatus) {
+            event.preventDefault();
+            
+            if (!this.draggedEnrollmentId) return;
+            
+            const enrollmentId = this.draggedEnrollmentId;
+            this.draggedEnrollmentId = null;
+            
+            try {
+                const response = await fetch('{% url "learners:kanban_update_status" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        enrollment_id: enrollmentId,
+                        new_status: newStatus
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showToastMessage('Status updated successfully', 'success');
+                    // Reload to reflect changes
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    this.showToastMessage(data.error || 'Failed to update status', 'error');
+                }
+            } catch (error) {
+                this.showToastMessage('An error occurred', 'error');
+                console.error('Error updating status:', error);
+            }
+        },
+        
+        showToastMessage(message, type) {
+            this.toastMessage = message;
+            this.toastType = type;
+            this.showToast = true;
+            setTimeout(() => this.showToast = false, 3000);
+        }
+    }
+}
+</script>
+
+<style>
+.kanban-column {
+    min-height: 500px;
+}
+.kanban-card.dragging {
+    opacity: 0.5;
+}
+.kanban-cards.drag-over {
+    background-color: #f0f9ff;
+}
+</style>
+{% endblock %}

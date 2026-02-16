@@ -1,0 +1,153 @@
+{% extends 'base/app_layout.html' %}
+{% load static admin_tags %}
+
+{% block title %}Add Tranche - {{ notification.reference_number }}{% endblock %}
+
+{% block page_title %}Add Tranche{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'not_detail' notification.pk %}" class="text-primary-600 hover:text-primary-800">{{ notification.reference_number }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Add Tranche</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    
+    <!-- Project Info Card -->
+    <div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-xl shadow-lg p-6 text-white">
+        <h2 class="text-xl font-bold">{{ notification.title }}</h2>
+        <p class="mt-1 text-emerald-100">{{ notification.reference_number }} • {{ notification.get_project_type_display }}</p>
+        {% if existing_tranches.count > 0 %}
+        <p class="mt-2 text-sm text-emerald-200">{{ existing_tranches.count }} existing tranche(s)</p>
+        {% endif %}
+    </div>
+    
+    <!-- Form -->
+    <form method="post" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">Tranche Details</h3>
+        </div>
+        
+        <div class="p-6 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Sequence Number -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sequence Number *</label>
+                    <input type="number" name="sequence_number" value="{{ suggested_sequence }}" min="1" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                    <p class="mt-1 text-xs text-gray-500">Order in the tranche sequence</p>
+                </div>
+                
+                <!-- Tranche Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tranche Type *</label>
+                    <select name="tranche_type" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                        <option value="">Select type...</option>
+                        {% for value, label in tranche_type_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Name -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tranche Name *</label>
+                <input type="text" name="name" required placeholder="e.g., Tranche 1 - Commencement"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+            </div>
+            
+            <!-- Description -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea name="description" rows="3" placeholder="Describe what this tranche covers..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"></textarea>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Due Date -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
+                    <input type="date" name="due_date" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                </div>
+                
+                <!-- Amount -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount (R)</label>
+                    <input type="number" name="amount" step="0.01" min="0" value="0"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Learner Count Target -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Target Learner Count</label>
+                    <input type="number" name="learner_count_target" min="0" value="{{ notification.expected_learner_count }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                </div>
+                
+                <!-- Priority -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <select name="priority" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                        {% for value, label in priority_choices %}
+                        <option value="{{ value }}" {% if value == 'MEDIUM' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Notes -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea name="notes" rows="2" placeholder="Additional notes..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"></textarea>
+            </div>
+        </div>
+        
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+            <a href="{% url 'not_detail' notification.pk %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                Create Tranche
+            </button>
+        </div>
+    </form>
+    
+    <!-- Existing Tranches -->
+    {% if existing_tranches %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-sm font-semibold text-gray-900">Existing Tranches</h3>
+        </div>
+        <ul class="divide-y divide-gray-100">
+            {% for t in existing_tranches %}
+            <li class="px-6 py-3 flex items-center justify-between">
+                <div>
+                    <span class="text-sm font-medium text-gray-900">#{{ t.sequence_number }}. {{ t.name }}</span>
+                    <span class="text-xs text-gray-500 ml-2">{{ t.get_tranche_type_display }}</span>
+                </div>
+                <span class="text-sm text-gray-500">{{ t.due_date|date:"d M Y" }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+</div>
+{% endblock %}

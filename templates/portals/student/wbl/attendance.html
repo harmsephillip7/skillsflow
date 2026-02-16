@@ -1,0 +1,471 @@
+{% extends "portals/student/base.html" %}
+{% load static %}
+
+{% block page_title %}My Attendance{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 pb-20">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white">
+        <div class="px-4 py-6">
+            <div class="flex items-center gap-2 mb-2">
+                <a href="{% url 'portals:student_wbl_dashboard' %}" class="text-emerald-100 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <h1 class="text-2xl font-bold">My Attendance</h1>
+            </div>
+            <p class="text-emerald-100 text-sm">{{ selected_month_label|default:"This Month" }}</p>
+        </div>
+    </header>
+
+    <div class="px-4 -mt-4">
+        {% if no_learner_profile or no_placement %}
+        <!-- Error State -->
+        <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 class="font-medium text-gray-900 mb-1">
+                {% if no_learner_profile %}No Learner Profile{% else %}No Active Placement{% endif %}
+            </h3>
+            <p class="text-sm text-gray-500">
+                {% if no_learner_profile %}Please contact support to set up your profile.
+                {% else %}You need an active workplace placement to track attendance.{% endif %}
+            </p>
+        </div>
+        {% else %}
+
+        <!-- Quick Action Buttons -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <!-- Clock In Today -->
+            {% if not today_attendance %}
+            <a href="{% url 'portals:student_attendance_submit_page' %}" 
+               class="bg-gradient-to-r from-emerald-500 to-green-500 rounded-xl p-4 text-white shadow-lg hover:shadow-xl transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm">Clock In</h3>
+                        <p class="text-xs text-green-100">Today</p>
+                    </div>
+                </div>
+            </a>
+            {% else %}
+            <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-green-500">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-900">Clocked In</h3>
+                        <p class="text-xs text-gray-500">{{ today_attendance.clock_in|time:"H:i"|default:"Today" }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Add Daily Tasks -->
+            {% if not today_daily_entry %}
+            <a href="{% url 'portals:student_daily_entry_create' %}" 
+               class="bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl p-4 text-white shadow-lg hover:shadow-xl transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm">Add Tasks</h3>
+                        <p class="text-xs text-teal-100">Today</p>
+                    </div>
+                </div>
+            </a>
+            {% else %}
+            <a href="{% url 'portals:student_daily_entry_detail' today_daily_entry.id %}" 
+               class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-teal-500 hover:shadow-md transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
+                        <span class="text-sm font-bold text-teal-600">{{ today_daily_entry.tasks.count }}</span>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-gray-900">Tasks Today</h3>
+                        <p class="text-xs text-gray-500">Tap to add more</p>
+                    </div>
+                </div>
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-4 gap-2 mb-4">
+            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
+                <span class="text-xl font-bold text-green-600">{{ stats.present_days|default:0 }}</span>
+                <p class="text-xs text-gray-500 mt-1">Present</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
+                <span class="text-xl font-bold text-amber-600">{{ stats.late_days|default:0 }}</span>
+                <p class="text-xs text-gray-500 mt-1">Late</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
+                <span class="text-xl font-bold text-red-600">{{ stats.absent_days|default:0 }}</span>
+                <p class="text-xs text-gray-500 mt-1">Absent</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
+                <span class="text-xl font-bold text-blue-600">{{ stats.leave_days|default:0 }}</span>
+                <p class="text-xs text-gray-500 mt-1">Leave</p>
+            </div>
+        </div>
+
+        <!-- Attendance Rate Progress -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">Attendance Rate</span>
+                <span class="text-lg font-bold {% if stats.attendance_rate >= 80 %}text-green-600{% elif stats.attendance_rate >= 60 %}text-amber-600{% else %}text-red-600{% endif %}">
+                    {{ stats.attendance_rate|default:0 }}%
+                </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-500
+                    {% if stats.attendance_rate >= 80 %}bg-green-500
+                    {% elif stats.attendance_rate >= 60 %}bg-amber-500
+                    {% else %}bg-red-500{% endif %}"
+                    style="width: {{ stats.attendance_rate|default:0 }}%"></div>
+            </div>
+            <div class="flex justify-between mt-2 text-xs text-gray-500">
+                <span>{{ stats.total_hours|floatformat:1|default:0 }}h worked</span>
+                <span>{{ stats.tasks_completed|default:0 }} tasks</span>
+            </div>
+        </div>
+
+        <!-- Month Navigation -->
+        <div class="bg-white rounded-xl shadow-sm p-3 mb-4">
+            <div class="flex items-center justify-between">
+                <a href="?year={{ prev_year }}&month={{ prev_month }}" 
+                   class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                
+                <select id="monthSelector" class="px-4 py-2 text-sm font-semibold text-gray-900 bg-transparent border-none focus:ring-0 cursor-pointer">
+                    {% for m in available_months %}
+                    <option value="{{ m.year }}-{{ m.month }}" {% if m.value == selected_month %}selected{% endif %}>
+                        {{ m.label }}
+                    </option>
+                    {% endfor %}
+                </select>
+                
+                {% if can_go_next %}
+                <a href="?year={{ next_year }}&month={{ next_month }}" 
+                   class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+                {% else %}
+                <div class="w-10 h-10 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Calendar View -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <!-- Day Headers -->
+            <div class="grid grid-cols-7 gap-1 mb-2">
+                <div class="text-center text-xs font-medium text-gray-500 py-2">Sun</div>
+                <div class="text-center text-xs font-medium text-gray-500 py-2">Mon</div>
+                <div class="text-center text-xs font-medium text-gray-500 py-2">Tue</div>
+                <div class="text-center text-xs font-medium text-gray-500 py-2">Wed</div>
+                <div class="text-center text-xs font-medium text-gray-500 py-2">Thu</div>
+                <div class="text-center text-xs font-medium text-gray-500 py-2">Fri</div>
+                <div class="text-center text-xs font-medium text-gray-500 py-2">Sat</div>
+            </div>
+            
+            <!-- Calendar Days -->
+            <div class="grid grid-cols-7 gap-1">
+                {% for day in calendar_days %}
+                <div class="aspect-square p-0.5">
+                    {% if day.date %}
+                    {% if day.is_future %}
+                    <!-- Future day - not clickable -->
+                    <div class="w-full h-full rounded-lg flex flex-col items-center justify-center bg-gray-50 text-gray-300">
+                        <span class="text-sm font-medium">{{ day.day }}</span>
+                    </div>
+                    {% elif day.is_weekend %}
+                    <!-- Weekend -->
+                    <div class="w-full h-full rounded-lg flex flex-col items-center justify-center bg-gray-100 text-gray-400">
+                        <span class="text-sm font-medium">{{ day.day }}</span>
+                    </div>
+                    {% else %}
+                    <!-- Clickable day -->
+                    <button onclick="openDayModal('{{ day.date|date:'Y-m-d' }}', '{{ day.status|default:'none' }}', {{ day.task_count|default:0 }}, {% if day.daily_entry %}{{ day.daily_entry.id }}{% else %}null{% endif %})"
+                            class="w-full h-full rounded-lg flex flex-col items-center justify-center transition relative
+                                {% if day.is_today %}ring-2 ring-emerald-500 ring-offset-1{% endif %}
+                                {% if day.status == 'present' %}bg-green-100 text-green-800 hover:bg-green-200
+                                {% elif day.status == 'late' %}bg-amber-100 text-amber-800 hover:bg-amber-200
+                                {% elif day.status == 'absent' %}bg-red-100 text-red-800 hover:bg-red-200
+                                {% elif day.status == 'leave' %}bg-blue-100 text-blue-800 hover:bg-blue-200
+                                {% elif day.status == 'holiday' %}bg-purple-100 text-purple-800
+                                {% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+                        <span class="text-sm font-semibold">{{ day.day }}</span>
+                        {% if day.has_tasks %}
+                        <span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                        {% endif %}
+                    </button>
+                    {% endif %}
+                    {% else %}
+                    <!-- Empty slot -->
+                    <div class="w-full h-full"></div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Legend -->
+            <div class="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-3 text-xs">
+                <span class="inline-flex items-center">
+                    <span class="w-3 h-3 bg-green-100 rounded mr-1.5"></span>Present
+                </span>
+                <span class="inline-flex items-center">
+                    <span class="w-3 h-3 bg-amber-100 rounded mr-1.5"></span>Late
+                </span>
+                <span class="inline-flex items-center">
+                    <span class="w-3 h-3 bg-red-100 rounded mr-1.5"></span>Absent
+                </span>
+                <span class="inline-flex items-center">
+                    <span class="w-3 h-3 bg-blue-100 rounded mr-1.5"></span>Leave
+                </span>
+                <span class="inline-flex items-center">
+                    <span class="w-1.5 h-1.5 bg-teal-500 rounded-full mr-1.5"></span>Tasks
+                </span>
+            </div>
+        </div>
+
+        <!-- Recent Records -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <h3 class="font-semibold text-gray-900">Recent Records</h3>
+            </div>
+            
+            {% if attendance_records %}
+            <div class="divide-y divide-gray-100">
+                {% for record in attendance_records|slice:":10" %}
+                <div class="p-4 hover:bg-gray-50 transition">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center
+                                {% if record.attendance_type == 'PRESENT' %}bg-green-100
+                                {% elif record.attendance_type == 'LATE' %}bg-amber-100
+                                {% elif record.attendance_type == 'ABSENT' %}bg-red-100
+                                {% else %}bg-blue-100{% endif %}">
+                                <span class="text-sm font-bold
+                                    {% if record.attendance_type == 'PRESENT' %}text-green-600
+                                    {% elif record.attendance_type == 'LATE' %}text-amber-600
+                                    {% elif record.attendance_type == 'ABSENT' %}text-red-600
+                                    {% else %}text-blue-600{% endif %}">
+                                    {{ record.date.day }}
+                                </span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">{{ record.date|date:"l" }}</p>
+                                <p class="text-xs text-gray-500">{{ record.date|date:"d F Y" }}</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-medium rounded-full
+                            {% if record.attendance_type == 'PRESENT' %}bg-green-100 text-green-700
+                            {% elif record.attendance_type == 'LATE' %}bg-amber-100 text-amber-700
+                            {% elif record.attendance_type == 'ABSENT' %}bg-red-100 text-red-700
+                            {% else %}bg-blue-100 text-blue-700{% endif %}">
+                            {{ record.get_attendance_type_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center gap-3 text-gray-500">
+                            {% if record.clock_in %}
+                            <span>
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14"></path>
+                                </svg>
+                                {{ record.clock_in|time:"H:i" }}
+                            </span>
+                            {% endif %}
+                            {% if record.clock_out %}
+                            <span>
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7"></path>
+                                </svg>
+                                {{ record.clock_out|time:"H:i" }}
+                            </span>
+                            {% endif %}
+                            {% if record.hours_worked %}
+                            <span>{{ record.hours_worked|floatformat:1 }}h</span>
+                            {% endif %}
+                        </div>
+                        {% if record.mentor_verified %}
+                        <span class="text-green-600 text-xs">
+                            <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Verified
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-8 text-center">
+                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <p class="text-sm text-gray-500">No attendance records this month</p>
+                <a href="{% url 'portals:student_attendance_submit_page' %}" class="inline-block mt-3 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition">
+                    Submit Attendance
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Day Details Modal -->
+<div id="dayModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end justify-center hidden" onclick="closeDayModal(event)">
+    <div class="bg-white w-full max-w-lg rounded-t-2xl p-6 transform transition-transform" onclick="event.stopPropagation()">
+        <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+        
+        <h3 id="modalDate" class="text-xl font-bold text-gray-900 mb-4">-</h3>
+        
+        <div id="modalContent">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+        
+        <div id="modalActions" class="mt-4 space-y-2">
+            <!-- Actions will be populated by JavaScript -->
+        </div>
+        
+        <button onclick="closeDayModal()" class="w-full mt-4 px-4 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition">
+            Close
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Month selector change
+document.getElementById('monthSelector')?.addEventListener('change', function() {
+    const [year, month] = this.value.split('-');
+    window.location.href = `?year=${year}&month=${month}`;
+});
+
+// Day modal functions
+function openDayModal(dateStr, status, taskCount, dailyEntryId) {
+    const modal = document.getElementById('dayModal');
+    const dateObj = new Date(dateStr + 'T00:00:00');
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    
+    document.getElementById('modalDate').textContent = dateObj.toLocaleDateString('en-ZA', options);
+    
+    // Status content
+    let statusHtml = '';
+    if (status === 'present') {
+        statusHtml = '<div class="flex items-center gap-2 p-3 bg-green-50 rounded-xl"><span class="w-3 h-3 bg-green-500 rounded-full"></span><span class="text-green-700 font-medium">Present</span></div>';
+    } else if (status === 'late') {
+        statusHtml = '<div class="flex items-center gap-2 p-3 bg-amber-50 rounded-xl"><span class="w-3 h-3 bg-amber-500 rounded-full"></span><span class="text-amber-700 font-medium">Late Arrival</span></div>';
+    } else if (status === 'absent') {
+        statusHtml = '<div class="flex items-center gap-2 p-3 bg-red-50 rounded-xl"><span class="w-3 h-3 bg-red-500 rounded-full"></span><span class="text-red-700 font-medium">Absent</span></div>';
+    } else if (status === 'leave') {
+        statusHtml = '<div class="flex items-center gap-2 p-3 bg-blue-50 rounded-xl"><span class="w-3 h-3 bg-blue-500 rounded-full"></span><span class="text-blue-700 font-medium">On Leave</span></div>';
+    } else if (status === 'holiday') {
+        statusHtml = '<div class="flex items-center gap-2 p-3 bg-purple-50 rounded-xl"><span class="w-3 h-3 bg-purple-500 rounded-full"></span><span class="text-purple-700 font-medium">Public Holiday</span></div>';
+    } else {
+        statusHtml = '<div class="flex items-center gap-2 p-3 bg-gray-50 rounded-xl"><span class="w-3 h-3 bg-gray-400 rounded-full"></span><span class="text-gray-600 font-medium">No attendance recorded</span></div>';
+    }
+    
+    // Tasks info
+    if (taskCount > 0) {
+        statusHtml += `<div class="flex items-center gap-2 p-3 bg-teal-50 rounded-xl mt-2">
+            <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+            </svg>
+            <span class="text-teal-700 font-medium">${taskCount} task${taskCount > 1 ? 's' : ''} completed</span>
+        </div>`;
+    }
+    
+    document.getElementById('modalContent').innerHTML = statusHtml;
+    
+    // Actions
+    let actionsHtml = '';
+    const today = new Date().toISOString().split('T')[0];
+    const isPast = dateStr <= today;
+    
+    if (isPast) {
+        if (status === 'none' || !status) {
+            actionsHtml += `<a href="{% url 'portals:student_attendance_submit_page' %}?date=${dateStr}" class="block w-full px-4 py-3 bg-emerald-600 text-white text-center font-medium rounded-xl hover:bg-emerald-700 transition">Submit Attendance</a>`;
+        }
+        
+        if (dailyEntryId) {
+            actionsHtml += `<a href="{% url 'portals:student_daily_entry_detail' 0 %}`.replace('/0/', `/${dailyEntryId}/`) + `" class="block w-full px-4 py-3 bg-teal-600 text-white text-center font-medium rounded-xl hover:bg-teal-700 transition">View Daily Tasks</a>`;
+        } else if (status && status !== 'none') {
+            actionsHtml += `<a href="{% url 'portals:student_daily_entry_create' %}?date=${dateStr}" class="block w-full px-4 py-3 bg-teal-600 text-white text-center font-medium rounded-xl hover:bg-teal-700 transition">Add Daily Tasks</a>`;
+        }
+    }
+    
+    document.getElementById('modalActions').innerHTML = actionsHtml;
+    
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDayModal(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.getElementById('dayModal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+// Swipe navigation for calendar
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+});
+
+document.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+});
+
+function handleSwipe() {
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 100) {
+        if (diff > 0) {
+            // Swipe left - next month
+            const nextLink = document.querySelector('a[href*="month={{ next_month }}"]');
+            if (nextLink) nextLink.click();
+        } else {
+            // Swipe right - previous month
+            const prevLink = document.querySelector('a[href*="month={{ prev_month }}"]');
+            if (prevLink) prevLink.click();
+        }
+    }
+}
+</script>
+{% endblock %}

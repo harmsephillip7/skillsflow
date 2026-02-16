@@ -1,0 +1,314 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="flex items-center text-sm text-gray-500 mb-2">
+                <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <a href="{% url 'workflows:sop_admin_list' %}" class="hover:text-primary-600">SOPs</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="text-gray-700">{{ sop.name }}</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">{{ page_title }}</h1>
+            <div class="flex items-center gap-2 mt-1">
+                <span class="text-sm font-mono text-gray-500">{{ sop.code }}</span>
+                {% if sop.is_published %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Published</span>
+                {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Draft</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <form method="post" action="{% url 'workflows:sop_toggle_publish' pk=sop.pk %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="inline-flex items-center px-4 py-2 {% if sop.is_published %}bg-yellow-100 text-yellow-700 hover:bg-yellow-200{% else %}bg-green-100 text-green-700 hover:bg-green-200{% endif %} text-sm font-medium rounded-xl transition">
+                    {% if sop.is_published %}
+                    <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                    </svg>
+                    Unpublish
+                    {% else %}
+                    <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    Publish
+                    {% endif %}
+                </button>
+            </form>
+            <a href="{% url 'workflows:sop_detail' code=sop.code %}" 
+               class="inline-flex items-center px-4 py-2 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-100 transition border border-gray-200">
+                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                Preview
+            </a>
+        </div>
+    </div>
+    
+    <div class="grid lg:grid-cols-3 gap-6">
+        <!-- Main Form -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- SOP Details -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">SOP Details</h2>
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                            <select name="category" required class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if sop.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Code *</label>
+                            <input type="text" name="code" value="{{ sop.code }}" required
+                                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono uppercase">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                        <input type="text" name="name" value="{{ sop.name }}" required
+                               class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" rows="2"
+                                  class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">{{ sop.description }}</textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Purpose</label>
+                        <textarea name="purpose" rows="2"
+                                  class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">{{ sop.purpose }}</textarea>
+                    </div>
+                    
+                    <div class="grid sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Version</label>
+                            <input type="text" name="version" value="{{ sop.version }}"
+                                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Duration</label>
+                            <input type="text" name="estimated_duration" value="{{ sop.estimated_duration }}"
+                                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Icon</label>
+                            <input type="text" name="icon" value="{{ sop.icon }}"
+                                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" 
+                                class="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition shadow-sm">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Steps -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Steps</h2>
+                        <p class="text-sm text-gray-500">{{ steps.count }} step{{ steps.count|pluralize }} defined</p>
+                    </div>
+                    <button type="button" onclick="document.getElementById('add-step-form').classList.toggle('hidden')"
+                            class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">
+                        <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Step
+                    </button>
+                </div>
+                
+                <!-- Add Step Form (Hidden by default) -->
+                <div id="add-step-form" class="hidden border-b border-gray-100 p-4 bg-blue-50">
+                    <form method="post" action="{% url 'workflows:sop_step_create' sop_pk=sop.pk %}" class="space-y-4">
+                        {% csrf_token %}
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                                <input type="text" name="title" required placeholder="Step title"
+                                       class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Responsible Role</label>
+                                <input type="text" name="responsible_role" placeholder="e.g., Admin"
+                                       class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea name="description" rows="2" placeholder="Detailed instructions..."
+                                      class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">App URL Name</label>
+                                <input type="text" name="app_url_name" placeholder="e.g., core:enrollment_list"
+                                       class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm">
+                                <p class="mt-1 text-xs text-gray-500">Django URL name for in-app navigation</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Button Label</label>
+                                <input type="text" name="app_url_label" placeholder="e.g., Go to Enrollments"
+                                       class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tips</label>
+                            <input type="text" name="tips" placeholder="Pro tips or common mistakes to avoid"
+                                   class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" name="is_optional" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Optional step</span>
+                            </label>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" onclick="document.getElementById('add-step-form').classList.add('hidden')"
+                                    class="px-4 py-2 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition">
+                                Cancel
+                            </button>
+                            <button type="submit" 
+                                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">
+                                Add Step
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Steps List -->
+                <div class="divide-y divide-gray-100">
+                    {% for step in steps %}
+                    <div class="p-4 hover:bg-gray-50" id="step-{{ step.pk }}">
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                                {{ step.order }}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-medium text-gray-900">{{ step.title }}</h4>
+                                    {% if step.is_optional %}
+                                    <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Optional</span>
+                                    {% endif %}
+                                </div>
+                                {% if step.description %}
+                                <p class="text-sm text-gray-500 mt-1">{{ step.description|truncatewords:30 }}</p>
+                                {% endif %}
+                                {% if step.app_url_name %}
+                                <p class="text-xs font-mono text-blue-600 mt-1">{{ step.app_url_name }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="editStep({{ step.pk }})"
+                                        class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <form method="post" action="{% url 'workflows:sop_step_delete' pk=step.pk %}" 
+                                      onsubmit="return confirm('Delete this step?')" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 text-center">
+                        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                        </div>
+                        <p class="text-gray-500 mb-2">No steps yet</p>
+                        <p class="text-sm text-gray-400">Click "Add Step" to create your first step</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="space-y-4">
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Actions</h3>
+                <div class="space-y-2">
+                    <a href="{% url 'workflows:sop_detail' code=sop.code %}" 
+                       class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        <span class="text-sm text-gray-700">Preview SOP</span>
+                    </a>
+                    <form method="post" action="{% url 'workflows:sop_delete' pk=sop.pk %}"
+                          onsubmit="return confirm('Are you sure you want to delete this SOP? This cannot be undone.')">
+                        {% csrf_token %}
+                        <button type="submit" 
+                                class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 transition text-left">
+                            <svg class="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            <span class="text-sm text-red-600">Delete SOP</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Common URL Names -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Common App URLs</h3>
+                <div class="space-y-2 text-xs">
+                    <div class="p-2 bg-gray-50 rounded font-mono">core:enrollment_list</div>
+                    <div class="p-2 bg-gray-50 rounded font-mono">core:learner_list</div>
+                    <div class="p-2 bg-gray-50 rounded font-mono">admin:dashboard</div>
+                    <div class="p-2 bg-gray-50 rounded font-mono">finance:invoice_list</div>
+                    <div class="p-2 bg-gray-50 rounded font-mono">hr_admin:department_list</div>
+                    <div class="p-2 bg-gray-50 rounded font-mono">corporate:client_list</div>
+                </div>
+                <p class="text-xs text-gray-400 mt-3">Use these URL names in the "App URL Name" field</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function editStep(stepId) {
+    // Simple edit - for a real implementation, you'd show an inline edit form
+    alert('Edit functionality would show inline form for step ' + stepId);
+}
+</script>
+{% endblock %}

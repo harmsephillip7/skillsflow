@@ -1,0 +1,218 @@
+{% extends 'base/app_layout.html' %}
+
+{% block title %}Employee Detail - {{ employee.get_full_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:dashboard' %}" class="text-gray-700 hover:text-blue-600">Corporate</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:employee_database' employee.client.pk %}" class="text-gray-700 hover:text-blue-600">Employee Database</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">{{ employee.get_full_name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl font-bold">
+                    {{ employee.learner.first_name|slice:":1" }}{{ employee.learner.last_name|slice:":1" }}
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ employee.get_full_name }}</h1>
+                    <p class="text-gray-500">{{ employee.job_title|default:"No Job Title" }} • {{ employee.department|default:"No Department" }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'corporate:employee_idp_list' employee.pk %}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Individual Development Plan
+                </a>
+                <button class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Edit Profile
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column: Details -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="p-4 border-b border-gray-100 bg-gray-50">
+                    <h3 class="font-bold text-gray-900">Personal Information</h3>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">ID Number</p>
+                        <p class="text-gray-900">{{ employee.learner.sa_id_number|default:"Not provided" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Email Address</p>
+                        <p class="text-gray-900">{{ employee.learner.email|default:"Not provided" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Gender / Race</p>
+                        <p class="text-gray-900">{{ employee.learner.get_gender_display }} / {{ employee.learner.get_population_group_display }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Disability</p>
+                        <p class="text-gray-900">{{ employee.learner.get_disability_status_display }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="p-4 border-b border-gray-100 bg-gray-50">
+                    <h3 class="font-bold text-gray-900">Employment Details</h3>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Employee Number</p>
+                        <p class="text-gray-900">{{ employee.employee_number|default:"-" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">OFO Code</p>
+                        <p class="text-gray-900">{{ employee.ofo_code|default:"-" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Occupational Level</p>
+                        <p class="text-gray-900">{{ employee.get_occupational_level_display|default:"-" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Employment Type</p>
+                        <p class="text-gray-900">{{ employee.get_employment_type_display|default:"-" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Qualifications -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-900">Qualifications & Certifications</h3>
+                    <button onclick="document.getElementById('addQualModal').classList.remove('hidden')" class="text-sm text-blue-600 hover:underline font-medium">
+                        + Add Qualification
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                            <tr>
+                                <th class="px-4 py-3">Qualification</th>
+                                <th class="px-4 py-3">Institution</th>
+                                <th class="px-4 py-3">Date Obtained</th>
+                                <th class="px-4 py-3">Status</th>
+                                <th class="px-4 py-3">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for qual in qualifications %}
+                            <tr>
+                                <td class="px-4 py-3">
+                                    <p class="font-medium text-gray-900">{{ qual.qualification_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ qual.get_qualification_type_display }} (NQF {{ qual.nqf_level|default:"-" }})</p>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600">{{ qual.institution }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600">{{ qual.date_obtained|date:"d M Y"|default:"-" }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="px-2 py-1 text-xs rounded-full 
+                                        {% if qual.verification_status == 'VERIFIED' %}bg-green-100 text-green-700
+                                        {% elif qual.verification_status == 'REJECTED' %}bg-red-100 text-red-700
+                                        {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                                        {{ qual.get_verification_status_display }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    {% if qual.certificate_file %}
+                                    <a href="{{ qual.certificate_file.url }}" target="_blank" class="text-blue-600 hover:underline text-sm">View File</a>
+                                    {% else %}
+                                    <span class="text-gray-400 text-sm italic">No file</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-gray-500 italic">
+                                    No qualifications recorded for this employee.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Qualification Modal -->
+<div id="addQualModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-900">Add Qualification</h3>
+            <button onclick="document.getElementById('addQualModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form action="{% url 'corporate:add_qualification' employee.pk %}" method="post" enctype="multipart/form-data" class="p-6 space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Qualification Type</label>
+                <select name="qualification_type" required class="w-full border-gray-300 rounded-lg shadow-sm">
+                    <option value="DEGREE">Degree</option>
+                    <option value="DIPLOMA">Diploma</option>
+                    <option value="CERTIFICATE">Certificate</option>
+                    <option value="MATRIC">Matric</option>
+                    <option value="SHORT_COURSE">Short Course</option>
+                    <option value="OTHER">Other</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Qualification Name</label>
+                <input type="text" name="qualification_name" required class="w-full border-gray-300 rounded-lg shadow-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Institution</label>
+                <input type="text" name="institution" class="w-full border-gray-300 rounded-lg shadow-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date Obtained</label>
+                    <input type="date" name="date_obtained" class="w-full border-gray-300 rounded-lg shadow-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">NQF Level</label>
+                    <input type="number" name="nqf_level" min="1" max="10" class="w-full border-gray-300 rounded-lg shadow-sm">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Certificate File (PDF/Image)</label>
+                <input type="file" name="certificate" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+            <div class="flex justify-end gap-3 pt-4">
+                <button type="button" onclick="document.getElementById('addQualModal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Qualification</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

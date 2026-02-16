@@ -1,0 +1,58 @@
+{% extends 'base/simple_layout.html' %}
+
+{% block title %}Invalid Invitation{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <!-- Logo -->
+        <div class="flex justify-center">
+            <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+        </div>
+        <h2 class="mt-6 text-center text-3xl font-bold text-gray-900">
+            Invalid Invitation
+        </h2>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow-lg sm:rounded-xl sm:px-10 text-center">
+            <div class="mb-6">
+                <p class="text-gray-700 mb-4">
+                    {% if reason == 'expired' %}
+                        This invitation has expired. Please contact your account manager to request a new invitation.
+                    {% elif reason == 'used' %}
+                        This invitation has already been used. If you already have an account, please log in.
+                    {% elif reason == 'revoked' %}
+                        This invitation has been revoked. Please contact your account manager for more information.
+                    {% else %}
+                        This invitation link is invalid or has been removed.
+                    {% endif %}
+                </p>
+            </div>
+            
+            <div class="space-y-3">
+                <a href="{% url 'login' %}" 
+                   class="w-full inline-flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Go to Login
+                </a>
+                
+                <a href="{% url 'home' %}" 
+                   class="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Return to Home
+                </a>
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-gray-200">
+                <p class="text-sm text-gray-500">
+                    Need help? Contact us at 
+                    <a href="mailto:support@skillsflow.co.za" class="text-primary-600 hover:text-primary-700">support@skillsflow.co.za</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

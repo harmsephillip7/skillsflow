@@ -1,0 +1,788 @@
+{% extends 'crm/crm_base.html' %}
+{% load static humanize %}
+
+{% block title %}Pipeline Hub - CRM - SkillsFlow{% endblock %}
+
+{% block page_title %}Pipeline Hub{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:dashboard' %}" class="text-gray-500 hover:text-gray-700">CRM</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Pipeline Hub</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <!-- Campus Selector -->
+    {% if show_campus_selector %}
+    <select onchange="updateFilters('campus', this.value)" id="campus-select"
+            class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+        <option value="">All Campuses</option>
+        {% for campus in all_campuses %}
+        <option value="{{ campus.pk }}" {% if campus == selected_campus %}selected{% endif %}>
+            {{ campus.name }}{% if campus == user_campus %} (Your Campus){% endif %}
+        </option>
+        {% endfor %}
+    </select>
+    {% endif %}
+    
+    <!-- My/All Toggle -->
+    <div class="flex rounded-lg border border-gray-300 overflow-hidden">
+        <button type="button" onclick="setShowAll(false)" id="my-leads-btn"
+           class="px-4 py-2 text-sm font-medium {% if not show_all %}bg-primary-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+            My Leads
+        </button>
+        <button type="button" onclick="setShowAll(true)" id="all-leads-btn"
+           class="px-4 py-2 text-sm font-medium {% if show_all %}bg-primary-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+            All Leads
+        </button>
+    </div>
+    
+    <a href="{% url 'crm:lead_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        Add Lead
+    </a>
+</div>
+{% endblock %}
+
+{% block crm_content %}
+<script>
+let showAll = {{ show_all|yesno:"true,false" }};
+let activeTab = '{{ active_tab }}';
+let currentPipeline = '{{ current_pipeline.pk|default:"" }}';
+
+function updateFilters(key, value) {
+    const params = new URLSearchParams(window.location.search);
+    if (value) {
+        params.set(key, value);
+    } else {
+        params.delete(key);
+    }
+    if (showAll) params.set('show_all', '1'); else params.delete('show_all');
+    if (activeTab) params.set('tab', activeTab);
+    if (currentPipeline) params.set('pipeline', currentPipeline);
+    window.location.href = '?' + params.toString();
+}
+
+function setShowAll(value) {
+    showAll = value;
+    const params = new URLSearchParams(window.location.search);
+    if (value) {
+        params.set('show_all', '1');
+    } else {
+        params.delete('show_all');
+    }
+    window.location.href = '?' + params.toString();
+}
+
+function switchTab(tab) {
+    console.log('Switching to tab:', tab);
+    activeTab = tab;
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', tab);
+    const newUrl = '?' + params.toString();
+    console.log('Navigating to:', newUrl);
+    window.location.href = newUrl;
+}
+
+function selectPipeline(pipelineId) {
+    currentPipeline = pipelineId;
+    const params = new URLSearchParams(window.location.search);
+    params.set('pipeline', pipelineId);
+    params.set('tab', 'leads');
+    window.location.href = '?' + params.toString();
+}
+</script>
+
+<div class="space-y-6">
+    
+    <!-- ======================= -->
+    <!-- PIPELINE OVERVIEW CARDS -->
+    <!-- ======================= -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {% for card in pipeline_cards %}
+        <div onclick="selectPipeline('{{ card.pipeline.pk }}')" 
+             class="cursor-pointer bg-white rounded-xl shadow-sm border-2 transition-all hover:shadow-md {% if card.pipeline == current_pipeline %}border-primary-500 ring-2 ring-primary-200{% else %}border-gray-100 hover:border-primary-300{% endif %} p-4">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 rounded-full mr-2" style="background-color: {{ card.pipeline.color|default:'#6B7280' }}"></div>
+                    <h3 class="font-semibold text-gray-900">{{ card.pipeline.name }}</h3>
+                </div>
+                <span class="text-2xl font-bold text-gray-900">{{ card.leads_count }}</span>
+            </div>
+            <div class="text-xs text-gray-500 mb-2">{{ card.pipeline.learner_type }}</div>
+            <div class="flex space-x-1">
+                {% for stage in card.stage_counts %}
+                <div class="flex-1 h-2 rounded-full" style="background-color: {{ stage.color|default:'#E5E7EB' }};" title="{{ stage.name }}: {{ stage.count }}"></div>
+                {% endfor %}
+            </div>
+            <div class="mt-2 flex justify-between text-xs text-gray-400">
+                {% for stage in card.stage_counts %}
+                <span>{{ stage.count }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full text-center py-8 text-gray-500">
+            <p>No pipelines configured.</p>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- ======================= -->
+    <!-- TABS: Leads | Opportunities | Applications -->
+    <!-- ======================= -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 relative z-10">
+        <div class="border-b border-gray-200">
+            <nav class="flex -mb-px" aria-label="Tabs">
+                <button type="button" onclick="switchTab('leads')" 
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors cursor-pointer relative z-20 {% if active_tab == 'leads' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+                    <span class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Leads
+                        {% if dashboard.pipeline_stats.total_leads %}
+                        <span class="ml-2 bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs">{{ dashboard.pipeline_stats.total_leads }}</span>
+                        {% endif %}
+                    </span>
+                </button>
+                <button type="button" onclick="switchTab('opportunities')" 
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors cursor-pointer relative z-20 {% if active_tab == 'opportunities' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+                    <span class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Opportunities
+                        {% if opportunity_stats.total_count %}
+                        <span class="ml-2 bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">{{ opportunity_stats.total_count }}</span>
+                        {% endif %}
+                    </span>
+                </button>
+                <button type="button" onclick="switchTab('applications')" 
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors cursor-pointer relative z-20 {% if active_tab == 'applications' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+                    <span class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Applications
+                        {% if application_stats.total_count %}
+                        <span class="ml-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">{{ application_stats.total_count }}</span>
+                        {% endif %}
+                    </span>
+                </button>
+            </nav>
+        </div>
+        
+        <!-- Tab Content -->
+        <div class="p-4">
+            
+            <!-- ======================= -->
+            <!-- LEADS TAB CONTENT -->
+            <!-- ======================= -->
+            {% if active_tab == 'leads' %}
+            {% if not current_pipeline %}
+            <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Select a pipeline</h3>
+                <p class="mt-1 text-sm text-gray-500">Click on a pipeline card above to view its leads.</p>
+            </div>
+            {% else %}
+            
+            <!-- Quick Stats for Selected Pipeline -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-xs font-medium text-gray-500">Total in Pipeline</div>
+                    <div class="mt-1 text-xl font-bold text-gray-900">{{ dashboard.pipeline_stats.total_leads|default:0 }}</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-xs font-medium text-gray-500">Hot Leads</div>
+                    <div class="mt-1 text-xl font-bold text-orange-600">{{ dashboard.pipeline_stats.hot_leads|default:0 }}</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-xs font-medium text-gray-500">Follow-ups Today</div>
+                    <div class="mt-1 text-xl font-bold text-blue-600">{{ dashboard.today_follow_ups|length|default:0 }}</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-xs font-medium text-gray-500">Conversion Rate</div>
+                    <div class="mt-1 text-xl font-bold text-green-600">{{ dashboard.pipeline_stats.conversion_rate|floatformat:1|default:"--" }}%</div>
+                </div>
+            </div>
+            
+            <!-- Kanban Board with Collapsible Stages -->
+            <div class="kanban-container">
+                <div class="flex space-x-4 overflow-x-auto pb-4" id="kanban-board">
+                    {% for stage_data in stages %}
+                    <div class="flex-shrink-0 w-72 md:w-80 kanban-column" data-stage-id="{{ stage_data.stage.pk }}">
+                        <!-- Column Header (Collapsible on mobile) -->
+                        <div class="flex items-center justify-between mb-3 px-1 cursor-pointer" onclick="toggleStage('{{ stage_data.stage.pk }}')">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full mr-2" style="background-color: {{ stage_data.stage.color|default:'#6B7280' }}"></div>
+                                <span class="font-semibold text-gray-900">{{ stage_data.stage.name }}</span>
+                                <span class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                                    {{ stage_data.total_count }}
+                                </span>
+                            </div>
+                            <button class="lg:hidden p-1 text-gray-400 hover:text-gray-600 stage-toggle" data-stage="{{ stage_data.stage.pk }}">
+                                <svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <!-- Cards Container -->
+                        <div class="space-y-3 min-h-[100px] bg-gray-50 rounded-lg p-2 stage-cards" 
+                             id="stage-{{ stage_data.stage.pk }}"
+                             ondrop="dropCard(event)" 
+                             ondragover="allowDrop(event)">
+                            
+                            {% for item in stage_data.leads %}
+                            {% with lead=item.lead requirements=item.requirements %}
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-3 cursor-grab active:cursor-grabbing lead-card"
+                                 draggable="true"
+                                 ondragstart="dragStart(event)"
+                                 data-lead-id="{{ lead.pk }}">
+                                
+                                <div class="flex items-start justify-between">
+                                    <a href="{% url 'crm:lead_detail' lead.pk %}" class="text-sm font-medium text-gray-900 hover:text-primary-600">
+                                        {{ lead.get_full_name }}
+                                    </a>
+                                    <div class="flex items-center space-x-1">
+                                        {% if lead.has_pre_approval %}
+                                        {% if lead.pre_approval_status == 'SENT' %}
+                                        <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-700" title="Pre-approval sent: {{ lead.pre_approval_number }}">📨</span>
+                                        {% elif lead.pre_approval_status == 'VIEWED' %}
+                                        <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-purple-100 text-purple-700" title="Pre-approval viewed: {{ lead.pre_approval_number }}">👀</span>
+                                        {% elif lead.pre_approval_status == 'ACCEPTED' %}
+                                        <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-green-100 text-green-700" title="Pre-approval accepted: {{ lead.pre_approval_number }}">✅</span>
+                                        {% endif %}
+                                        {% endif %}
+                                        {% if lead.qualification_interest %}
+                                        <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-green-100 text-green-700" title="Ready for quote">💰</span>
+                                        {% else %}
+                                        <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-orange-100 text-orange-700" title="No qualification set">⚠️</span>
+                                        {% endif %}
+                                        {% if lead.engagement_score >= 50 %}
+                                        <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-red-100 text-red-800" title="High engagement">🔥</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                {% if lead.qualification_interest %}
+                                <p class="mt-1 text-xs text-gray-500 truncate">{{ lead.qualification_interest.short_title }}</p>
+                                {% else %}
+                                <p class="mt-1 text-xs text-orange-500 truncate">No qualification selected</p>
+                                {% endif %}
+                                
+                                <!-- Requirements Indicators -->
+                                {% if requirements.has_pending %}
+                                <div class="mt-2 flex items-center space-x-2 text-xs">
+                                    {% if requirements.documents.pending > 0 %}
+                                    <span class="flex items-center text-orange-600" title="Pending documents">
+                                        <svg class="w-3 h-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        {{ requirements.documents.pending }}
+                                    </span>
+                                    {% endif %}
+                                    {% if requirements.payments.pending > 0 %}
+                                    <span class="flex items-center text-red-600" title="Pending payments">
+                                        <svg class="w-3 h-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                                        </svg>
+                                        {{ requirements.payments.pending }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                
+                                <div class="mt-2 flex items-center justify-between">
+                                    <div class="flex items-center space-x-2 text-xs text-gray-400">
+                                        {% if lead.phone %}
+                                        <span title="Phone">📱</span>
+                                        {% endif %}
+                                        {% if lead.email %}
+                                        <span title="Email">✉️</span>
+                                        {% endif %}
+                                        {% if lead.whatsapp_number %}
+                                        <span title="WhatsApp" class="text-green-500">💬</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <button type="button" onclick="openQuoteModal('{{ lead.pk }}')" 
+                                            class="px-2 py-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 transition-colors">
+                                        💰 Quote
+                                    </button>
+                                </div>
+                                
+                                {% if lead.stage_entered_at %}
+                                <div class="mt-2 text-xs text-gray-400">
+                                    In stage for {{ lead.stage_entered_at|timesince }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endwith %}
+                            {% empty %}
+                            <div class="text-center py-8 text-sm text-gray-400">
+                                No leads in this stage
+                            </div>
+                            {% endfor %}
+                            
+                            {% if stage_data.total_count > 20 %}
+                            <div class="text-center py-2">
+                                <a href="{% url 'crm:lead_list' %}?stage={{ stage_data.stage.pk }}" class="text-xs text-primary-600 hover:text-primary-700">
+                                    View all {{ stage_data.total_count }} leads →
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="w-full text-center py-12 text-gray-500">
+                        <p>No stages defined for this pipeline.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+            
+            <!-- ======================= -->
+            <!-- OPPORTUNITIES TAB CONTENT -->
+            <!-- ======================= -->
+            {% if active_tab == 'opportunities' %}
+            
+            <!-- Opportunity Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-xs font-medium text-gray-500">Total Opportunities</div>
+                    <div class="mt-1 text-xl font-bold text-gray-900">{{ opportunity_stats.total_count|default:0 }}</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-xs font-medium text-gray-500">Total Value</div>
+                    <div class="mt-1 text-xl font-bold text-green-600">R{{ opportunity_stats.total_value|floatformat:0|intcomma|default:"0" }}</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-xs font-medium text-gray-500">Weighted Value</div>
+                    <div class="mt-1 text-xl font-bold text-blue-600">R{{ opportunity_stats.weighted_value|floatformat:0|intcomma|default:"0" }}</div>
+                </div>
+            </div>
+            
+            <!-- Create Opportunity Button -->
+            <div class="mb-4">
+                <a href="{% url 'crm:opportunity_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    New Opportunity (Upsell)
+                </a>
+            </div>
+            
+            <!-- Opportunity Kanban -->
+            <div class="flex space-x-4 overflow-x-auto pb-4">
+                {% for stage_data in opportunity_stages %}
+                <div class="flex-shrink-0 w-72 md:w-80">
+                    <div class="flex items-center justify-between mb-3 px-1">
+                        <div class="flex items-center">
+                            <span class="px-2 py-0.5 text-xs font-medium rounded {{ stage_data.bg_class }} {{ stage_data.text_class }}">
+                                {{ stage_data.label }}
+                            </span>
+                            <span class="ml-2 text-sm text-gray-500">{{ stage_data.count }}</span>
+                        </div>
+                        <span class="text-xs text-green-600 font-medium">R{{ stage_data.value|floatformat:0|intcomma }}</span>
+                    </div>
+                    
+                    <div class="space-y-3 min-h-[100px] bg-gray-50 rounded-lg p-2"
+                         ondrop="dropOpportunity(event, '{{ stage_data.key }}')" 
+                         ondragover="allowDrop(event)">
+                        {% for opp in stage_data.opportunities %}
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-3 cursor-grab"
+                             draggable="true"
+                             ondragstart="dragOppStart(event)"
+                             data-opportunity-id="{{ opp.pk }}">
+                            <div class="flex items-start justify-between">
+                                <a href="{% url 'crm:opportunity_detail' opp.pk %}" class="text-sm font-medium text-gray-900 hover:text-primary-600">
+                                    {{ opp.name|truncatewords:5 }}
+                                </a>
+                                <span class="text-xs font-medium text-green-600">{{ opp.probability }}%</span>
+                            </div>
+                            {% if opp.lead %}
+                            <p class="mt-1 text-xs text-gray-500">{{ opp.lead.get_full_name }}</p>
+                            {% endif %}
+                            {% if opp.qualification %}
+                            <p class="mt-1 text-xs text-gray-400 truncate">{{ opp.qualification.short_title }}</p>
+                            {% endif %}
+                            <div class="mt-2 flex items-center justify-between">
+                                <span class="text-sm font-semibold text-green-600">R{{ opp.value|floatformat:0|intcomma }}</span>
+                                {% if opp.expected_close_date %}
+                                <span class="text-xs text-gray-400">{{ opp.expected_close_date|date:"M j" }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-6 text-sm text-gray-400">
+                            No opportunities
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- ======================= -->
+            <!-- APPLICATIONS TAB CONTENT -->
+            <!-- ======================= -->
+            {% if active_tab == 'applications' %}
+            
+            <!-- Application Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-xs font-medium text-gray-500">Total Applications</div>
+                    <div class="mt-1 text-xl font-bold text-gray-900">{{ application_stats.total_count|default:0 }}</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-xs font-medium text-gray-500">Pending Documents</div>
+                    <div class="mt-1 text-xl font-bold text-orange-600">{{ application_stats.pending_docs|default:0 }}</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-xs font-medium text-gray-500">Accepted</div>
+                    <div class="mt-1 text-xl font-bold text-green-600">{{ application_stats.accepted|default:0 }}</div>
+                </div>
+            </div>
+            
+            <!-- Application Kanban -->
+            <div class="flex space-x-4 overflow-x-auto pb-4">
+                {% for stage_data in application_stages %}
+                <div class="flex-shrink-0 w-72 md:w-80">
+                    <div class="flex items-center justify-between mb-3 px-1">
+                        <div class="flex items-center">
+                            <span class="px-2 py-0.5 text-xs font-medium rounded {{ stage_data.bg_class }} {{ stage_data.text_class }}">
+                                {{ stage_data.label }}
+                            </span>
+                            <span class="ml-2 text-sm text-gray-500">{{ stage_data.count }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3 min-h-[100px] bg-gray-50 rounded-lg p-2">
+                        {% for app in stage_data.applications %}
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                            <div class="flex items-start justify-between">
+                                <a href="{% url 'crm:application_detail' app.pk %}" class="text-sm font-medium text-gray-900 hover:text-primary-600">
+                                    {{ app.opportunity.lead.get_full_name|default:"Application" }}
+                                </a>
+                            </div>
+                            {% if app.opportunity.qualification %}
+                            <p class="mt-1 text-xs text-gray-500 truncate">{{ app.opportunity.qualification.short_title }}</p>
+                            {% endif %}
+                            
+                            <!-- Document Progress -->
+                            {% if app.required_documents %}
+                            <div class="mt-2">
+                                <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+                                    <span>Documents</span>
+                                    <span>{{ app.required_documents|length|add:"-"|add:app.missing_documents|length }}/{{ app.required_documents|length }}</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                    <div class="bg-green-500 h-1.5 rounded-full" style="width: {% widthratio app.missing_documents|length|add:"-1"|add:app.required_documents|length app.required_documents|length 100 %}%;"></div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="mt-2 text-xs text-gray-400">
+                                Created {{ app.created_at|timesince }} ago
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-6 text-sm text-gray-400">
+                            No applications
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick Quote Modal (same as sales_pipeline.html) -->
+<div id="quick-quote-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Quick Quote</h3>
+                <button onclick="closeQuoteModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div id="quote-modal-content">
+                <div class="animate-pulse flex flex-col space-y-4">
+                    <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div class="h-10 bg-gray-200 rounded"></div>
+                    <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Stage collapse for mobile
+function toggleStage(stageId) {
+    if (window.innerWidth >= 1024) return; // Only collapse on mobile
+    
+    const cards = document.getElementById('stage-' + stageId);
+    const toggle = document.querySelector(`[data-stage="${stageId}"] svg`);
+    
+    if (cards.classList.contains('hidden')) {
+        cards.classList.remove('hidden');
+        toggle.classList.remove('rotate-180');
+    } else {
+        cards.classList.add('hidden');
+        toggle.classList.add('rotate-180');
+    }
+}
+
+// Drag and drop for leads
+let draggedLeadId = null;
+
+function dragStart(event) {
+    draggedLeadId = event.target.dataset.leadId;
+    event.target.classList.add('opacity-50');
+}
+
+function allowDrop(event) {
+    event.preventDefault();
+    event.currentTarget.classList.add('bg-primary-50', 'border-primary-300');
+}
+
+function dropCard(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('bg-primary-50', 'border-primary-300');
+    
+    const stageContainer = event.currentTarget;
+    const stageId = stageContainer.id.replace('stage-', '');
+    
+    if (draggedLeadId && stageId) {
+        moveLeadToStage(draggedLeadId, stageId);
+    }
+}
+
+function moveLeadToStage(leadId, stageId) {
+    fetch('{% url "crm:pipeline_stage_update" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            lead_id: leadId,
+            stage_id: stageId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert(data.error || 'Failed to move lead');
+        }
+    });
+}
+
+// Quick Quote Modal
+let currentQuoteLeadId = null;
+
+function openQuoteModal(leadId) {
+    currentQuoteLeadId = leadId;
+    document.getElementById('quick-quote-modal').classList.remove('hidden');
+    document.getElementById('quote-modal-content').innerHTML = `
+        <div class="animate-pulse flex flex-col space-y-4">
+            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div class="h-10 bg-gray-200 rounded"></div>
+        </div>
+    `;
+    
+    // Load quote data
+    fetch(`/crm/api/leads/${leadId}/quick-quote-data/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('quote-modal-content').innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-red-600">${data.error}</p>
+                    </div>
+                `;
+                return;
+            }
+            renderQuoteForm(data);
+        });
+}
+
+function closeQuoteModal() {
+    document.getElementById('quick-quote-modal').classList.add('hidden');
+    currentQuoteLeadId = null;
+}
+
+function renderQuoteForm(data) {
+    let qualOptions = data.qualifications.map(q => 
+        `<option value="${q.id}" ${q.id === data.lead.qualification_interest_id ? 'selected' : ''}>
+            ${q.name} - R${q.price.toLocaleString()}
+        </option>`
+    ).join('');
+    
+    let paymentOptions = data.payment_options.map(p =>
+        `<option value="${p.id}">${p.name} - ${p.months} months</option>`
+    ).join('');
+    
+    document.getElementById('quote-modal-content').innerHTML = `
+        <div class="space-y-4">
+            <div class="bg-gray-50 rounded-lg p-3">
+                <p class="font-medium text-gray-900">${data.lead.full_name}</p>
+                <p class="text-sm text-gray-500">${data.lead.email || ''} ${data.lead.phone || ''}</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Qualification</label>
+                <select id="quote-qualification" class="w-full rounded-lg border-gray-300" onchange="updateQuotePricing()">
+                    ${qualOptions}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Payment Plan</label>
+                <select id="quote-payment" class="w-full rounded-lg border-gray-300" onchange="updateQuotePricing()">
+                    ${paymentOptions}
+                </select>
+            </div>
+            
+            <div id="quote-pricing" class="bg-amber-50 rounded-lg p-4">
+                <div class="flex justify-between text-sm">
+                    <span>Total:</span>
+                    <span id="quote-total" class="font-bold">R${(data.lead.qualification_interest_price || 0).toLocaleString()}</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="quote-whatsapp" checked class="rounded text-primary-600">
+                <label class="text-sm text-gray-700">Send via WhatsApp</label>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="quote-email" class="rounded text-primary-600">
+                <label class="text-sm text-gray-700">Send via Email</label>
+            </div>
+            
+            <button onclick="submitQuote()" class="w-full py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors">
+                Generate & Send Quote
+            </button>
+        </div>
+    `;
+}
+
+function updateQuotePricing() {
+    // Implementation similar to sales_pipeline.html
+}
+
+function submitQuote() {
+    const qualId = document.getElementById('quote-qualification').value;
+    const paymentId = document.getElementById('quote-payment').value;
+    const sendWhatsApp = document.getElementById('quote-whatsapp').checked;
+    const sendEmail = document.getElementById('quote-email').checked;
+    
+    fetch(`/crm/api/leads/${currentQuoteLeadId}/quick-quote-create/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            qualification_id: qualId,
+            payment_option_id: paymentId,
+            send_whatsapp: sendWhatsApp,
+            send_email: sendEmail
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeQuoteModal();
+            alert('Quote sent successfully!');
+        } else {
+            alert(data.error || 'Failed to create quote');
+        }
+    });
+}
+
+// Opportunity drag/drop
+let draggedOppId = null;
+
+function dragOppStart(event) {
+    draggedOppId = event.target.dataset.opportunityId;
+}
+
+function dropOpportunity(event, newStage) {
+    event.preventDefault();
+    if (draggedOppId) {
+        fetch(`/crm/opportunities/${draggedOppId}/stage/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ stage: newStage })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            }
+        });
+    }
+}
+
+// Close modal on escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeQuoteModal();
+    }
+});
+</script>
+
+<style>
+/* Responsive kanban */
+@media (max-width: 1023px) {
+    .kanban-column {
+        width: 100% !important;
+        flex-shrink: 1 !important;
+    }
+    
+    .kanban-container .flex {
+        flex-direction: column;
+        overflow-x: visible;
+    }
+    
+    .stage-cards.hidden {
+        display: none;
+    }
+}
+</style>
+{% endblock %}

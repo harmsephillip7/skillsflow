@@ -1,0 +1,296 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}{{ opportunity.title }} - Opportunity{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:crm_dashboard' %}" class="text-gray-700 hover:text-blue-600">CRM</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:opportunity_list' %}" class="text-gray-700 hover:text-blue-600">Opportunities</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">{{ opportunity.reference_number }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex space-x-3">
+    {% if opportunity.is_open %}
+    <a href="{% url 'corporate:add_opportunity_activity' opportunity.pk %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+        </svg>
+        Log Activity
+    </a>
+    {% endif %}
+    <a href="{% url 'corporate:opportunity_update' opportunity.pk %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+        </svg>
+        Edit
+    </a>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-start justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ opportunity.title }}</h1>
+                    <p class="text-sm text-gray-500 mt-1">{{ opportunity.reference_number }}</p>
+                </div>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                    {% if opportunity.stage == 'CLOSED_WON' %}bg-emerald-100 text-emerald-800
+                    {% elif opportunity.stage == 'CLOSED_LOST' %}bg-red-100 text-red-800
+                    {% elif opportunity.stage == 'NEGOTIATION' %}bg-purple-100 text-purple-800
+                    {% elif opportunity.stage == 'PROPOSAL' %}bg-blue-100 text-blue-800
+                    {% elif opportunity.stage == 'QUALIFIED' %}bg-green-100 text-green-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ opportunity.get_stage_display }}
+                </span>
+            </div>
+            
+            {% if opportunity.description %}
+            <p class="mt-4 text-gray-600">{{ opportunity.description }}</p>
+            {% endif %}
+            
+            <!-- Stage Progress -->
+            {% if opportunity.is_open %}
+            <div class="mt-6">
+                <p class="text-sm font-medium text-gray-700 mb-2">Pipeline Stage</p>
+                <div class="flex space-x-1">
+                    {% for code, name in stage_choices %}
+                    {% if code not in 'CLOSED_WON,CLOSED_LOST,ON_HOLD' %}
+                    <div class="flex-1">
+                        <div class="h-2 rounded {% if opportunity.stage == code %}bg-blue-600{% elif forloop.counter <= current_stage_index %}bg-blue-400{% else %}bg-gray-200{% endif %}"></div>
+                        <p class="text-xs text-gray-500 mt-1 truncate">{{ name }}</p>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <!-- Quick Stage Update -->
+                <form method="post" action="{% url 'corporate:opportunity_stage' opportunity.pk %}" class="mt-4 flex items-center space-x-2">
+                    {% csrf_token %}
+                    <select name="stage" class="text-sm border border-gray-300 rounded px-3 py-1">
+                        {% for code, name in stage_choices %}
+                        <option value="{{ code }}" {% if opportunity.stage == code %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">Update Stage</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Proposed Services -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Proposed Services</h2>
+            </div>
+            <div class="divide-y divide-gray-200">
+                {% for service in proposed_services %}
+                <div class="p-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-medium text-gray-900">{{ service.name }}</p>
+                            <p class="text-sm text-gray-500">{{ service.category.name }}</p>
+                        </div>
+                        {% if service.base_price %}
+                        <span class="text-gray-900 font-semibold">R{{ service.base_price|floatformat:0|intcomma }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-6 text-center text-gray-500">
+                    <p>No services proposed yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Activity Timeline -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900">Activity Timeline</h2>
+                {% if opportunity.is_open %}
+                <a href="{% url 'corporate:add_opportunity_activity' opportunity.pk %}" class="text-blue-600 hover:text-blue-800 text-sm">+ Add Activity</a>
+                {% endif %}
+            </div>
+            <div class="divide-y divide-gray-200">
+                {% for activity in activities %}
+                <div class="p-4">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0">
+                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full 
+                                {% if activity.activity_type == 'CALL' %}bg-blue-100 text-blue-600
+                                {% elif activity.activity_type == 'MEETING' %}bg-green-100 text-green-600
+                                {% elif activity.activity_type == 'EMAIL' %}bg-gray-100 text-gray-600
+                                {% elif activity.activity_type == 'PROPOSAL_SENT' %}bg-purple-100 text-purple-600
+                                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {% if activity.activity_type == 'CALL' %}📞
+                                {% elif activity.activity_type == 'MEETING' %}🤝
+                                {% elif activity.activity_type == 'EMAIL' %}✉️
+                                {% elif activity.activity_type == 'PROPOSAL_SENT' %}📄
+                                {% else %}📝{% endif %}
+                            </span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm font-medium text-gray-900">{{ activity.subject }}</p>
+                                <span class="text-xs text-gray-500">{{ activity.activity_date|date:"d M Y H:i" }}</span>
+                            </div>
+                            <p class="text-xs text-gray-500">{{ activity.get_activity_type_display }}</p>
+                            {% if activity.description %}
+                            <p class="mt-1 text-sm text-gray-600">{{ activity.description|truncatewords:30 }}</p>
+                            {% endif %}
+                            {% if activity.outcome %}
+                            <span class="inline-block mt-2 px-2 py-0.5 text-xs rounded 
+                                {% if activity.outcome == 'POSITIVE' %}bg-green-100 text-green-800
+                                {% elif activity.outcome == 'NEGATIVE' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ activity.get_outcome_display }}
+                            </span>
+                            {% endif %}
+                            {% if activity.next_action %}
+                            <p class="mt-2 text-xs text-gray-500">
+                                Next: {{ activity.next_action }} {% if activity.next_action_date %}({{ activity.next_action_date|date:"d M" }}){% endif %}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-6 text-center text-gray-500">
+                    <p>No activities recorded yet</p>
+                    {% if opportunity.is_open %}
+                    <a href="{% url 'corporate:add_opportunity_activity' opportunity.pk %}" class="text-blue-600 hover:underline mt-2 inline-block">Log your first activity</a>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        <!-- Details Card -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Details</h3>
+            <dl class="space-y-3">
+                <div>
+                    <dt class="text-sm text-gray-500">Client</dt>
+                    <dd class="text-sm font-medium text-gray-900">
+                        {% if opportunity.client %}
+                        <a href="{% url 'corporate:client_360' opportunity.client.pk %}" class="text-blue-600 hover:text-blue-800">
+                            {{ opportunity.client.company_name }}
+                        </a>
+                        {% else %}
+                        {{ opportunity.prospect_company_name|default:"-" }}
+                        {% if opportunity.prospect_contact_name %}
+                        <p class="text-xs text-gray-500">{{ opportunity.prospect_contact_name }}</p>
+                        {% endif %}
+                        {% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Type</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ opportunity.get_opportunity_type_display }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Value</dt>
+                    <dd class="text-lg font-bold text-gray-900">R{{ opportunity.estimated_value|floatformat:0|intcomma|default:"-" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Probability</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ opportunity.probability }}%</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Weighted Value</dt>
+                    <dd class="text-sm font-medium text-green-600">R{{ opportunity.weighted_value|floatformat:0|intcomma }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Expected Close</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ opportunity.expected_close_date|date:"d M Y"|default:"-" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Days in Pipeline</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ opportunity.days_in_pipeline }} days</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Lead Source</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ opportunity.lead_source.name|default:"-" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Sales Owner</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ opportunity.sales_owner.get_full_name|default:opportunity.sales_owner.username }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Priority</dt>
+                    <dd>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                            {% if opportunity.priority == 'CRITICAL' %}bg-red-100 text-red-800
+                            {% elif opportunity.priority == 'HIGH' %}bg-orange-100 text-orange-800
+                            {% elif opportunity.priority == 'MEDIUM' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ opportunity.get_priority_display }}
+                        </span>
+                    </dd>
+                </div>
+            </dl>
+        </div>
+        
+        <!-- Actions Card -->
+        {% if opportunity.stage == 'CLOSED_WON' %}
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6 border border-green-200">
+            <h3 class="text-lg font-semibold text-green-800 mb-2">🎉 Won!</h3>
+            <p class="text-sm text-green-700 mb-4">Convert this opportunity to create client subscriptions.</p>
+            <a href="{% url 'corporate:opportunity_convert' opportunity.pk %}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 w-full justify-center">
+                Convert to Subscription
+            </a>
+        </div>
+        {% elif opportunity.stage == 'CLOSED_LOST' %}
+        <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Lost</h3>
+            {% if opportunity.loss_reason %}
+            <p class="text-sm text-gray-600 mb-2"><strong>Reason:</strong> {{ opportunity.loss_reason }}</p>
+            {% endif %}
+            {% if opportunity.competitor %}
+            <p class="text-sm text-gray-600"><strong>Competitor:</strong> {{ opportunity.competitor }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Client Services -->
+        {% if client_subscriptions %}
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Client's Active Services</h3>
+            <ul class="space-y-2">
+                {% for sub in client_subscriptions %}
+                <li class="flex items-center text-sm">
+                    <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    {{ sub.service.name }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

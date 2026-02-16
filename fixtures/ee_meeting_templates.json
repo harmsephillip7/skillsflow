@@ -1,0 +1,279 @@
+[
+    {
+        "model": "corporate.meetingtemplate",
+        "pk": 100,
+        "fields": {
+            "name": "Q1 EE Committee Meeting - Annual Planning",
+            "quarter": "Q1",
+            "suggested_month": 1,
+            "description": "First quarter Employment Equity committee meeting focused on annual planning, goal setting, and previous year report review",
+            "meeting_purpose": "EE",
+            "default_agenda": [
+                {"title": "Welcome and Attendance", "description": "", "duration_minutes": 5},
+                {"title": "Confirmation of Previous Minutes", "description": "", "duration_minutes": 5},
+                {"title": "Matters Arising from Previous Meeting", "description": "", "duration_minutes": 10},
+                {"title": "Review of Previous Year's EE Report Submission", "description": "Submission confirmation and acknowledgment, Any feedback from DEL", "duration_minutes": 15},
+                {"title": "Annual EE Plan Review", "description": "Current plan status and validity period, Goals achievement from previous year, Updated numerical goals for new reporting year", "duration_minutes": 20},
+                {"title": "Workforce Analysis Update", "description": "Current workforce profile review, Designated group representation status, Occupational level distribution", "duration_minutes": 20},
+                {"title": "EE Objectives and Targets for New Year", "description": "Recruitment targets by designated group, Promotion and advancement targets, Training and development priorities", "duration_minutes": 15},
+                {"title": "Budget Allocation for EE Initiatives", "description": "", "duration_minutes": 10},
+                {"title": "Committee Administration", "description": "Member roster update, Role confirmations", "duration_minutes": 10},
+                {"title": "Date and Agenda for Next Meeting", "description": "", "duration_minutes": 5},
+                {"title": "Closure", "description": "", "duration_minutes": 5}
+            ],
+            "preparation_notes": "Bring previous year EE report, DEL feedback letters, current workforce profile data",
+            "is_active": true
+        }
+    },
+    {
+        "model": "corporate.meetingtemplate",
+        "pk": 101,
+        "fields": {
+            "name": "Q2 EE Committee Meeting - Workforce Analysis",
+            "quarter": "Q2",
+            "suggested_month": 4,
+            "description": "Second quarter Employment Equity committee meeting focused on detailed workforce analysis and barrier identification",
+            "meeting_purpose": "EE",
+            "default_agenda": [
+                {"title": "Welcome and Attendance", "description": "", "duration_minutes": 5},
+                {"title": "Confirmation of Previous Minutes", "description": "", "duration_minutes": 5},
+                {"title": "Matters Arising from Previous Meeting", "description": "", "duration_minutes": 10},
+                {"title": "Workforce Analysis Deep Dive", "description": "Detailed demographic breakdown by occupational level, Comparison to Regional EAP targets, Gap analysis by designated group, Under-representation areas identified", "duration_minutes": 25},
+                {"title": "Barriers to Employment Equity", "description": "Review of identified barriers, New barriers identification, Categorization (recruitment, advancement, retention, working conditions), Root cause analysis", "duration_minutes": 20},
+                {"title": "Affirmative Action Measures", "description": "Review of existing measures, Effectiveness assessment, New measures proposed, Responsible persons and timelines", "duration_minutes": 15},
+                {"title": "Income Differential Analysis", "description": "Salary gap review by occupational level, Actions to address unjustifiable differentials", "duration_minutes": 15},
+                {"title": "Progress on Q1 Action Items", "description": "", "duration_minutes": 10},
+                {"title": "Date and Agenda for Next Meeting", "description": "", "duration_minutes": 5},
+                {"title": "Closure", "description": "", "duration_minutes": 5}
+            ],
+            "preparation_notes": "Prepare detailed workforce breakdown, EAP data, income differential analysis",
+            "is_active": true
+        }
+    },
+    {
+        "model": "corporate.meetingtemplate",
+        "pk": 102,
+        "fields": {
+            "name": "Q3 EE Committee Meeting - Progress Review",
+            "quarter": "Q3",
+            "suggested_month": 7,
+            "description": "Third quarter Employment Equity committee meeting focused on mid-year progress review and corrective actions",
+            "meeting_purpose": "EE",
+            "default_agenda": [
+                {"title": "Welcome and Attendance", "description": "", "duration_minutes": 5},
+                {"title": "Confirmation of Previous Minutes", "description": "", "duration_minutes": 5},
+                {"title": "Matters Arising from Previous Meeting", "description": "", "duration_minutes": 10},
+                {"title": "Mid-Year Progress Review", "description": "Numerical goals progress assessment, Recruitment achievements vs targets, Promotions and advancement progress, Training completions for designated groups", "duration_minutes": 20},
+                {"title": "Affirmative Action Measures Progress", "description": "Status update on each measure, Effectiveness evaluation, Adjustments required", "duration_minutes": 15},
+                {"title": "Barrier Remediation Progress", "description": "Actions taken to address barriers, Remaining challenges, Additional resources needed", "duration_minutes": 15},
+                {"title": "Workforce Profile Changes", "description": "Appointments, promotions, terminations, Impact on EE targets, Designated group movement", "duration_minutes": 15},
+                {"title": "Corrective Actions Required", "description": "Areas behind target, Acceleration strategies, Resource allocation", "duration_minutes": 15},
+                {"title": "EE Report Preparation Planning", "description": "Data collection timeline, Documentation requirements, Committee sign-off process", "duration_minutes": 10},
+                {"title": "Date and Agenda for Next Meeting", "description": "", "duration_minutes": 5},
+                {"title": "Closure", "description": "", "duration_minutes": 5}
+            ],
+            "preparation_notes": "Prepare mid-year progress report, barrier status update, corrective action proposals",
+            "is_active": true
+        }
+    },
+    {
+        "model": "corporate.meetingtemplate",
+        "pk": 103,
+        "fields": {
+            "name": "Q4 EE Committee Meeting - Annual Report Preparation",
+            "quarter": "Q4",
+            "suggested_month": 10,
+            "description": "Fourth quarter Employment Equity committee meeting focused on annual EE report finalization and submission preparation",
+            "meeting_purpose": "EE",
+            "default_agenda": [
+                {"title": "Welcome and Attendance", "description": "", "duration_minutes": 5},
+                {"title": "Confirmation of Previous Minutes", "description": "", "duration_minutes": 5},
+                {"title": "Matters Arising from Previous Meeting", "description": "", "duration_minutes": 10},
+                {"title": "Annual EE Report Preparation", "description": "EEA2 Form review and verification, EEA4 Form (Income Differential) review, Supporting documentation checklist", "duration_minutes": 25},
+                {"title": "Workforce Profile Final Review", "description": "End of reporting year snapshot (30 September), Year-on-year comparison, Designated group representation summary", "duration_minutes": 20},
+                {"title": "Numerical Goals Achievement", "description": "Final status on all targets, Variance analysis and explanations, Successes and challenges", "duration_minutes": 15},
+                {"title": "Affirmative Action Measures Summary", "description": "Completed measures, Ongoing initiatives, Measures for next year", "duration_minutes": 10},
+                {"title": "EE Plan Status", "description": "Current plan validity, Plan revision requirements, New plan preparation if expiring", "duration_minutes": 10},
+                {"title": "Committee Attestation", "description": "Review of report accuracy, Committee approval for submission, Signatures required", "duration_minutes": 10},
+                {"title": "Submission Timeline", "description": "Online submission deadline (15 January), Responsible persons, Backup procedures", "duration_minutes": 5},
+                {"title": "Planning for Next Reporting Year", "description": "", "duration_minutes": 5},
+                {"title": "Date and Agenda for Q1 Meeting", "description": "", "duration_minutes": 5},
+                {"title": "Closure", "description": "", "duration_minutes": 5}
+            ],
+            "preparation_notes": "Prepare draft EEA2 and EEA4 forms, final workforce profile, numerical goals achievement report",
+            "is_active": true
+        }
+    },
+    {
+        "model": "corporate.meetingtemplate",
+        "pk": 104,
+        "fields": {
+            "name": "Combined Training & EE Committee Meeting - Q1",
+            "quarter": "Q1",
+            "suggested_month": 2,
+            "description": "First quarter combined Training and Employment Equity committee meeting for organizations with integrated committee structure",
+            "meeting_purpose": "COMBINED",
+            "default_agenda": [
+                {"title": "Welcome and Attendance", "description": "", "duration_minutes": 5},
+                {"title": "Confirmation of Previous Minutes", "description": "", "duration_minutes": 5},
+                {"title": "Matters Arising from Previous Meeting", "description": "", "duration_minutes": 10},
+                {"title": "PART A: TRAINING MATTERS - WSP/ATR Previous Year Review", "description": "Submission status, Training achievements vs planned, Pivotal and non-pivotal training summary", "duration_minutes": 20},
+                {"title": "Annual Training Plan Development", "description": "Skills needs analysis, Training priorities for new year, Budget allocation", "duration_minutes": 15},
+                {"title": "Bursary and Learnership Programs", "description": "Current commitments, New applications", "duration_minutes": 10},
+                {"title": "PART B: EE MATTERS - Previous Year EE Report Review", "description": "Submission confirmation, DEL feedback (if any)", "duration_minutes": 10},
+                {"title": "Workforce Profile Analysis", "description": "Current demographics, Designated group representation", "duration_minutes": 15},
+                {"title": "EE Numerical Goals Update", "description": "Previous year achievements, New year targets", "duration_minutes": 10},
+                {"title": "Barriers and Affirmative Action Measures", "description": "Status update", "duration_minutes": 10},
+                {"title": "PART C: INTEGRATED PLANNING", "description": "Skills development for designated groups, Training aligned to EE goals, Development programs for advancement", "duration_minutes": 15},
+                {"title": "Committee Administration", "description": "", "duration_minutes": 5},
+                {"title": "Date and Agenda for Next Meeting", "description": "", "duration_minutes": 5},
+                {"title": "Closure", "description": "", "duration_minutes": 5}
+            ],
+            "preparation_notes": "Prepare both WSP/ATR and EE documentation, integrated skills-EE planning materials",
+            "is_active": true
+        }
+    },
+    {
+        "model": "corporate.meetingtemplate",
+        "pk": 105,
+        "fields": {
+            "name": "Combined Training & EE Committee Meeting - Q2",
+            "quarter": "Q2",
+            "suggested_month": 5,
+            "description": "Second quarter combined Training and Employment Equity committee meeting for organizations with integrated committee structure",
+            "meeting_purpose": "COMBINED",
+            "default_agenda": [
+                {"title": "Welcome and Attendance", "description": "", "duration_minutes": 5},
+                {"title": "Confirmation of Previous Minutes", "description": "", "duration_minutes": 5},
+                {"title": "Matters Arising from Previous Meeting", "description": "", "duration_minutes": 10},
+                {"title": "PART A: TRAINING MATTERS - Implementation Progress", "description": "Q1 training completions, Upcoming Q2 training schedule, Trainer and venue arrangements", "duration_minutes": 15},
+                {"title": "Learnership and Internship Updates", "description": "Current learner progress, Completion forecasts", "duration_minutes": 10},
+                {"title": "Training Budget Utilization", "description": "Expenditure to date, Projections", "duration_minutes": 10},
+                {"title": "PART B: EE MATTERS - Detailed Workforce Analysis", "description": "Occupational level breakdown, Under-representation areas, Gap to EAP targets", "duration_minutes": 20},
+                {"title": "Barrier Identification and Analysis", "description": "Barriers review, Root causes, Proposed remediation", "duration_minutes": 15},
+                {"title": "Affirmative Action Measures", "description": "Effectiveness review, New measures", "duration_minutes": 10},
+                {"title": "Income Differential Analysis", "description": "", "duration_minutes": 10},
+                {"title": "PART C: INTEGRATED PLANNING", "description": "Skills development impact on EE, Training supporting designated group advancement, Career pathing initiatives", "duration_minutes": 15},
+                {"title": "Committee Administration", "description": "", "duration_minutes": 5},
+                {"title": "Date and Agenda for Next Meeting", "description": "", "duration_minutes": 5},
+                {"title": "Closure", "description": "", "duration_minutes": 5}
+            ],
+            "preparation_notes": "Prepare training progress report, detailed workforce analysis, income differential data",
+            "is_active": true
+        }
+    },
+    {
+        "model": "corporate.meetingtemplate",
+        "pk": 106,
+        "fields": {
+            "name": "Combined Training & EE Committee Meeting - Q3",
+            "quarter": "Q3",
+            "suggested_month": 8,
+            "description": "Third quarter combined Training and Employment Equity committee meeting for organizations with integrated committee structure",
+            "meeting_purpose": "COMBINED",
+            "default_agenda": [
+                {"title": "Welcome and Attendance", "description": "", "duration_minutes": 5},
+                {"title": "Confirmation of Previous Minutes", "description": "", "duration_minutes": 5},
+                {"title": "Matters Arising from Previous Meeting", "description": "", "duration_minutes": 10},
+                {"title": "PART A: TRAINING MATTERS - Mid-Year Training Review", "description": "ATR progress (April-September), Training completions summary, Quality and effectiveness assessment", "duration_minutes": 20},
+                {"title": "Skills Audit Updates", "description": "New skills requirements, Training plan adjustments", "duration_minutes": 10},
+                {"title": "WSP Preparation Planning", "description": "Data collection timeline, Consultation requirements", "duration_minutes": 10},
+                {"title": "PART B: EE MATTERS - Mid-Year EE Progress Review", "description": "Numerical goals tracking, Recruitment and promotion progress", "duration_minutes": 15},
+                {"title": "Affirmative Action Progress", "description": "Measures implementation status, Corrective actions needed", "duration_minutes": 10},
+                {"title": "EE Report Preparation Planning", "description": "Data requirements, Timeline to submission", "duration_minutes": 10},
+                {"title": "PART C: INTEGRATED PLANNING", "description": "Designated group development progress, Training supporting EE goals, Succession planning updates", "duration_minutes": 15},
+                {"title": "Year-End Planning", "description": "Remaining training priorities, EE targets acceleration", "duration_minutes": 10},
+                {"title": "Committee Administration", "description": "", "duration_minutes": 5},
+                {"title": "Date and Agenda for Next Meeting", "description": "", "duration_minutes": 5},
+                {"title": "Closure", "description": "", "duration_minutes": 5}
+            ],
+            "preparation_notes": "Prepare mid-year training review, EE progress report, year-end planning documents",
+            "is_active": true
+        }
+    },
+    {
+        "model": "corporate.meetingtemplate",
+        "pk": 107,
+        "fields": {
+            "name": "Combined Training & EE Committee Meeting - Q4",
+            "quarter": "Q4",
+            "suggested_month": 11,
+            "description": "Fourth quarter combined Training and Employment Equity committee meeting for organizations with integrated committee structure",
+            "meeting_purpose": "COMBINED",
+            "default_agenda": [
+                {"title": "Welcome and Attendance", "description": "", "duration_minutes": 5},
+                {"title": "Confirmation of Previous Minutes", "description": "", "duration_minutes": 5},
+                {"title": "Matters Arising from Previous Meeting", "description": "", "duration_minutes": 10},
+                {"title": "PART A: TRAINING MATTERS - Annual Training Report Finalization", "description": "ATR data verification, Training achievements summary, Budget utilization final", "duration_minutes": 20},
+                {"title": "WSP Development", "description": "Next year training needs, Priority skills areas, Budget requirements", "duration_minutes": 15},
+                {"title": "Committee Sign-off for WSP/ATR", "description": "", "duration_minutes": 10},
+                {"title": "PART B: EE MATTERS - Annual EE Report Finalization", "description": "EEA2 and EEA4 review, Workforce profile verification, Numerical goals final status", "duration_minutes": 20},
+                {"title": "EE Plan Review", "description": "Plan validity status, Revision requirements", "duration_minutes": 10},
+                {"title": "Committee Attestation for EE Report", "description": "Accuracy verification, Approval for submission", "duration_minutes": 10},
+                {"title": "PART C: INTEGRATED PLANNING", "description": "Alignment of Training and EE for next year, Skills development supporting EE targets", "duration_minutes": 15},
+                {"title": "Submission Timelines", "description": "EE Report: 15 January, WSP/ATR: 30 April", "duration_minutes": 5},
+                {"title": "Committee Member Terms Review", "description": "", "duration_minutes": 5},
+                {"title": "Annual Committee Performance Review", "description": "", "duration_minutes": 5},
+                {"title": "Date and Agenda for Q1 Meeting", "description": "", "duration_minutes": 5},
+                {"title": "Closure", "description": "", "duration_minutes": 5}
+            ],
+            "preparation_notes": "Prepare draft WSP/ATR and EE reports, submission checklists, next year planning documents",
+            "is_active": true
+        }
+    },
+    {
+        "model": "corporate.meetingtemplate",
+        "pk": 108,
+        "fields": {
+            "name": "EE Committee - Special Meeting (Plan Development)",
+            "quarter": "Q1",
+            "suggested_month": 3,
+            "description": "Special Employment Equity committee meeting for developing or revising the EE Plan",
+            "meeting_purpose": "EE",
+            "default_agenda": [
+                {"title": "Welcome and Attendance", "description": "", "duration_minutes": 5},
+                {"title": "Purpose of Special Meeting", "description": "", "duration_minutes": 5},
+                {"title": "EE Plan Requirements Overview", "description": "Statutory requirements (Section 20), Plan duration (1-5 years), Required components", "duration_minutes": 15},
+                {"title": "Workforce Analysis Review", "description": "Current demographic profile, Designated group representation, Under-representation analysis, Comparison to Regional EAP", "duration_minutes": 20},
+                {"title": "Barrier Analysis", "description": "Identified barriers summary, Prioritization of barriers, Affirmative action measures proposed", "duration_minutes": 20},
+                {"title": "Numerical Goals Development", "description": "Methodology for target setting, Annual targets by occupational level, Designated group-specific goals, Reasonableness assessment", "duration_minutes": 25},
+                {"title": "Affirmative Action Measures", "description": "Recruitment measures, Advancement and promotion measures, Training and development measures, Retention measures, Reasonable accommodation measures", "duration_minutes": 20},
+                {"title": "Implementation Timeline", "description": "Annual milestones, Responsible persons, Resource requirements", "duration_minutes": 15},
+                {"title": "Monitoring and Evaluation Framework", "description": "Progress tracking mechanisms, Reporting frequency, Corrective action procedures", "duration_minutes": 10},
+                {"title": "Plan Document Review", "description": "Draft plan walkthrough, Committee input and revisions", "duration_minutes": 15},
+                {"title": "Plan Approval", "description": "Committee endorsement, CEO/Accounting Officer sign-off process", "duration_minutes": 10},
+                {"title": "Communication Plan", "description": "Employee awareness, Display requirements", "duration_minutes": 5},
+                {"title": "Next Steps and Closure", "description": "", "duration_minutes": 5}
+            ],
+            "preparation_notes": "Prepare draft EE Plan document, workforce analysis data, barrier analysis, proposed numerical goals",
+            "is_active": true
+        }
+    },
+    {
+        "model": "corporate.meetingtemplate",
+        "pk": 109,
+        "fields": {
+            "name": "EE Committee - Special Meeting (Barrier Investigation)",
+            "quarter": "Q2",
+            "suggested_month": 6,
+            "description": "Special Employment Equity committee meeting for investigating specific barriers to employment equity",
+            "meeting_purpose": "EE",
+            "default_agenda": [
+                {"title": "Welcome and Attendance", "description": "", "duration_minutes": 5},
+                {"title": "Purpose of Special Meeting", "description": "", "duration_minutes": 5},
+                {"title": "Barrier Under Investigation", "description": "Description of barrier, Impact on designated groups, How it was identified", "duration_minutes": 15},
+                {"title": "Data and Evidence Review", "description": "Workforce data analysis, Employee feedback/complaints, HR process review, External benchmarking", "duration_minutes": 20},
+                {"title": "Root Cause Analysis", "description": "Contributing factors, Historical context, Systemic issues", "duration_minutes": 20},
+                {"title": "Stakeholder Input", "description": "Affected group representatives, Line management perspective, HR input", "duration_minutes": 15},
+                {"title": "Proposed Remedial Actions", "description": "Short-term interventions, Long-term solutions, Policy/procedure changes, Training requirements", "duration_minutes": 20},
+                {"title": "Resource Requirements", "description": "Budget implications, Personnel requirements, Timeline considerations", "duration_minutes": 10},
+                {"title": "Success Metrics", "description": "How improvement will be measured, Monitoring frequency, Reporting mechanism", "duration_minutes": 10},
+                {"title": "Responsibilities Assignment", "description": "Action owners, Deadlines, Escalation procedures", "duration_minutes": 10},
+                {"title": "Follow-up Schedule", "description": "", "duration_minutes": 5},
+                {"title": "Closure", "description": "", "duration_minutes": 5}
+            ],
+            "preparation_notes": "Prepare barrier investigation report, evidence documentation, stakeholder input summaries",
+            "is_active": true
+        }
+    }
+]

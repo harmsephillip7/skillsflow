@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent/Guardian Notification - Pre-Approval</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .highlight-box {
+            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .info-value {
+            font-weight: 600;
+            color: #111827;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .button:hover {
+            opacity: 0.9;
+        }
+        .notice {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .notice-title {
+            font-weight: bold;
+            color: #92400e;
+            margin-bottom: 5px;
+        }
+        .notice-text {
+            color: #92400e;
+            font-size: 14px;
+        }
+        .footer {
+            background: #f9fafb;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .steps {
+            margin: 20px 0;
+        }
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin: 15px 0;
+        }
+        .step-number {
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .step-text {
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👨‍👩‍👧 Parent/Guardian Notification</h1>
+            <p>Your child has been pre-approved for enrollment</p>
+        </div>
+        
+        <div class="content">
+            <p>Dear {{ parent_name }},</p>
+            
+            <p>We are pleased to inform you that <strong>{{ lead.first_name }} {{ lead.last_name }}</strong> has been pre-approved for enrollment in an educational program with us.</p>
+            
+            <div class="highlight-box">
+                <h3 style="margin-top: 0; color: #5b21b6;">Pre-Approval Details</h3>
+                <div class="info-row">
+                    <span class="info-label">Learner Name</span>
+                    <span class="info-value">{{ lead.first_name }} {{ lead.last_name }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Qualification</span>
+                    <span class="info-value">{{ qualification.name }}</span>
+                </div>
+                {% if campus %}
+                <div class="info-row">
+                    <span class="info-label">Campus</span>
+                    <span class="info-value">{{ campus.name }}</span>
+                </div>
+                {% endif %}
+                <div class="info-row">
+                    <span class="info-label">Reference Number</span>
+                    <span class="info-value">{{ letter.letter_number }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Valid Until</span>
+                    <span class="info-value">{{ letter.valid_until|date:"d F Y" }}</span>
+                </div>
+            </div>
+            
+            <div class="notice">
+                <div class="notice-title">⚠️ Your Consent is Required</div>
+                <div class="notice-text">As {{ lead.first_name }} is under 18 years of age, your consent as a parent or legal guardian is required before they can proceed with their enrollment application.</div>
+            </div>
+            
+            <h3>What You Need To Do</h3>
+            
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-text">Click the button below to review the pre-approval letter</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-text">Review the qualification details and enrollment terms</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-text">Provide your digital consent to allow {{ lead.first_name }} to proceed</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="{{ portal_url }}" class="button">View Letter & Provide Consent</a>
+            </div>
+            
+            <p style="color: #6b7280; font-size: 14px;">If the button above doesn't work, copy and paste this link into your browser:<br>
+            <a href="{{ portal_url }}" style="color: #667eea; word-break: break-all;">{{ portal_url }}</a></p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+            
+            <p>If you have any questions about this pre-approval or the enrollment process, please don't hesitate to contact us.</p>
+            
+            <p>Thank you for considering {{ brand_name }} for {{ lead.first_name }}'s education journey.</p>
+            
+            <p>Best regards,<br>
+            <strong>The Admissions Team</strong><br>
+            {{ brand_name }}</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {% now "Y" %} {{ brand_name }}. All rights reserved.</p>
+            <p>This email was sent regarding a pre-approval application for {{ lead.first_name }} {{ lead.last_name }}.</p>
+            <p>Reference: {{ letter.letter_number }}</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,276 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Learner Database - SkillsFlow{% endblock %}
+
+{% block main_content %}
+<div class="flex flex-col h-full">
+    <!-- Page Header -->
+    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Learner Database</h1>
+                <p class="mt-1 text-sm text-gray-500">Search and view learner profiles. To add learners, create an enrollment.</p>
+            </div>
+            
+            <!-- View Switcher & Actions -->
+            <div class="flex items-center space-x-3">
+                <div class="flex bg-gray-100 rounded-lg p-1">
+                    <span class="px-3 py-1.5 text-sm font-medium rounded-md bg-white shadow text-primary-700">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                        </svg>
+                        List
+                    </span>
+                    <a href="{% url 'learners:kanban' %}" class="px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                        </svg>
+                        Kanban
+                    </a>
+                    <a href="{% url 'learners:pivot' %}" class="px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        Pivot
+                    </a>
+                </div>
+                
+                <a href="{% url 'learners:bulk_import' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    Import/Export
+                </a>
+                
+                <a href="{% url 'admin:enrollment_wizard' %}?step=1" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg shadow-sm text-sm font-medium hover:bg-primary-700">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                    </svg>
+                    New Enrollment
+                </a>
+            </div>
+        </div>
+        
+        <!-- Filters -->
+        <div class="mt-4">
+            <form method="get" class="flex flex-wrap items-center gap-3">
+                <!-- Search -->
+                <div class="relative">
+                    <input type="text" 
+                           name="search" 
+                           value="{{ request.GET.search }}"
+                           placeholder="Search by name, SA ID, email..."
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500 w-64">
+                    <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                
+                <!-- Status Filter -->
+                <select name="status" 
+                        onchange="this.form.submit()"
+                        class="border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Statuses</option>
+                    <option value="APPLIED" {% if request.GET.status == 'APPLIED' %}selected{% endif %}>Applied</option>
+                    <option value="DOC_CHECK" {% if request.GET.status == 'DOC_CHECK' %}selected{% endif %}>Document Check</option>
+                    <option value="REGISTERED" {% if request.GET.status == 'REGISTERED' %}selected{% endif %}>Registered</option>
+                    <option value="ENROLLED" {% if request.GET.status == 'ENROLLED' %}selected{% endif %}>Enrolled</option>
+                    <option value="ACTIVE" {% if request.GET.status == 'ACTIVE' %}selected{% endif %}>Active</option>
+                    <option value="ON_HOLD" {% if request.GET.status == 'ON_HOLD' %}selected{% endif %}>On Hold</option>
+                    <option value="COMPLETED" {% if request.GET.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                    <option value="CERTIFIED" {% if request.GET.status == 'CERTIFIED' %}selected{% endif %}>Certified</option>
+                    <option value="WITHDRAWN" {% if request.GET.status == 'WITHDRAWN' %}selected{% endif %}>Withdrawn</option>
+                </select>
+                
+                <!-- Qualification Filter -->
+                <select name="qualification" 
+                        onchange="this.form.submit()"
+                        class="border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Qualifications</option>
+                    {% for qual in qualifications %}
+                    <option value="{{ qual.id }}" {% if request.GET.qualification == qual.id|stringformat:"s" %}selected{% endif %}>
+                        {{ qual.title|truncatechars:40 }}
+                    </option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Campus Filter -->
+                <select name="campus"
+                        onchange="this.form.submit()"
+                        class="border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Campuses</option>
+                    {% for campus in campuses %}
+                    <option value="{{ campus.id }}" {% if request.GET.campus == campus.id|stringformat:"s" %}selected{% endif %}>
+                        {{ campus.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                
+                <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700">
+                    Apply Filters
+                </button>
+                
+                {% if request.GET.search or request.GET.status or request.GET.qualification or request.GET.campus %}
+                <a href="{% url 'learners:list' %}" class="text-sm text-gray-500 hover:text-gray-700">
+                    Clear filters
+                </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    
+    <!-- Table -->
+    <div class="flex-1 overflow-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50 sticky top-0">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <input type="checkbox" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" 
+                               id="selectAll" @change="toggleAll($event)">
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Learner
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ID Number
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Qualification
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Campus
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Enrolled
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for enrollment in enrollments %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="checkbox" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500 learner-checkbox"
+                               value="{{ enrollment.id }}" name="selected_enrollments">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            {% if enrollment.learner.id_photo %}
+                            <img src="{{ enrollment.learner.id_photo.url }}" 
+                                 alt="{{ enrollment.learner.full_name }}"
+                                 class="w-10 h-10 rounded-full object-cover">
+                            {% else %}
+                            <div class="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                                <span class="text-sm font-medium text-primary-700">
+                                    {{ enrollment.learner.first_name|slice:":1" }}{{ enrollment.learner.last_name|slice:":1" }}
+                                </span>
+                            </div>
+                            {% endif %}
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ enrollment.learner.first_name }} {{ enrollment.learner.last_name }}
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    {{ enrollment.learner.user.email|default:"No email" }}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ enrollment.learner.sa_id_number }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ enrollment.qualification.title|truncatechars:35 }}</div>
+                        <div class="text-sm text-gray-500">{{ enrollment.qualification.saqa_id }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ enrollment.campus.name|default:"—" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if enrollment.status == 'ACTIVE' %}bg-green-100 text-green-800
+                            {% elif enrollment.status == 'COMPLETED' %}bg-teal-100 text-teal-800
+                            {% elif enrollment.status == 'CERTIFIED' %}bg-emerald-100 text-emerald-800
+                            {% elif enrollment.status == 'ENROLLED' %}bg-indigo-100 text-indigo-800
+                            {% elif enrollment.status == 'APPLIED' %}bg-slate-100 text-slate-800
+                            {% elif enrollment.status == 'DOC_CHECK' %}bg-amber-100 text-amber-800
+                            {% elif enrollment.status == 'REGISTERED' %}bg-blue-100 text-blue-800
+                            {% elif enrollment.status == 'ON_HOLD' %}bg-orange-100 text-orange-800
+                            {% elif enrollment.status == 'WITHDRAWN' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ enrollment.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ enrollment.enrollment_date|date:"d M Y"|default:"—" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex items-center space-x-3">
+                            <a href="{% url 'learners:detail' enrollment.learner.id %}" 
+                               class="text-primary-600 hover:text-primary-900">View</a>
+                            <a href="{% url 'learners:performance' %}?learner={{ enrollment.learner.id }}" 
+                               class="text-gray-600 hover:text-gray-900">Performance</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="px-6 py-12 text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No learners found</h3>
+                        <p class="mt-1 text-sm text-gray-500">Try adjusting your filters or search term.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="flex-shrink-0 bg-white px-6 py-4 border-t border-gray-200">
+        <div class="flex items-center justify-between">
+            <div class="text-sm text-gray-500">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} results
+            </div>
+            <nav class="flex items-center space-x-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                   class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                    Previous
+                </a>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <span class="px-3 py-2 text-sm font-medium text-white bg-primary-600 border border-primary-600 rounded-md">
+                    {{ num }}
+                </span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                   class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                    {{ num }}
+                </a>
+                {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                   class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                    Next
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

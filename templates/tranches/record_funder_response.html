@@ -1,0 +1,185 @@
+{% extends 'base/app_layout.html' %}
+{% load static admin_tags %}
+
+{% block title %}Record Funder Response - {{ tranche.reference_number }}{% endblock %}
+
+{% block page_title %}Record Funder Response{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'tranches:tranche_list' %}" class="text-primary-600 hover:text-primary-800">Tranches</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="text-primary-600 hover:text-primary-800">{{ tranche.reference_number }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Record Response</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    
+    <!-- Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-gray-900">{{ tranche.name }}</h2>
+                <p class="mt-1 text-sm text-gray-500">{{ tranche.reference_number }}</p>
+            </div>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                {{ tranche.get_status_display }}
+            </span>
+        </div>
+        
+        {% if submission %}
+        <div class="mt-4 pt-4 border-t border-gray-100">
+            <p class="text-sm text-gray-600">
+                <span class="font-medium">Submission:</span> {{ submission.submission_reference }}<br>
+                <span class="font-medium">Submitted:</span> {{ submission.submission_date|date:"d M Y" }}<br>
+                <span class="font-medium">Method:</span> {{ submission.get_submission_method_display }}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Response Form -->
+    <form method="post" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">Funder Response</h3>
+        </div>
+        
+        <div class="p-6 space-y-6">
+            <!-- Response Type -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-3">Response Type *</label>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="relative flex cursor-pointer rounded-lg border bg-white p-4 shadow-sm focus:outline-none" x-data="{ selected: false }">
+                        <input type="radio" name="response_type" value="APPROVED" class="sr-only" required @change="selected = true">
+                        <span class="flex flex-1">
+                            <span class="flex flex-col">
+                                <span class="flex items-center text-sm font-medium text-gray-900">
+                                    <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Approved
+                                </span>
+                                <span class="mt-1 text-sm text-gray-500">Claim has been approved</span>
+                            </span>
+                        </span>
+                    </label>
+                    
+                    <label class="relative flex cursor-pointer rounded-lg border bg-white p-4 shadow-sm focus:outline-none">
+                        <input type="radio" name="response_type" value="QUERY" class="sr-only" required>
+                        <span class="flex flex-1">
+                            <span class="flex flex-col">
+                                <span class="flex items-center text-sm font-medium text-gray-900">
+                                    <svg class="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Query
+                                </span>
+                                <span class="mt-1 text-sm text-gray-500">Funder has questions</span>
+                            </span>
+                        </span>
+                    </label>
+                    
+                    <label class="relative flex cursor-pointer rounded-lg border bg-white p-4 shadow-sm focus:outline-none">
+                        <input type="radio" name="response_type" value="REJECTED" class="sr-only" required>
+                        <span class="flex flex-1">
+                            <span class="flex flex-col">
+                                <span class="flex items-center text-sm font-medium text-gray-900">
+                                    <svg class="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Rejected
+                                </span>
+                                <span class="mt-1 text-sm text-gray-500">Claim was rejected</span>
+                            </span>
+                        </span>
+                    </label>
+                    
+                    <label class="relative flex cursor-pointer rounded-lg border bg-white p-4 shadow-sm focus:outline-none">
+                        <input type="radio" name="response_type" value="PARTIAL" class="sr-only" required>
+                        <span class="flex flex-1">
+                            <span class="flex flex-col">
+                                <span class="flex items-center text-sm font-medium text-gray-900">
+                                    <svg class="w-5 h-5 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Partial
+                                </span>
+                                <span class="mt-1 text-sm text-gray-500">Partially approved</span>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Response Date -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Response Date *</label>
+                <input type="date" name="response_date" value="{% now 'Y-m-d' %}" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+            </div>
+            
+            <!-- Approved Amount (shown for PARTIAL) -->
+            <div id="approved_amount_field">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Approved Amount</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-gray-500">R</span>
+                    <input type="number" name="approved_amount" step="0.01" min="0" value="{{ tranche.amount }}"
+                           class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                </div>
+                <p class="mt-1 text-xs text-gray-500">Original claim: R{{ tranche.amount|floatformat:0 }}</p>
+            </div>
+            
+            <!-- Funder Reference -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Funder Reference</label>
+                <input type="text" name="funder_reference" placeholder="Reference number from funder"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+            </div>
+            
+            <!-- Notes -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Response Notes</label>
+                <textarea name="notes" rows="4" placeholder="Details of funder response, queries, or rejection reasons..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"></textarea>
+            </div>
+        </div>
+        
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+            <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                Record Response
+            </button>
+        </div>
+    </form>
+    
+</div>
+
+<style>
+    input[type="radio"]:checked + span {
+        border-color: theme('colors.primary.500');
+        ring: 2px;
+    }
+    label:has(input[type="radio"]:checked) {
+        border-color: #4f46e5;
+        background-color: #f5f3ff;
+    }
+</style>
+{% endblock %}

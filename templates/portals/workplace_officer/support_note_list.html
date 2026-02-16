@@ -1,0 +1,177 @@
+{% extends 'portals/workplace_officer/base.html' %}
+{% load static %}
+
+{% block title %}Support Notes - Workplace Officer Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-journal-text me-2"></i>Support Notes</h2>
+    <div class="d-flex gap-2">
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-funnel"></i> Filter: {{ filter_type|title }}
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item {% if filter_type == 'all' %}active{% endif %}" href="?filter=all">All Notes</a></li>
+                <li><a class="dropdown-item {% if filter_type == 'follow_up' %}active{% endif %}" href="?filter=follow_up">Follow-up Required</a></li>
+                <li><a class="dropdown-item {% if filter_type == 'confidential' %}active{% endif %}" href="?filter=confidential">Confidential</a></li>
+            </ul>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newNoteModal">
+            <i class="bi bi-plus-lg"></i> New Note
+        </button>
+    </div>
+</div>
+
+<!-- Notes List -->
+<div class="card">
+    <div class="card-body p-0">
+        {% if notes %}
+        <div class="list-group list-group-flush">
+            {% for note in notes %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="d-flex gap-3">
+                        <div class="avatar-circle-sm bg-info text-white">
+                            {{ note.learner.first_name.0 }}{{ note.learner.last_name.0 }}
+                        </div>
+                        <div>
+                            <h6 class="mb-1">
+                                {{ note.learner.get_full_name }}
+                                {% if note.is_confidential %}
+                                <span class="badge bg-danger ms-2"><i class="bi bi-lock"></i> Confidential</span>
+                                {% endif %}
+                            </h6>
+                            <p class="mb-1 text-muted small">
+                                {{ note.placement.host.company_name }} • {{ note.created_at|date:"d M Y, H:i" }}
+                            </p>
+                            <p class="mb-0">{{ note.content|truncatewords:30 }}</p>
+                            {% if note.follow_up_required and not note.follow_up_completed %}
+                            <span class="badge bg-warning text-dark mt-1">
+                                <i class="bi bi-clock"></i> Follow-up: {{ note.follow_up_date|date:"d M Y"|default:"Not set" }}
+                            </span>
+                            {% elif note.follow_up_completed %}
+                            <span class="badge bg-success mt-1">
+                                <i class="bi bi-check-circle"></i> Follow-up Completed
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                            Actions
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'portals:officer_placement_detail' note.placement.id %}">View Placement</a></li>
+                            {% if note.follow_up_required and not note.follow_up_completed %}
+                            <li><a class="dropdown-item" href="#">Mark Follow-up Complete</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if notes.has_other_pages %}
+        <div class="card-footer">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if notes.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ notes.previous_page_number }}&filter={{ filter_type }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in notes.paginator.page_range %}
+                        {% if notes.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > notes.number|add:'-3' and num < notes.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}&filter={{ filter_type }}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if notes.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ notes.next_page_number }}&filter={{ filter_type }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-journal-x display-1 text-muted"></i>
+            <h4 class="mt-3">No Support Notes Found</h4>
+            <p class="text-muted">
+                {% if filter_type != 'all' %}
+                No notes match the current filter. Try selecting "All Notes".
+                {% else %}
+                You haven't created any support notes yet.
+                {% endif %}
+            </p>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newNoteModal">
+                <i class="bi bi-plus-lg me-1"></i> Create First Note
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- New Note Modal -->
+<div class="modal fade" id="newNoteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="bi bi-journal-plus me-2"></i>Create Support Note</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Select a learner placement to create a support note for:</p>
+                <form id="selectPlacementForm">
+                    <select class="form-select" id="placementSelect" required>
+                        <option value="">Choose learner...</option>
+                        {% for placement in my_placements %}
+                        <option value="{{ placement.id }}">{{ placement.learner.get_full_name }} ({{ placement.host.company_name }})</option>
+                        {% empty %}
+                        <option value="" disabled>No active placements</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info" id="goToCreateBtn">
+                    <i class="bi bi-arrow-right me-1"></i> Continue
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('goToCreateBtn').addEventListener('click', function() {
+    var placementId = document.getElementById('placementSelect').value;
+    if (placementId) {
+        window.location.href = '{% url "portals:officer_support_note_create" placement_id=0 %}'.replace('/0/', '/' + placementId + '/');
+    } else {
+        alert('Please select a learner first.');
+    }
+});
+</script>
+
+<style>
+    .avatar-circle-sm {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}My Journey{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">My Journey</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Progress Overview -->
+    {% if journey %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">Your Progress</h2>
+                <span class="text-2xl font-bold text-primary-600">{{ journey.overall_progress }}%</span>
+            </div>
+            
+            <!-- Overall Progress Bar -->
+            <div class="w-full bg-gray-200 rounded-full h-3 mb-6">
+                <div class="bg-primary-600 h-3 rounded-full transition-all duration-500" 
+                     style="width: {{ journey.overall_progress }}%"></div>
+            </div>
+            
+            <!-- Stats -->
+            <div class="grid grid-cols-3 gap-4">
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                    <p class="text-3xl font-bold text-gray-900">{{ journey.milestones_completed }}</p>
+                    <p class="text-sm text-gray-500">Completed</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                    <p class="text-3xl font-bold text-gray-900">{{ journey.milestones_in_progress }}</p>
+                    <p class="text-sm text-gray-500">In Progress</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                    <p class="text-3xl font-bold text-gray-900">{{ journey.milestones_remaining }}</p>
+                    <p class="text-sm text-gray-500">Remaining</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Milestones -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="border-b border-gray-100 px-6 py-4">
+            <h2 class="text-lg font-semibold text-gray-900">Milestones</h2>
+            <p class="text-sm text-gray-500 mt-1">Track your progress through key achievements</p>
+        </div>
+        
+        <div class="p-6">
+            {% if milestones %}
+            <div class="relative">
+                <!-- Timeline line -->
+                <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                
+                <div class="space-y-6">
+                    {% for milestone in milestones %}
+                    <div class="relative flex items-start">
+                        <!-- Status icon -->
+                        <div class="absolute left-0 w-8 h-8 rounded-full flex items-center justify-center
+                            {% if milestone.is_completed %}bg-green-500 text-white
+                            {% elif milestone.is_current %}bg-primary-500 text-white ring-4 ring-primary-100
+                            {% else %}bg-gray-200 text-gray-400{% endif %}">
+                            {% if milestone.is_completed %}
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            {% elif milestone.is_current %}
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            {% else %}
+                            <span class="text-xs font-medium">{{ forloop.counter }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="ml-12 flex-1">
+                            <div class="bg-gray-50 rounded-lg p-4 {% if milestone.is_current %}ring-2 ring-primary-200{% endif %}">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h3 class="font-medium text-gray-900">{{ milestone.name }}</h3>
+                                    {% if milestone.is_completed %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Completed
+                                    </span>
+                                    {% elif milestone.is_current %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                                        In Progress
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                        Upcoming
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if milestone.description %}
+                                <p class="text-sm text-gray-600 mb-2">{{ milestone.description }}</p>
+                                {% endif %}
+                                
+                                {% if milestone.completed_at %}
+                                <p class="text-xs text-gray-400">
+                                    Completed on {{ milestone.completed_at|date:"F j, Y" }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                </svg>
+                <h3 class="mt-4 text-lg font-medium text-gray-900">No milestones yet</h3>
+                <p class="mt-2 text-gray-500">Your journey milestones will appear here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Active Workflows -->
+    {% if active_workflows %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="border-b border-gray-100 px-6 py-4">
+            <h2 class="text-lg font-semibold text-gray-900">Active Workflows</h2>
+        </div>
+        
+        <div class="divide-y divide-gray-100">
+            {% for workflow in active_workflows %}
+            <div class="p-4 hover:bg-gray-50 transition-colors">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-medium text-gray-900">{{ workflow.definition.name }}</h3>
+                        <p class="text-sm text-gray-500">{{ workflow.definition.description }}</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-gray-900">{{ workflow.progress_percentage }}%</p>
+                            <p class="text-xs text-gray-500">Complete</p>
+                        </div>
+                        <a href="{% url 'workflows:instance_detail' workflow.pk %}" 
+                           class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Progress bar -->
+                <div class="mt-3 w-full bg-gray-200 rounded-full h-1.5">
+                    <div class="bg-primary-600 h-1.5 rounded-full" style="width: {{ workflow.progress_percentage }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

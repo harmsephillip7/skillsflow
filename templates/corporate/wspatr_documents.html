@@ -1,0 +1,387 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}Documents - {{ client.company_name }} - {{ service_year.financial_year_display }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:dashboard' %}" class="text-gray-700 hover:text-blue-600">Corporate</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:wspatr_management' client.pk %}" class="text-gray-700 hover:text-blue-600">{{ client.company_name }}</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">Documents - {{ service_year.financial_year_display }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex space-x-3">
+    <a href="{% url 'corporate:wspatr_management' client.pk %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Back to WSP/ATR
+    </a>
+    {% if not documents.exists %}
+    <form method="post" action="{% url 'corporate:wspatr_initialize_documents' client.pk service_year.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Initialize Standard Documents
+        </button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    
+    <!-- Progress Overview -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Document Progress</h2>
+                <p class="text-sm text-gray-600">{{ uploaded_count }} of {{ total_required }} required documents uploaded</p>
+            </div>
+            <div class="text-right">
+                <span class="text-3xl font-bold {% if doc_progress >= 80 %}text-green-600{% elif doc_progress >= 50 %}text-yellow-600{% else %}text-gray-600{% endif %}">{{ doc_progress }}%</span>
+            </div>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+            <div class="h-full transition-all duration-500 rounded-full {% if doc_progress >= 80 %}bg-green-500{% elif doc_progress >= 50 %}bg-yellow-500{% else %}bg-blue-500{% endif %}" style="width: {{ doc_progress }}%"></div>
+        </div>
+        
+        <!-- Status Update -->
+        <div class="mt-4 pt-4 border-t border-gray-100">
+            <form method="post" action="{% url 'corporate:wspatr_update_status' client.pk service_year.pk %}" class="flex items-center gap-4">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'corporate:wspatr_documents' client.pk service_year.pk %}">
+                <label class="text-sm font-medium text-gray-700">Submission Status:</label>
+                <select name="status" class="rounded-lg border-gray-300 text-sm">
+                    {% for value, label in service_year.STATUS_CHOICES %}
+                    <option value="{{ value }}" {% if service_year.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                    Update Status
+                </button>
+                <span class="ml-auto text-sm text-gray-500">
+                    Deadline: <strong class="{% if service_year.is_overdue %}text-red-600{% else %}text-gray-900{% endif %}">{{ service_year.submission_deadline|date:"d M Y" }}</strong>
+                    {% if service_year.days_until_deadline is not None %}
+                    ({{ service_year.days_until_deadline }} days)
+                    {% endif %}
+                </span>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Documents Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Required Documents -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="p-4 border-b border-gray-100">
+                <h3 class="font-semibold text-gray-900">Required Documents</h3>
+                <p class="text-sm text-gray-600">Documents needed for WSP/ATR submission</p>
+            </div>
+            <div class="divide-y divide-gray-100">
+                {% for doc in documents %}
+                {% if doc.is_required %}
+                <div class="p-4 hover:bg-gray-50">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start space-x-3">
+                            {% if doc.is_uploaded %}
+                            <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            {% else %}
+                            <div class="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <h4 class="font-medium text-gray-900">{{ doc.display_name }}</h4>
+                                {% if doc.description %}
+                                <p class="text-sm text-gray-500">{{ doc.description }}</p>
+                                {% endif %}
+                                {% if doc.is_uploaded %}
+                                <p class="text-xs text-gray-500 mt-1">
+                                    <a href="{{ doc.file.url }}" target="_blank" class="text-primary-600 hover:underline">{{ doc.file_name }}</a>
+                                    {% if doc.file_size %} ({{ doc.file_size|filesizeformat }}){% endif %}
+                                    <br>Uploaded {{ doc.uploaded_at|date:"d M Y H:i" }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            {% if doc.is_uploaded %}
+                            <a href="{{ doc.file.url }}" target="_blank" class="p-2 text-gray-400 hover:text-primary-600" title="Download">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                            </a>
+                            <form method="post" action="{% url 'corporate:wspatr_delete_document' client.pk service_year.pk doc.pk %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="p-2 text-gray-400 hover:text-red-600" title="Remove file" onclick="return confirm('Remove this file?')">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </form>
+                            {% endif %}
+                            <button onclick="openUploadModal('{{ doc.pk }}', '{{ doc.display_name }}')" class="px-3 py-1.5 text-sm bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100">
+                                {% if doc.is_uploaded %}Replace{% else %}Upload{% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% empty %}
+                <div class="p-8 text-center text-gray-500">
+                    <p>No document requirements set up yet.</p>
+                    <p class="text-sm">Click "Initialize Standard Documents" to set up the required documents.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Optional & Output Documents -->
+        <div class="space-y-6">
+            <!-- Approval Letter Section -->
+            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-sm border border-green-100">
+                <div class="p-4 border-b border-green-100">
+                    <h3 class="font-semibold text-green-900">WSP Approval Letter</h3>
+                    <p class="text-sm text-green-700">Upload the approval letter received from SETA after submission</p>
+                </div>
+                <div class="p-4">
+                    {% with approval=service_year.approval_letter %}
+                    {% if approval and approval.is_uploaded %}
+                    <div class="flex items-center justify-between p-3 bg-white rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">{{ approval.file_name }}</p>
+                                <p class="text-xs text-gray-500">Uploaded {{ approval.uploaded_at|date:"d M Y" }}</p>
+                            </div>
+                        </div>
+                        <a href="{{ approval.file.url }}" target="_blank" class="px-3 py-1.5 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200">
+                            View Letter
+                        </a>
+                    </div>
+                    {% else %}
+                    <form method="post" action="{% url 'corporate:wspatr_upload_approval_letter' client.pk service_year.pk %}" enctype="multipart/form-data" class="space-y-3">
+                        {% csrf_token %}
+                        <div>
+                            <input type="file" name="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-100 file:text-green-700 hover:file:bg-green-200" required>
+                        </div>
+                        <div>
+                            <input type="text" name="seta_reference" placeholder="SETA Reference Number (optional)" class="w-full rounded-lg border-gray-300 text-sm">
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" name="mark_approved" value="true" id="mark_approved" class="rounded text-green-600">
+                            <label for="mark_approved" class="text-sm text-gray-700">Mark WSP as Approved</label>
+                        </div>
+                        <button type="submit" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            Upload Approval Letter
+                        </button>
+                    </form>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+            
+            <!-- Optional Documents -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Other Documents</h3>
+                        <p class="text-sm text-gray-600">Optional or additional documents</p>
+                    </div>
+                    <button onclick="openAddDocModal()" class="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                        + Add Document
+                    </button>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for doc in documents %}
+                    {% if not doc.is_required %}
+                    <div class="p-4 hover:bg-gray-50">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-start space-x-3">
+                                {% if doc.is_uploaded %}
+                                <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                                {% else %}
+                                <div class="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h4 class="font-medium text-gray-900">{{ doc.display_name }}</h4>
+                                    {% if doc.is_uploaded %}
+                                    <p class="text-xs text-gray-500">
+                                        <a href="{{ doc.file.url }}" target="_blank" class="text-primary-600 hover:underline">{{ doc.file_name }}</a>
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                {% if doc.is_uploaded %}
+                                <a href="{{ doc.file.url }}" target="_blank" class="p-2 text-gray-400 hover:text-primary-600">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                    </svg>
+                                </a>
+                                {% endif %}
+                                <form method="post" action="{% url 'corporate:wspatr_delete_document' client.pk service_year.pk doc.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="p-2 text-gray-400 hover:text-red-600" onclick="return confirm('Delete this document?')">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </form>
+                                <button onclick="openUploadModal('{{ doc.pk }}', '{{ doc.display_name }}')" class="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                                    {% if doc.is_uploaded %}Replace{% else %}Upload{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% empty %}
+                    <div class="p-4 text-center text-gray-500 text-sm">
+                        No optional documents added yet.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Document Modal -->
+<div id="uploadModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+        <form method="post" action="{% url 'corporate:wspatr_upload_document' client.pk service_year.pk %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="document_id" id="uploadDocId">
+            <div class="p-6 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-900" id="uploadModalTitle">Upload Document</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Select File</label>
+                    <input type="file" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100" required>
+                    <p class="mt-1 text-xs text-gray-500">Accepted: PDF, Word, Excel, Images, ZIP</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                    <textarea name="notes" rows="2" class="w-full rounded-lg border-gray-300 text-sm" placeholder="Any notes about this document..."></textarea>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+                <button type="button" onclick="closeUploadModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Document Modal -->
+<div id="addDocModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+        <form method="post" action="{% url 'corporate:wspatr_add_document_requirement' client.pk service_year.pk %}">
+            {% csrf_token %}
+            <div class="p-6 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-900">Add Document Requirement</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
+                    <select name="document_type" class="w-full rounded-lg border-gray-300 text-sm">
+                        {% for value, label in document_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Custom Name (optional)</label>
+                    <input type="text" name="name" class="w-full rounded-lg border-gray-300 text-sm" placeholder="Leave blank to use document type name">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                    <textarea name="description" rows="2" class="w-full rounded-lg border-gray-300 text-sm" placeholder="Additional details..."></textarea>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" name="is_required" value="true" id="is_required" class="rounded text-primary-600">
+                    <label for="is_required" class="text-sm text-gray-700">Mark as required document</label>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+                <button type="button" onclick="closeAddDocModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openUploadModal(docId, docName) {
+    document.getElementById('uploadDocId').value = docId;
+    document.getElementById('uploadModalTitle').textContent = 'Upload: ' + docName;
+    document.getElementById('uploadModal').classList.remove('hidden');
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadModal').classList.add('hidden');
+}
+
+function openAddDocModal() {
+    document.getElementById('addDocModal').classList.remove('hidden');
+}
+
+function closeAddDocModal() {
+    document.getElementById('addDocModal').classList.add('hidden');
+}
+
+// Close modals on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeUploadModal();
+        closeAddDocModal();
+    }
+});
+
+// Close modals on backdrop click
+document.getElementById('uploadModal').addEventListener('click', function(e) {
+    if (e.target === this) closeUploadModal();
+});
+document.getElementById('addDocModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAddDocModal();
+});
+</script>
+{% endblock %}

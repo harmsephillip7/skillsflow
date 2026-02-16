@@ -1,0 +1,917 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Create Project - Step {{ current_step }} | SkillsFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8" x-data="wizardController()">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Create New Project</h1>
+            <p class="mt-2 text-gray-600">Complete the wizard to set up your training notification project</p>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="mb-8">
+            <nav aria-label="Progress">
+                <ol class="flex items-center justify-between">
+                    {% for step in steps %}
+                    <li class="relative {% if not forloop.last %}flex-1{% endif %}">
+                        <div class="flex items-center">
+                            <a href="{% url 'not_wizard_step' step=step.number %}" 
+                               class="relative flex h-10 w-10 items-center justify-center rounded-full 
+                                      {% if step.number < current_step %}bg-green-600 hover:bg-green-700
+                                      {% elif step.number == current_step %}bg-blue-600
+                                      {% else %}bg-gray-200 hover:bg-gray-300{% endif %} 
+                                      transition-colors">
+                                {% if step.number < current_step %}
+                                <!-- Completed -->
+                                <svg class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                {% else %}
+                                <span class="{% if step.number == current_step %}text-white{% else %}text-gray-500{% endif %} font-medium">{{ step.number }}</span>
+                                {% endif %}
+                            </a>
+                            {% if not forloop.last %}
+                            <div class="ml-4 flex-1 h-0.5 {% if step.number < current_step %}bg-green-600{% else %}bg-gray-200{% endif %}"></div>
+                            {% endif %}
+                        </div>
+                        <div class="mt-2 text-center">
+                            <span class="text-xs font-medium {% if step.number == current_step %}text-blue-600{% elif step.number < current_step %}text-green-600{% else %}text-gray-500{% endif %}">
+                                {{ step.title }}
+                            </span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ol>
+            </nav>
+        </div>
+
+        <!-- Main Form -->
+        <form method="post" action="{% url 'not_wizard_step' step=current_step %}" class="bg-white rounded-xl shadow-sm border border-gray-200">
+            {% csrf_token %}
+            
+            <div class="p-6 lg:p-8">
+                <!-- Step 1: Basic Information -->
+                {% if current_step == 1 %}
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Basic Project Information</h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Project Title -->
+                        <div class="lg:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Project Title *</label>
+                            <input type="text" name="title" value="{{ wizard_data.basic.title|default:'' }}" required
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="e.g., MERSETA Welding Skills Program 2025">
+                        </div>
+                        
+                        <!-- Project Type -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Project Type *</label>
+                            <select name="project_type" required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select type...</option>
+                                {% for value, label in project_types %}
+                                <option value="{{ value }}" {% if wizard_data.basic.project_type == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Funder -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Funder/SETA *</label>
+                            <select name="funder" required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select funder...</option>
+                                {% for value, label in funder_choices %}
+                                <option value="{{ value }}" {% if wizard_data.basic.funder == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Priority -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                            <select name="priority"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                {% for value, label in priority_choices %}
+                                <option value="{{ value }}" {% if wizard_data.basic.priority == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Corporate Client -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Corporate Client</label>
+                            <select name="corporate_client"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select client...</option>
+                                {% for client in corporate_clients %}
+                                <option value="{{ client.id }}" {% if wizard_data.basic.corporate_client_id|stringformat:"s" == client.id|stringformat:"s" %}selected{% endif %}>{{ client.company_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Client Name (manual entry) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Client Name (if not in list)</label>
+                            <input type="text" name="client_name" value="{{ wizard_data.basic.client_name|default:'' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Enter client name">
+                        </div>
+                        
+                        <!-- Tender Reference -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tender/Contract Reference</label>
+                            <input type="text" name="tender_reference" value="{{ wizard_data.basic.tender_reference|default:'' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="e.g., MERSETA/2025/001">
+                        </div>
+                        
+                        <!-- Contract Value -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Contract Value (R)</label>
+                            <input type="number" name="contract_value" value="{{ wizard_data.basic.contract_value|default:'' }}" step="0.01"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="e.g., 500000.00">
+                        </div>
+                    </div>
+                    
+                    <!-- Qualification & Learners Section -->
+                    <div class="mt-8 pt-6 border-t border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Qualification & Learners</h3>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Qualification -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Qualification</label>
+                                <select name="qualification"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select qualification...</option>
+                                    {% for qual in qualifications %}
+                                    <option value="{{ qual.id }}" {% if wizard_data.basic.qualification_id|stringformat:"s" == qual.id|stringformat:"s" %}selected{% endif %}>{{ qual.short_title }} ({{ qual.code }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Expected Learners -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Expected Learner Count</label>
+                                <input type="number" name="expected_learner_count" value="{{ wizard_data.basic.expected_learner_count|default:'' }}" min="1"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="e.g., 25">
+                            </div>
+                            
+                            <!-- Learner Source -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Learner Source</label>
+                                <input type="text" name="learner_source" value="{{ wizard_data.basic.learner_source|default:'' }}"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="e.g., Client employees, Recruited">
+                            </div>
+                            
+                            <!-- Program Description -->
+                            <div class="lg:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Program Description</label>
+                                <textarea name="program_description" rows="3"
+                                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                          placeholder="Brief description of the training program...">{{ wizard_data.basic.program_description|default:'' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Timeline & Delivery Section -->
+                    <div class="mt-8 pt-6 border-t border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Timeline & Delivery</h3>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- Start Date -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Planned Start Date</label>
+                                <input type="date" name="planned_start_date" value="{{ wizard_data.basic.planned_start_date|default:'' }}"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <!-- End Date -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Planned End Date</label>
+                                <input type="date" name="planned_end_date" value="{{ wizard_data.basic.planned_end_date|default:'' }}"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <!-- Duration -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Duration (months)</label>
+                                <input type="number" name="duration_months" value="{{ wizard_data.basic.duration_months|default:'' }}" min="1"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="e.g., 12">
+                            </div>
+                            
+                            <!-- Delivery Campus -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Campus</label>
+                                <select name="delivery_campus"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select campus...</option>
+                                    {% for campus in campuses %}
+                                    <option value="{{ campus.id }}" {% if wizard_data.basic.delivery_campus_id|stringformat:"s" == campus.id|stringformat:"s" %}selected{% endif %}>{{ campus.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Delivery Mode -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Mode</label>
+                                <select name="delivery_mode"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select mode...</option>
+                                    {% for value, label in delivery_mode_choices %}
+                                    <option value="{{ value }}" {% if wizard_data.basic.delivery_mode == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Delivery Address -->
+                            <div class="lg:col-span-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Address (if off-site)</label>
+                                <textarea name="delivery_address" rows="2"
+                                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                          placeholder="Physical address if training is not at campus...">{{ wizard_data.basic.delivery_address|default:'' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Notes -->
+                    <div class="mt-8 pt-6 border-t border-gray-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Additional Notes</label>
+                        <textarea name="description" rows="3"
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="Any additional project notes or requirements...">{{ wizard_data.basic.description|default:'' }}</textarea>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Step 2: Deliverables -->
+                {% if current_step == 2 %}
+                <div>
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Project Deliverables</h2>
+                            <p class="text-sm text-gray-500 mt-1">Define milestones and their invoicing percentages. Total should equal 100%.</p>
+                        </div>
+                        <div class="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg">
+                            <span class="text-sm text-gray-600">Total:</span>
+                            <span class="text-lg font-bold" :class="totalPercentage === 100 ? 'text-green-600' : 'text-red-600'" x-text="totalPercentage + '%'">0%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4" id="deliverables-container">
+                        {% for deliverable in wizard_data.deliverables %}
+                        <div class="deliverable-row bg-gray-50 rounded-lg p-4 border border-gray-200" data-index="{{ forloop.counter0 }}">
+                            <div class="grid grid-cols-12 gap-4">
+                                <div class="col-span-4">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Title</label>
+                                    <input type="text" name="deliverable_title[]" value="{{ deliverable.title }}" required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                           placeholder="Deliverable title">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                                    <select name="deliverable_type[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                                        {% for value, label in deliverable_types %}
+                                        <option value="{{ value }}" {% if deliverable.deliverable_type == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">% Invoice</label>
+                                    <input type="number" name="deliverable_percentage[]" value="{{ deliverable.percentage }}" min="0" max="100" step="1"
+                                           class="percentage-input w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                           @input="calculateTotal()" placeholder="0">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Due Date</label>
+                                    <input type="date" name="deliverable_due_date[]" value="{{ deliverable.due_date }}"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="col-span-2 flex items-end">
+                                    <button type="button" onclick="removeDeliverable(this)" 
+                                            class="w-full px-3 py-2 text-red-600 hover:bg-red-50 border border-red-200 rounded-lg text-sm font-medium">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                                <input type="text" name="deliverable_description[]" value="{{ deliverable.description }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                       placeholder="Brief description of this deliverable">
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500 text-center py-8">No deliverables added yet. Click "Add Deliverable" to start.</p>
+                        {% endfor %}
+                    </div>
+                    
+                    <button type="button" onclick="addDeliverable()"
+                            class="mt-4 w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Deliverable
+                    </button>
+                    
+                    <!-- Quick Add Common Deliverables -->
+                    <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                        <h4 class="text-sm font-medium text-blue-800 mb-2">Quick Add Common Deliverables</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="addCommonDeliverable('Learner Registration', 'REGISTRATION', 20)"
+                                    class="px-3 py-1 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100">
+                                + Registration (20%)
+                            </button>
+                            <button type="button" onclick="addCommonDeliverable('Induction', 'MILESTONE', 10)"
+                                    class="px-3 py-1 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100">
+                                + Induction (10%)
+                            </button>
+                            <button type="button" onclick="addCommonDeliverable('Mid-term Assessment', 'ASSESSMENT', 20)"
+                                    class="px-3 py-1 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100">
+                                + Mid-term (20%)
+                            </button>
+                            <button type="button" onclick="addCommonDeliverable('Final Assessment', 'ASSESSMENT', 25)"
+                                    class="px-3 py-1 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100">
+                                + Final Assessment (25%)
+                            </button>
+                            <button type="button" onclick="addCommonDeliverable('Moderation', 'MODERATION', 10)"
+                                    class="px-3 py-1 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100">
+                                + Moderation (10%)
+                            </button>
+                            <button type="button" onclick="addCommonDeliverable('Certification', 'CERTIFICATION', 15)"
+                                    class="px-3 py-1 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100">
+                                + Certification (15%)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Step 3: Resources -->
+                {% if current_step == 3 %}
+                <div>
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Resource Requirements</h2>
+                            <p class="text-sm text-gray-500 mt-1">Specify what resources are needed for this project</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4" id="resources-container">
+                        {% for resource in wizard_data.resources %}
+                        <div class="resource-row bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="grid grid-cols-12 gap-4">
+                                <div class="col-span-3">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                                    <select name="resource_type[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                                        {% for value, label in resource_types %}
+                                        <option value="{{ value }}" {% if resource.resource_type == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-span-4">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                                    <input type="text" name="resource_description[]" value="{{ resource.description }}"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                           placeholder="e.g., Welding Instructor">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Qty Required</label>
+                                    <input type="number" name="resource_quantity[]" value="{{ resource.quantity_required|default:1 }}" min="1"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Est. Cost (R)</label>
+                                    <input type="number" name="resource_cost[]" value="{{ resource.estimated_cost }}" step="0.01"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                           placeholder="0.00">
+                                </div>
+                                <div class="col-span-1 flex items-end">
+                                    <button type="button" onclick="removeResource(this)" 
+                                            class="w-full px-3 py-2 text-red-600 hover:bg-red-50 border border-red-200 rounded-lg text-sm">
+                                        <svg class="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500 text-center py-8" id="no-resources-msg">No resources added yet. Click "Add Resource" to start.</p>
+                        {% endfor %}
+                    </div>
+                    
+                    <button type="button" onclick="addResource()"
+                            class="mt-4 w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Resource
+                    </button>
+                    
+                    <!-- Quick Add Common Resources -->
+                    <div class="mt-6 p-4 bg-green-50 rounded-lg">
+                        <h4 class="text-sm font-medium text-green-800 mb-2">Quick Add Common Resources</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="addCommonResource('FACILITATOR', 'Facilitator/Trainer')"
+                                    class="px-3 py-1 bg-white border border-green-200 rounded-full text-xs text-green-700 hover:bg-green-100">
+                                + Facilitator
+                            </button>
+                            <button type="button" onclick="addCommonResource('ASSESSOR', 'Assessor')"
+                                    class="px-3 py-1 bg-white border border-green-200 rounded-full text-xs text-green-700 hover:bg-green-100">
+                                + Assessor
+                            </button>
+                            <button type="button" onclick="addCommonResource('MODERATOR', 'Moderator')"
+                                    class="px-3 py-1 bg-white border border-green-200 rounded-full text-xs text-green-700 hover:bg-green-100">
+                                + Moderator
+                            </button>
+                            <button type="button" onclick="addCommonResource('VENUE', 'Training Venue/Classroom')"
+                                    class="px-3 py-1 bg-white border border-green-200 rounded-full text-xs text-green-700 hover:bg-green-100">
+                                + Venue
+                            </button>
+                            <button type="button" onclick="addCommonResource('MATERIALS', 'Learning Materials')"
+                                    class="px-3 py-1 bg-white border border-green-200 rounded-full text-xs text-green-700 hover:bg-green-100">
+                                + Materials
+                            </button>
+                            <button type="button" onclick="addCommonResource('PPE', 'PPE/Safety Equipment')"
+                                    class="px-3 py-1 bg-white border border-green-200 rounded-full text-xs text-green-700 hover:bg-green-100">
+                                + PPE
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Step 4: Stakeholders -->
+                {% if current_step == 4 %}
+                <div>
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Stakeholder Assignments</h2>
+                            <p class="text-sm text-gray-500 mt-1">Assign team members and their roles for this project</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4" id="stakeholders-container">
+                        {% for stakeholder in wizard_data.stakeholders %}
+                        <div class="stakeholder-row bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="grid grid-cols-12 gap-4">
+                                <div class="col-span-3">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Team Member</label>
+                                    <select name="stakeholder_user[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Select user...</option>
+                                        {% for user in staff_users %}
+                                        <option value="{{ user.id }}" {% if stakeholder.user_id|stringformat:"s" == user.id|stringformat:"s" %}selected{% endif %}>{{ user.get_full_name|default:user.username }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-span-3">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Department</label>
+                                    <select name="stakeholder_department[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                                        {% for value, label in department_choices %}
+                                        <option value="{{ value }}" {% if stakeholder.department == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-span-3">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Role in Project</label>
+                                    <select name="stakeholder_role[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                                        {% for value, label in role_choices %}
+                                        <option value="{{ value }}" {% if stakeholder.role_in_project == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Responsibilities</label>
+                                    <input type="text" name="stakeholder_responsibilities[]" value="{{ stakeholder.responsibilities }}"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                           placeholder="Key tasks">
+                                </div>
+                                <div class="col-span-1 flex items-end">
+                                    <button type="button" onclick="removeStakeholder(this)" 
+                                            class="w-full px-3 py-2 text-red-600 hover:bg-red-50 border border-red-200 rounded-lg text-sm">
+                                        <svg class="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500 text-center py-8" id="no-stakeholders-msg">No stakeholders added yet. Click "Add Stakeholder" to start.</p>
+                        {% endfor %}
+                    </div>
+                    
+                    <button type="button" onclick="addStakeholder()"
+                            class="mt-4 w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Stakeholder
+                    </button>
+                </div>
+                {% endif %}
+
+                <!-- Step 5: Review -->
+                {% if current_step == 5 %}
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Review & Create Project</h2>
+                    
+                    <!-- Basic Info Summary -->
+                    <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h3 class="font-medium text-blue-800 mb-3">Project Information</h3>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">Title:</span>
+                                <span class="ml-2 font-medium text-gray-900">{{ wizard_data.basic.title|default:"Not specified" }}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Type:</span>
+                                <span class="ml-2 font-medium text-gray-900">{{ wizard_data.basic.project_type|default:"Not specified" }}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Funder:</span>
+                                <span class="ml-2 font-medium text-gray-900">{{ wizard_data.basic.funder|default:"Not specified" }}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Contract Value:</span>
+                                <span class="ml-2 font-medium text-gray-900">R {{ wizard_data.basic.contract_value|default:"0" }}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Learner Count:</span>
+                                <span class="ml-2 font-medium text-gray-900">{{ wizard_data.basic.expected_learner_count|default:"Not specified" }}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Duration:</span>
+                                <span class="ml-2 font-medium text-gray-900">{{ wizard_data.basic.duration_months|default:"Not specified" }} months</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Start Date:</span>
+                                <span class="ml-2 font-medium text-gray-900">{{ wizard_data.basic.planned_start_date|default:"Not specified" }}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">End Date:</span>
+                                <span class="ml-2 font-medium text-gray-900">{{ wizard_data.basic.planned_end_date|default:"Not specified" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Deliverables Summary -->
+                    <div class="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                        <h3 class="font-medium text-green-800 mb-3">Deliverables ({{ wizard_data.deliverables|length }})</h3>
+                        {% if wizard_data.deliverables %}
+                        <div class="space-y-2">
+                            {% for d in wizard_data.deliverables %}
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-700">{{ d.title }}</span>
+                                <span class="font-medium text-green-700">{{ d.percentage|default:0 }}%</span>
+                            </div>
+                            {% endfor %}
+                            <div class="flex justify-between text-sm font-bold border-t border-green-300 pt-2 mt-2">
+                                <span class="text-gray-700">Total</span>
+                                <span class="text-green-700">
+                                    {% widthratio 1 1 0 as total %}
+                                    {% for d in wizard_data.deliverables %}
+                                        {% with d.percentage|default:0|add:total as total %}{% endwith %}
+                                    {% endfor %}
+                                    Calculated on load
+                                </span>
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-sm text-gray-600">No deliverables defined</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Resources Summary -->
+                    <div class="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <h3 class="font-medium text-yellow-800 mb-3">Resources ({{ wizard_data.resources|length }})</h3>
+                        {% if wizard_data.resources %}
+                        <div class="space-y-2">
+                            {% for r in wizard_data.resources %}
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-700">{{ r.description }} ({{ r.resource_type }})</span>
+                                <span class="font-medium text-yellow-700">Qty: {{ r.quantity_required|default:1 }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-sm text-gray-600">No resources defined</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Stakeholders Summary -->
+                    <div class="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                        <h3 class="font-medium text-purple-800 mb-3">Stakeholders ({{ wizard_data.stakeholders|length }})</h3>
+                        {% if wizard_data.stakeholders %}
+                        <div class="space-y-2">
+                            {% for s in wizard_data.stakeholders %}
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-700">{{ s.role_in_project }}</span>
+                                <span class="font-medium text-purple-700">{{ s.department }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-sm text-gray-600">No stakeholders assigned</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Confirmation -->
+                    <div class="p-4 bg-gray-100 rounded-lg">
+                        <label class="flex items-start gap-3">
+                            <input type="checkbox" id="confirm-create" class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="text-sm text-gray-700">
+                                I have reviewed all the project details and confirm they are correct. 
+                                The project will be created in <strong>Draft</strong> status.
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Navigation Footer -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl flex items-center justify-between">
+                <div>
+                    <button type="submit" name="action" value="cancel"
+                            class="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium">
+                        Cancel
+                    </button>
+                    {% if current_step > 1 %}
+                    <button type="submit" name="action" value="save_draft"
+                            class="ml-2 px-4 py-2 text-blue-600 hover:text-blue-800 font-medium">
+                        Save as Draft
+                    </button>
+                    {% endif %}
+                </div>
+                
+                <div class="flex gap-3">
+                    {% if current_step > 1 %}
+                    <button type="submit" name="action" value="back"
+                            class="px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
+                        ← Back
+                    </button>
+                    {% endif %}
+                    
+                    {% if current_step < 5 %}
+                    <button type="submit" name="action" value="next"
+                            class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
+                        Next →
+                    </button>
+                    {% else %}
+                    <button type="submit" name="action" value="create" id="create-btn"
+                            class="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Create Project
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Alpine.js controller
+function wizardController() {
+    return {
+        totalPercentage: 0,
+        init() {
+            this.calculateTotal();
+        },
+        calculateTotal() {
+            let total = 0;
+            document.querySelectorAll('.percentage-input').forEach(input => {
+                total += parseInt(input.value) || 0;
+            });
+            this.totalPercentage = total;
+        }
+    }
+}
+
+// Deliverable functions
+function addDeliverable() {
+    const container = document.getElementById('deliverables-container');
+    const emptyMsg = container.querySelector('p');
+    if (emptyMsg) emptyMsg.remove();
+    
+    const html = `
+        <div class="deliverable-row bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div class="grid grid-cols-12 gap-4">
+                <div class="col-span-4">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Title</label>
+                    <input type="text" name="deliverable_title[]" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                           placeholder="Deliverable title">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                    <select name="deliverable_type[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                        {% for value, label in deliverable_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">% Invoice</label>
+                    <input type="number" name="deliverable_percentage[]" min="0" max="100" step="1"
+                           class="percentage-input w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                           oninput="Alpine.$data(document.querySelector('[x-data]')).calculateTotal()" placeholder="0">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Due Date</label>
+                    <input type="date" name="deliverable_due_date[]"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="col-span-2 flex items-end">
+                    <button type="button" onclick="removeDeliverable(this)" 
+                            class="w-full px-3 py-2 text-red-600 hover:bg-red-50 border border-red-200 rounded-lg text-sm font-medium">
+                        Remove
+                    </button>
+                </div>
+            </div>
+            <div class="mt-3">
+                <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                <input type="text" name="deliverable_description[]"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                       placeholder="Brief description of this deliverable">
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', html);
+}
+
+function addCommonDeliverable(title, type, percentage) {
+    addDeliverable();
+    const rows = document.querySelectorAll('.deliverable-row');
+    const lastRow = rows[rows.length - 1];
+    lastRow.querySelector('input[name="deliverable_title[]"]').value = title;
+    lastRow.querySelector('select[name="deliverable_type[]"]').value = type;
+    lastRow.querySelector('input[name="deliverable_percentage[]"]').value = percentage;
+    // Trigger percentage calculation
+    const event = new Event('input', { bubbles: true });
+    lastRow.querySelector('.percentage-input').dispatchEvent(event);
+}
+
+function removeDeliverable(btn) {
+    btn.closest('.deliverable-row').remove();
+    // Recalculate total
+    if (typeof Alpine !== 'undefined') {
+        Alpine.$data(document.querySelector('[x-data]')).calculateTotal();
+    }
+}
+
+// Resource functions
+function addResource() {
+    const container = document.getElementById('resources-container');
+    const emptyMsg = document.getElementById('no-resources-msg');
+    if (emptyMsg) emptyMsg.remove();
+    
+    const html = `
+        <div class="resource-row bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div class="grid grid-cols-12 gap-4">
+                <div class="col-span-3">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                    <select name="resource_type[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                        {% for value, label in resource_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-span-4">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                    <input type="text" name="resource_description[]"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                           placeholder="e.g., Welding Instructor">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Qty Required</label>
+                    <input type="number" name="resource_quantity[]" value="1" min="1"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Est. Cost (R)</label>
+                    <input type="number" name="resource_cost[]" step="0.01"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                           placeholder="0.00">
+                </div>
+                <div class="col-span-1 flex items-end">
+                    <button type="button" onclick="removeResource(this)" 
+                            class="w-full px-3 py-2 text-red-600 hover:bg-red-50 border border-red-200 rounded-lg text-sm">
+                        <svg class="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', html);
+}
+
+function addCommonResource(type, description) {
+    addResource();
+    const rows = document.querySelectorAll('.resource-row');
+    const lastRow = rows[rows.length - 1];
+    lastRow.querySelector('select[name="resource_type[]"]').value = type;
+    lastRow.querySelector('input[name="resource_description[]"]').value = description;
+}
+
+function removeResource(btn) {
+    btn.closest('.resource-row').remove();
+}
+
+// Stakeholder functions
+function addStakeholder() {
+    const container = document.getElementById('stakeholders-container');
+    const emptyMsg = document.getElementById('no-stakeholders-msg');
+    if (emptyMsg) emptyMsg.remove();
+    
+    const html = `
+        <div class="stakeholder-row bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div class="grid grid-cols-12 gap-4">
+                <div class="col-span-3">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Team Member</label>
+                    <select name="stakeholder_user[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select user...</option>
+                        {% for user in staff_users %}
+                        <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-span-3">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Department</label>
+                    <select name="stakeholder_department[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                        {% for value, label in department_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-span-3">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Role in Project</label>
+                    <select name="stakeholder_role[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                        {% for value, label in role_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Responsibilities</label>
+                    <input type="text" name="stakeholder_responsibilities[]"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                           placeholder="Key tasks">
+                </div>
+                <div class="col-span-1 flex items-end">
+                    <button type="button" onclick="removeStakeholder(this)" 
+                            class="w-full px-3 py-2 text-red-600 hover:bg-red-50 border border-red-200 rounded-lg text-sm">
+                        <svg class="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', html);
+}
+
+function removeStakeholder(btn) {
+    btn.closest('.stakeholder-row').remove();
+}
+
+// Review page checkbox
+document.addEventListener('DOMContentLoaded', function() {
+    const checkbox = document.getElementById('confirm-create');
+    const createBtn = document.getElementById('create-btn');
+    
+    if (checkbox && createBtn) {
+        checkbox.addEventListener('change', function() {
+            createBtn.disabled = !this.checked;
+        });
+    }
+    
+    // Initialize percentage total
+    if (typeof Alpine !== 'undefined') {
+        setTimeout(() => {
+            const controller = Alpine.$data(document.querySelector('[x-data]'));
+            if (controller) controller.calculateTotal();
+        }, 100);
+    }
+});
+</script>
+{% endblock %}

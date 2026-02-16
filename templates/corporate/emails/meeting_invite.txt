@@ -1,0 +1,64 @@
+Training Committee Meeting Invitation
+=====================================
+
+Dear {{ member.display_name }},
+
+You are invited to attend a Training Committee Meeting.
+
+MEETING DETAILS
+---------------
+Meeting: {{ meeting.title }}
+Client: {{ client.company_name }}
+Date: {{ meeting.scheduled_date|date:"l, d F Y" }}
+Time: {{ meeting.scheduled_time|time:"H:i" }}
+Duration: {{ meeting.duration_minutes }} minutes
+
+{% if meeting.meeting_type == 'VIRTUAL' %}
+This is a virtual meeting.
+{% if meeting.meeting_link %}
+Join Link: {{ meeting.meeting_link }}
+{% endif %}
+{% if meeting.meeting_id %}
+Meeting ID: {{ meeting.meeting_id }}
+{% endif %}
+{% if meeting.meeting_password %}
+Password: {{ meeting.meeting_password }}
+{% endif %}
+{% elif meeting.meeting_type == 'HYBRID' %}
+This is a hybrid meeting.
+{% if meeting.location %}
+In-Person Location: {{ meeting.location }}
+{% endif %}
+{% if meeting.meeting_link %}
+Join Link (for remote attendance): {{ meeting.meeting_link }}
+{% endif %}
+{% else %}
+{% if meeting.location %}
+Location: {{ meeting.location }}
+{% endif %}
+{% endif %}
+
+{% if agenda_items %}
+AGENDA
+------
+{% for item in agenda_items %}
+{{ item.sequence }}. {{ item.title }} ({{ item.duration_minutes }} min)
+{% if item.description %}   {{ item.description }}{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if meeting.notes %}
+NOTES
+-----
+{{ meeting.notes }}
+{% endif %}
+
+Please add this meeting to your calendar using the attached .ics file.
+
+If you are unable to attend, please send your apologies to the meeting organizer.
+
+Kind regards,
+SkillsFlow Corporate Services
+
+---
+This is an automated message from SkillsFlow.

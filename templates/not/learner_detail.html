@@ -1,0 +1,381 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{{ learner.user.get_full_name }} - {{ training_notification.reference_number }}{% endblock %}
+
+{% block page_title %}Learner Details{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'not_dashboard' %}" class="text-primary-600 hover:text-primary-800">NOT</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'not_detail' training_notification.pk %}" class="text-primary-600 hover:text-primary-800">{{ training_notification.reference_number }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'not_learners' training_notification.pk %}" class="text-primary-600 hover:text-primary-800">Learners</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ learner.user.get_full_name }}</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'not_learners' training_notification.pk %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Back to Learners
+    </a>
+    <a href="{% url 'not_learner_documents' training_notification.pk learner.pk %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 transition-all">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Manage Documents
+    </a>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6" x-data="{ activeTab: 'progress' }">
+    
+    <!-- Learner Header Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-start justify-between">
+            <div class="flex items-center">
+                <div class="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center">
+                    <span class="text-primary-700 font-bold text-xl">{{ learner.user.first_name|slice:":1" }}{{ learner.user.last_name|slice:":1" }}</span>
+                </div>
+                <div class="ml-4">
+                    <h2 class="text-xl font-bold text-gray-900">{{ learner.user.get_full_name }}</h2>
+                    <p class="text-sm text-gray-500">{{ learner.user.email }}</p>
+                    {% if learner.id_number %}
+                    <p class="text-sm text-gray-500">ID: {{ learner.id_number }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                    {% if enrollment.status == 'COMPLETED' %}bg-green-100 text-green-800
+                    {% elif enrollment.status == 'IN_PROGRESS' or enrollment.status == 'ACTIVE' %}bg-blue-100 text-blue-800
+                    {% elif enrollment.status == 'DROPPED' or enrollment.status == 'WITHDRAWN' %}bg-red-100 text-red-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ enrollment.get_status_display }}
+                </span>
+                <div class="mt-2 text-sm text-gray-500">
+                    <span class="font-mono text-primary-600">{{ training_notification.reference_number }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Progress Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Module Progress -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Module Progress</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ progress.module_completion_rate }}%</p>
+                    <p class="text-xs text-gray-500">{{ progress.completed_modules }}/{{ progress.total_modules }} modules</p>
+                </div>
+                <div class="p-3 rounded-lg bg-blue-100">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Assessment Progress -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Assessments Done</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ progress.assessment_completion_rate }}%</p>
+                    <p class="text-xs text-gray-500">{{ progress.assessed_count }}/{{ progress.total_assessments }} assessed</p>
+                </div>
+                <div class="p-3 rounded-lg bg-yellow-100">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Competency Rate -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Competency Rate</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ progress.competency_rate }}%</p>
+                    <p class="text-xs text-gray-500">{{ progress.competent_count }} competent</p>
+                </div>
+                <div class="p-3 rounded-lg bg-green-100">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Document Compliance -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Documents</p>
+                    <p class="text-2xl font-bold {% if document_status.is_compliant %}text-green-600{% else %}text-yellow-600{% endif %}">
+                        {{ document_status.compliance_rate }}%
+                    </p>
+                    <p class="text-xs text-gray-500">{{ document_status.compliant_count }}/{{ document_status.total_required }} complete</p>
+                </div>
+                <div class="p-3 rounded-lg {% if document_status.is_compliant %}bg-green-100{% else %}bg-yellow-100{% endif %}">
+                    <svg class="w-6 h-6 {% if document_status.is_compliant %}text-green-600{% else %}text-yellow-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="border-b border-gray-200">
+            <nav class="flex -mb-px">
+                <button @click="activeTab = 'progress'" :class="activeTab === 'progress' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    Module Progress
+                </button>
+                <button @click="activeTab = 'assessments'" :class="activeTab === 'assessments' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Assessments
+                    <span class="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">{{ progress.total_assessments }}</span>
+                </button>
+                <button @click="activeTab = 'documents'" :class="activeTab === 'documents' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Documents
+                    {% if not document_status.is_compliant %}
+                    <span class="ml-2 bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded-full text-xs">{{ document_status.missing|length }} missing</span>
+                    {% endif %}
+                </button>
+            </nav>
+        </div>
+        
+        <!-- Module Progress Tab -->
+        <div x-show="activeTab === 'progress'" class="p-6">
+            {% if progress.module_progress %}
+            <div class="space-y-4">
+                {% for module_item in progress.module_progress %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div class="flex-1">
+                        <h4 class="text-sm font-medium text-gray-900">{{ module_item.module.name|default:module_item.module.code }}</h4>
+                        <p class="text-xs text-gray-500">{{ module_item.module.code }}</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                            <div class="w-32 h-2 bg-gray-200 rounded-full">
+                                <div class="h-2 bg-primary-600 rounded-full" style="width: {{ module_item.progress_percentage|default:0 }}%"></div>
+                            </div>
+                            <span class="text-xs text-gray-500">{{ module_item.progress_percentage|default:0 }}%</span>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if module_item.status == 'COMPLETED' %}bg-green-100 text-green-800
+                            {% elif module_item.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ module_item.get_status_display|default:module_item.status }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                <p class="mt-2">No module progress data available.</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Assessments Tab -->
+        <div x-show="activeTab === 'assessments'" class="p-6">
+            {% if progress.assessment_results %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assessment</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Module</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Result</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Moderation</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for result in progress.assessment_results %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ result.assessment.title|default:result.assessment }}</div>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="text-sm text-gray-500">{{ result.module.code|default:"-" }}</div>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if result.status == 'PENDING' %}bg-yellow-100 text-yellow-800
+                                    {% elif result.status == 'COMPETENT' %}bg-green-100 text-green-800
+                                    {% elif result.status == 'NOT_YET_COMPETENT' %}bg-red-100 text-red-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ result.get_status_display|default:result.status }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                {% if result.is_competent %}
+                                <span class="text-green-600 font-medium">Competent</span>
+                                {% elif result.status != 'PENDING' %}
+                                <span class="text-red-600 font-medium">Not Yet Competent</span>
+                                {% else %}
+                                <span class="text-gray-400">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                {% if result.moderation_status == 'MODERATED' %}
+                                <span class="inline-flex items-center text-purple-600">
+                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Moderated
+                                </span>
+                                {% else %}
+                                <span class="text-gray-400">Not moderated</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="mt-2">No assessment data available.</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Documents Tab -->
+        <div x-show="activeTab === 'documents'" class="p-6">
+            <div class="mb-4 flex justify-end">
+                <a href="{% url 'not_learner_documents' training_notification.pk learner.pk %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-all">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Manage Documents
+                </a>
+            </div>
+            
+            {% if documents %}
+            <div class="space-y-3">
+                {% for doc in documents %}
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div class="flex items-center">
+                        <div class="p-2 rounded-lg 
+                            {% if doc.status == 'VERIFIED' %}bg-green-100
+                            {% elif doc.status == 'REJECTED' %}bg-red-100
+                            {% elif doc.status == 'EXPIRED' %}bg-orange-100
+                            {% else %}bg-yellow-100{% endif %}">
+                            <svg class="w-5 h-5 
+                                {% if doc.status == 'VERIFIED' %}text-green-600
+                                {% elif doc.status == 'REJECTED' %}text-red-600
+                                {% elif doc.status == 'EXPIRED' %}text-orange-600
+                                {% else %}text-yellow-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">{{ doc.document_type.name }}</p>
+                            <p class="text-xs text-gray-500">{{ doc.document_type.get_category_display }}</p>
+                            {% if doc.expiry_date %}
+                            <p class="text-xs {% if doc.is_expired %}text-red-500{% elif doc.is_expiring_soon %}text-orange-500{% else %}text-gray-500{% endif %}">
+                                Expires: {{ doc.expiry_date|date:"d M Y" }}
+                                {% if doc.is_expired %}(Expired){% elif doc.is_expiring_soon %}(Expiring soon){% endif %}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if doc.status == 'VERIFIED' %}bg-green-100 text-green-800
+                            {% elif doc.status == 'REJECTED' %}bg-red-100 text-red-800
+                            {% elif doc.status == 'EXPIRED' %}bg-orange-100 text-orange-800
+                            {% elif doc.status == 'UPLOADED' %}bg-blue-100 text-blue-800
+                            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {{ doc.get_status_display }}
+                        </span>
+                        {% if doc.file %}
+                        <a href="{{ doc.file.url }}" target="_blank" class="text-primary-600 hover:text-primary-800">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <p class="mt-2">No documents uploaded yet.</p>
+            </div>
+            {% endif %}
+            
+            <!-- Missing Documents Alert -->
+            {% if document_status.missing %}
+            <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-yellow-800">Missing Required Documents</h3>
+                        <div class="mt-2 text-sm text-yellow-700">
+                            <ul class="list-disc list-inside">
+                                {% for doc_type in document_status.missing %}
+                                <li>{{ doc_type.name }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

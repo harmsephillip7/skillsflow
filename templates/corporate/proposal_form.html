@@ -1,0 +1,305 @@
+{% extends 'base/app_layout.html' %}
+
+{% block title %}{% if proposal.pk %}Edit{% else %}Create{% endif %} Proposal{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:dashboard' %}" class="text-gray-700 hover:text-blue-600">Corporate</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:proposal_list' %}" class="text-gray-700 hover:text-blue-600">Proposals</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">{% if proposal.pk %}{{ proposal.proposal_number }}{% else %}New Proposal{% endif %}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto" x-data="proposalForm()">
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h1 class="text-2xl font-bold text-gray-900 mb-6">
+                {% if proposal.pk %}Edit Proposal{% else %}Create New Proposal{% endif %}
+            </h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Title -->
+                <div class="md:col-span-2">
+                    <label for="id_title" class="block text-sm font-medium text-gray-700 mb-1">Proposal Title *</label>
+                    <input type="text" name="title" id="id_title" 
+                        value="{{ form.title.value|default:'' }}"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., Annual WSP/ATR Service Package">
+                </div>
+                
+                <!-- Client / Opportunity Selection -->
+                <div>
+                    <label for="id_client" class="block text-sm font-medium text-gray-700 mb-1">Client</label>
+                    <select name="client" id="id_client"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select client...</option>
+                        {% for client in clients %}
+                        <option value="{{ client.pk }}" {% if form.client.value == client.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ client.company_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="id_opportunity" class="block text-sm font-medium text-gray-700 mb-1">Linked Opportunity</label>
+                    <select name="opportunity" id="id_opportunity"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">No opportunity linked</option>
+                        {% for opp in opportunities %}
+                        <option value="{{ opp.pk }}" {% if form.opportunity.value == opp.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ opp.title }} ({{ opp.get_stage_display }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Valid Until -->
+                <div>
+                    <label for="id_valid_until" class="block text-sm font-medium text-gray-700 mb-1">Valid Until</label>
+                    <input type="date" name="valid_until" id="id_valid_until"
+                        value="{{ form.valid_until.value|date:'Y-m-d'|default:'' }}"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <!-- Contact -->
+                <div>
+                    <label for="id_contact" class="block text-sm font-medium text-gray-700 mb-1">Client Contact</label>
+                    <select name="contact" id="id_contact"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select contact...</option>
+                        {% for contact in contacts %}
+                        <option value="{{ contact.pk }}" {% if form.contact.value == contact.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ contact.full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Introduction -->
+                <div class="md:col-span-2">
+                    <label for="id_introduction" class="block text-sm font-medium text-gray-700 mb-1">Introduction</label>
+                    <textarea name="introduction" id="id_introduction" rows="4"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Brief introduction about the proposal...">{{ form.introduction.value|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Line Items -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Proposed Services</h3>
+            
+            <div class="space-y-4">
+                <template x-for="(item, index) in items" :key="index">
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                            <!-- Service -->
+                            <div class="md:col-span-4">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Service *</label>
+                                <select :name="'item_service_' + index" x-model="item.service_id"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                                    <option value="">Select service...</option>
+                                    {% for service in services %}
+                                    <option value="{{ service.pk }}" data-price="{{ service.default_price|default:0 }}">
+                                        {{ service.name }}
+                                    </option>
+                                    {% endfor %}
+                                    <option value="custom">Custom service...</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Custom Service Name -->
+                            <div class="md:col-span-3" x-show="item.service_id === 'custom'">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Service Name</label>
+                                <input type="text" :name="'item_custom_name_' + index" x-model="item.custom_name"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                                    placeholder="Custom service name">
+                            </div>
+                            
+                            <!-- Quantity -->
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
+                                <input type="number" :name="'item_quantity_' + index" x-model="item.quantity" min="1" step="1"
+                                    @input="updateTotals()"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                            </div>
+                            
+                            <!-- Unit Price -->
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Unit Price (R)</label>
+                                <input type="number" :name="'item_unit_price_' + index" x-model="item.unit_price" min="0" step="0.01"
+                                    @input="updateTotals()"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                            </div>
+                            
+                            <!-- Line Total -->
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Total</label>
+                                <p class="px-3 py-2 bg-gray-50 rounded-md text-sm font-medium" x-text="'R ' + formatNumber(item.quantity * item.unit_price)"></p>
+                            </div>
+                            
+                            <!-- Delete -->
+                            <div class="flex items-end">
+                                <button type="button" @click="removeItem(index)" class="text-red-600 hover:text-red-800 text-sm">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mt-3">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Description</label>
+                            <textarea :name="'item_description_' + index" x-model="item.description" rows="2"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                                placeholder="Description of the service..."></textarea>
+                        </div>
+                    </div>
+                </template>
+                
+                <button type="button" @click="addItem()" 
+                    class="w-full border-2 border-dashed border-gray-300 rounded-lg py-4 text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-colors">
+                    + Add Service Item
+                </button>
+            </div>
+            
+            <!-- Hidden field with JSON items -->
+            <input type="hidden" name="line_items_json" :value="JSON.stringify(items)">
+        </div>
+        
+        <!-- Pricing -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Pricing</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="id_discount_percentage" class="block text-sm font-medium text-gray-700 mb-1">Discount (%)</label>
+                    <input type="number" name="discount_percentage" id="id_discount_percentage" 
+                        x-model="discountPercentage" @input="updateTotals()"
+                        min="0" max="100" step="0.01"
+                        value="{{ form.discount_percentage.value|default:0 }}"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                
+                <div>
+                    <label for="id_tax_percentage" class="block text-sm font-medium text-gray-700 mb-1">VAT (%)</label>
+                    <input type="number" name="tax_percentage" id="id_tax_percentage" 
+                        x-model="taxPercentage" @input="updateTotals()"
+                        min="0" max="100" step="0.01"
+                        value="{{ form.tax_percentage.value|default:15 }}"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <dl class="space-y-2">
+                        <div class="flex justify-between">
+                            <dt class="text-sm text-gray-500">Subtotal</dt>
+                            <dd class="text-sm font-medium" x-text="'R ' + formatNumber(subtotal)"></dd>
+                        </div>
+                        <div class="flex justify-between" x-show="discountPercentage > 0">
+                            <dt class="text-sm text-red-500">Discount</dt>
+                            <dd class="text-sm font-medium text-red-600" x-text="'-R ' + formatNumber(discountAmount)"></dd>
+                        </div>
+                        <div class="flex justify-between" x-show="taxPercentage > 0">
+                            <dt class="text-sm text-gray-500">VAT</dt>
+                            <dd class="text-sm font-medium" x-text="'R ' + formatNumber(taxAmount)"></dd>
+                        </div>
+                        <div class="flex justify-between pt-2 border-t border-gray-200">
+                            <dt class="text-base font-medium text-gray-900">Total</dt>
+                            <dd class="text-base font-bold text-gray-900" x-text="'R ' + formatNumber(total)"></dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Terms & Conditions -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Terms & Conditions</h3>
+            <textarea name="terms_conditions" id="id_terms_conditions" rows="6"
+                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Payment terms, delivery timeline, etc.">{{ form.terms_conditions.value|default:'' }}</textarea>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex justify-end space-x-3">
+            <a href="{% url 'corporate:proposal_list' %}" 
+                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" name="save_draft" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
+                Save as Draft
+            </button>
+            <button type="submit" name="send" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                {% if proposal.pk %}Save{% else %}Create{% endif %} Proposal
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function proposalForm() {
+    return {
+        items: [
+            { service_id: '', custom_name: '', quantity: 1, unit_price: 0, description: '' }
+        ],
+        discountPercentage: {{ form.discount_percentage.value|default:0 }},
+        taxPercentage: {{ form.tax_percentage.value|default:15 }},
+        subtotal: 0,
+        discountAmount: 0,
+        taxAmount: 0,
+        total: 0,
+        
+        init() {
+            // Load existing items if editing
+            {% if existing_items %}
+            this.items = {{ existing_items|safe }};
+            {% endif %}
+            this.updateTotals();
+        },
+        
+        addItem() {
+            this.items.push({ service_id: '', custom_name: '', quantity: 1, unit_price: 0, description: '' });
+        },
+        
+        removeItem(index) {
+            if (this.items.length > 1) {
+                this.items.splice(index, 1);
+                this.updateTotals();
+            }
+        },
+        
+        updateTotals() {
+            this.subtotal = this.items.reduce((sum, item) => {
+                return sum + (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0);
+            }, 0);
+            
+            this.discountAmount = this.subtotal * (parseFloat(this.discountPercentage) || 0) / 100;
+            const afterDiscount = this.subtotal - this.discountAmount;
+            this.taxAmount = afterDiscount * (parseFloat(this.taxPercentage) || 0) / 100;
+            this.total = afterDiscount + this.taxAmount;
+        },
+        
+        formatNumber(num) {
+            return (num || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+    }
+}
+</script>
+{% endblock %}

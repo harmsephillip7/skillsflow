@@ -1,0 +1,766 @@
+{% extends "portals/student/base.html" %}
+{% load static %}
+
+{% block page_title %}Clock In{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Full screen app-like experience */
+    .clock-screen {
+        min-height: 100vh;
+        min-height: 100dvh;
+        background: linear-gradient(180deg, #059669 0%, #10b981 40%, #34d399 100%);
+    }
+    
+    .clock-screen.clocked-in {
+        background: linear-gradient(180deg, #dc2626 0%, #ef4444 40%, #f87171 100%);
+    }
+    
+    .clock-screen.completed {
+        background: linear-gradient(180deg, #1e40af 0%, #3b82f6 40%, #60a5fa 100%);
+    }
+    
+    .clock-screen.leave {
+        background: linear-gradient(180deg, #7c3aed 0%, #8b5cf6 40%, #a78bfa 100%);
+    }
+    
+    /* Giant clock button */
+    .clock-button {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 4px solid rgba(255, 255, 255, 0.4);
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+    
+    .clock-button:active {
+        transform: scale(0.95);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .clock-button:disabled {
+        opacity: 0.7;
+    }
+    
+    .clock-button.loading {
+        animation: pulse-ring 1.5s ease-out infinite;
+    }
+    
+    @keyframes pulse-ring {
+        0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+        70% { box-shadow: 0 0 0 30px rgba(255, 255, 255, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+    }
+    
+    /* GPS indicator pulse */
+    .gps-pulse {
+        animation: gps-blink 2s ease-in-out infinite;
+    }
+    
+    @keyframes gps-blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+    
+    /* Time display */
+    .time-display {
+        font-family: 'SF Mono', 'Roboto Mono', monospace;
+        font-variant-numeric: tabular-nums;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Bottom sheet */
+    .bottom-sheet {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-radius: 24px 24px 0 0;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+        transform: translateY(calc(100% - 80px));
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 50;
+        max-height: 70vh;
+        overflow: hidden;
+    }
+    
+    .bottom-sheet.expanded {
+        transform: translateY(0);
+    }
+    
+    .bottom-sheet-handle {
+        width: 40px;
+        height: 4px;
+        background: #d1d5db;
+        border-radius: 2px;
+        margin: 12px auto;
+    }
+    
+    /* Status cards */
+    .status-card {
+        transition: all 0.2s ease;
+    }
+    
+    .status-card:active {
+        transform: scale(0.96);
+    }
+    
+    /* Hide default bottom nav */
+    nav.fixed.bottom-0 {
+        display: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block bottom_nav %}{% endblock %}
+
+{% block content %}
+<div id="clockScreen" class="clock-screen {% if today_attendance and today_attendance.clock_in and today_attendance.clock_out %}completed{% elif today_attendance and today_attendance.clock_in %}clocked-in{% elif today_attendance %}leave{% endif %} flex flex-col">
+    
+    <!-- Top Bar -->
+    <div class="safe-area-top"></div>
+    <header class="px-6 pt-6 pb-4 flex items-center justify-between">
+        <div class="text-white">
+            <p class="text-sm opacity-80">{{ today|date:"l" }}</p>
+            <p class="text-lg font-semibold">{{ today|date:"d F Y" }}</p>
+        </div>
+        
+        <!-- GPS Status -->
+        <div id="gpsStatus" class="flex items-center gap-2 px-3 py-2 bg-white bg-opacity-20 rounded-full">
+            <div id="gpsIndicator" class="w-2 h-2 rounded-full bg-white gps-pulse"></div>
+            <span id="gpsText" class="text-xs text-white font-medium">Locating...</span>
+        </div>
+    </header>
+    
+    <!-- Employer Info -->
+    <div class="px-6 mb-4">
+        <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl px-4 py-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-white font-semibold truncate">{{ placement.host.employer.name|default:"Your Workplace" }}</p>
+                    <p class="text-white text-sm opacity-70">{{ placement.position|default:"Learner" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Clock Area -->
+    <div class="flex-1 flex flex-col items-center justify-center px-6 -mt-8">
+        
+        <!-- Live Time -->
+        <div class="text-center mb-8">
+            <div id="liveTime" class="time-display text-7xl font-bold text-white">--:--</div>
+            <p id="liveSeconds" class="time-display text-2xl text-white opacity-60 mt-1">:--</p>
+        </div>
+        
+        <!-- Giant Clock Button -->
+        {% if today_attendance and today_attendance.clock_in and today_attendance.clock_out %}
+        <!-- Fully clocked - show completion -->
+        <div class="clock-button flex flex-col items-center justify-center">
+            <svg class="w-16 h-16 text-white mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="text-white text-lg font-bold">Done</span>
+        </div>
+        <div class="mt-6 text-center">
+            <p class="text-white text-xl font-semibold">Attendance Complete</p>
+            <p class="text-white opacity-70 mt-2">
+                {{ today_attendance.clock_in|time:"H:i" }} → {{ today_attendance.clock_out|time:"H:i" }}
+            </p>
+            {% if today_attendance.hours_worked %}
+            <p class="text-white opacity-70 text-sm mt-1">{{ today_attendance.hours_worked }} hours</p>
+            {% endif %}
+        </div>
+        
+        {% elif today_attendance and today_attendance.clock_in %}
+        <!-- Clocked in - show clock out -->
+        <button id="clockOutBtn" onclick="clockOut()" class="clock-button flex flex-col items-center justify-center">
+            <svg class="w-16 h-16 text-white mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            <span class="text-white text-lg font-bold">CLOCK OUT</span>
+        </button>
+        <div class="mt-6 text-center">
+            <p class="text-white text-xl font-semibold">You're Clocked In</p>
+            <p class="text-white opacity-70 mt-2">Since {{ today_attendance.clock_in|time:"H:i" }}</p>
+            <p id="workingDuration" class="text-white opacity-70 text-sm mt-1"></p>
+        </div>
+        
+        {% elif today_attendance %}
+        <!-- Has leave/other status -->
+        <div class="clock-button flex flex-col items-center justify-center">
+            <svg class="w-16 h-16 text-white mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <span class="text-white text-sm font-bold">{{ today_attendance.get_attendance_type_display|upper }}</span>
+        </div>
+        <div class="mt-6 text-center">
+            <p class="text-white text-xl font-semibold">{{ today_attendance.get_attendance_type_display }}</p>
+            <p class="text-white opacity-70 mt-2">Recorded for today</p>
+        </div>
+        
+        {% else %}
+        <!-- Not clocked in - show clock in -->
+        <button id="clockInBtn" onclick="clockIn()" class="clock-button flex flex-col items-center justify-center">
+            <svg class="w-16 h-16 text-white mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+            </svg>
+            <span class="text-white text-lg font-bold">CLOCK IN</span>
+        </button>
+        <div class="mt-6 text-center">
+            <p class="text-white text-xl font-semibold">Tap to Start Your Day</p>
+            <p id="gpsSubtext" class="text-white opacity-70 mt-2">📍 Location will be captured</p>
+        </div>
+        {% endif %}
+        
+        <!-- GPS Warning -->
+        <div id="gpsWarning" class="hidden mt-4 px-4 py-2 bg-white bg-opacity-20 rounded-full">
+            <p class="text-white text-sm">⚠️ Low GPS accuracy (<span id="gpsAccuracy">-</span>m)</p>
+        </div>
+    </div>
+    
+    <!-- Floating Add Task Button (shown when clocked in) -->
+    {% if today_attendance and today_attendance.clock_in and not today_attendance.clock_out %}
+    <a href="{% url 'portals:student_task_quick_add' %}" 
+       id="addTaskFab"
+       class="fixed z-40 right-4 bottom-28 w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all transform hover:scale-105 active:scale-95"
+       style="box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        <span class="sr-only">Add Task</span>
+    </a>
+    {% endif %}
+    
+    <!-- Bottom Sheet -->
+    <div id="bottomSheet" class="bottom-sheet">
+        <div class="bottom-sheet-handle cursor-pointer" onclick="toggleSheet()"></div>
+        
+        <!-- Peek Content (always visible) -->
+        <div class="px-6 pb-4 flex items-center justify-between" onclick="toggleSheet()">
+            <div>
+                <p class="text-gray-500 text-sm">This month</p>
+                <p class="text-gray-900 font-bold text-lg">{{ days_present_this_month|default:0 }} days present</p>
+            </div>
+            <div class="flex items-center gap-2 text-gray-400">
+                <span class="text-sm">More</span>
+                <svg id="sheetArrow" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                </svg>
+            </div>
+        </div>
+        
+        <!-- Expanded Content -->
+        <div class="px-6 pb-8 overflow-y-auto" style="max-height: calc(70vh - 100px);">
+            
+            <!-- Not coming in today? -->
+            {% if not today_attendance %}
+            <div class="mb-6">
+                <p class="text-gray-500 text-sm mb-3">Not coming in today?</p>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="submitLeave('SICK')" class="status-card flex flex-col items-center p-3 bg-amber-50 rounded-xl">
+                        <span class="text-2xl">🤒</span>
+                        <span class="text-xs text-amber-700 mt-1">Sick</span>
+                    </button>
+                    <button onclick="submitLeave('ANNUAL')" class="status-card flex flex-col items-center p-3 bg-blue-50 rounded-xl">
+                        <span class="text-2xl">🏖️</span>
+                        <span class="text-xs text-blue-700 mt-1">Leave</span>
+                    </button>
+                    <button onclick="submitLeave('FAMILY')" class="status-card flex flex-col items-center p-3 bg-purple-50 rounded-xl">
+                        <span class="text-2xl">👨‍👩‍👧</span>
+                        <span class="text-xs text-purple-700 mt-1">Family</span>
+                    </button>
+                    <button onclick="submitLeave('UNPAID')" class="status-card flex flex-col items-center p-3 bg-gray-100 rounded-xl">
+                        <span class="text-2xl">📝</span>
+                        <span class="text-xs text-gray-700 mt-1">Unpaid</span>
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl font-bold text-emerald-600">{{ days_present_this_month|default:0 }}</span>
+                        <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Days Present</p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl font-bold text-blue-600">{{ total_modules_completed|default:0 }}</span>
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Modules Done</p>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <p class="text-gray-500 text-sm mb-3">Quick Actions</p>
+            <div class="grid grid-cols-4 gap-3 mb-6">
+                <a href="{% url 'portals:student_attendance' %}" class="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-gray-100">
+                    <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center mb-1">
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-600">History</span>
+                </a>
+                <a href="{% url 'portals:student_daily_entries' %}" class="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-gray-100">
+                    <div class="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center mb-1">
+                        <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-600">Tasks</span>
+                </a>
+                <a href="{% url 'portals:student_logbook' %}" class="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-gray-100">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-1">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-600">Logbook</span>
+                </a>
+                <a href="{% url 'portals:student_messages' %}" class="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-gray-100 relative">
+                    <div class="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center mb-1">
+                        <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                    </div>
+                    {% if unread_messages %}
+                    <span class="absolute top-2 right-2 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">{{ unread_messages }}</span>
+                    {% endif %}
+                    <span class="text-xs text-gray-600">Chat</span>
+                </a>
+            </div>
+            
+            <!-- More Links -->
+            <div class="space-y-2">
+                <a href="{% url 'portals:student_wbl_full_dashboard' %}" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                            </svg>
+                        </div>
+                        <span class="font-medium text-gray-900">Full Dashboard</span>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+                <a href="{% url 'portals:student_stipend_history' %}" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                        </div>
+                        <span class="font-medium text-gray-900">Stipends</span>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+                <a href="{% url 'portals:student_profile' %}" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </div>
+                        <span class="font-medium text-gray-900">My Profile</span>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Offline Queue Badge -->
+    <div id="offlineQueueBadge" class="hidden fixed top-20 left-4 right-4 bg-blue-600 text-white px-4 py-3 rounded-xl shadow-lg z-40">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                </svg>
+                <span><span id="pendingCount">0</span> pending sync</span>
+            </div>
+            <button onclick="syncOfflineQueue()" class="px-3 py-1 bg-white text-blue-600 text-sm font-medium rounded-lg">Sync</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ============================================
+// IndexedDB for Offline Queue
+// ============================================
+const DB_NAME = 'SkillsFlowOffline';
+const DB_VERSION = 1;
+const STORE_NAME = 'attendanceQueue';
+let db;
+
+function initDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => { db = request.result; resolve(db); };
+        request.onupgradeneeded = (event) => {
+            const database = event.target.result;
+            if (!database.objectStoreNames.contains(STORE_NAME)) {
+                const store = database.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                store.createIndex('client_uuid', 'client_uuid', { unique: true });
+            }
+        };
+    });
+}
+
+// ============================================
+// GPS
+// ============================================
+let gpsData = null;
+let gpsReady = false;
+
+function captureGPS() {
+    const indicator = document.getElementById('gpsIndicator');
+    const text = document.getElementById('gpsText');
+    const warning = document.getElementById('gpsWarning');
+    const subtext = document.getElementById('gpsSubtext');
+    
+    if (!('geolocation' in navigator)) {
+        indicator.className = 'w-2 h-2 rounded-full bg-red-400';
+        text.textContent = 'Not supported';
+        gpsReady = true;
+        return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            gpsData = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: new Date().toISOString()
+            };
+            gpsReady = true;
+            
+            if (gpsData.accuracy <= 100) {
+                indicator.className = 'w-2 h-2 rounded-full bg-green-400';
+                text.textContent = `${Math.round(gpsData.accuracy)}m`;
+                if (subtext) subtext.textContent = '📍 Location ready';
+            } else {
+                indicator.className = 'w-2 h-2 rounded-full bg-amber-400';
+                text.textContent = `${Math.round(gpsData.accuracy)}m`;
+                warning.classList.remove('hidden');
+                document.getElementById('gpsAccuracy').textContent = Math.round(gpsData.accuracy);
+            }
+            
+            enableButtons();
+        },
+        (error) => {
+            console.error('GPS error:', error);
+            indicator.className = 'w-2 h-2 rounded-full bg-amber-400';
+            text.textContent = 'Unavailable';
+            if (subtext) subtext.textContent = '📍 Location unavailable';
+            gpsReady = true;
+            enableButtons();
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+}
+
+function enableButtons() {
+    const clockInBtn = document.getElementById('clockInBtn');
+    const clockOutBtn = document.getElementById('clockOutBtn');
+    if (clockInBtn) clockInBtn.disabled = false;
+    if (clockOutBtn) clockOutBtn.disabled = false;
+}
+
+// ============================================
+// Time Display
+// ============================================
+function updateTime() {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+    
+    document.getElementById('liveTime').textContent = `${hours}:${minutes}`;
+    document.getElementById('liveSeconds').textContent = `:${seconds}`;
+    
+    // Update working duration if clocked in
+    updateWorkingDuration();
+}
+
+function updateWorkingDuration() {
+    const durationEl = document.getElementById('workingDuration');
+    if (!durationEl) return;
+    
+    const clockInTime = '{{ today_attendance.clock_in|time:"H:i"|default:"" }}';
+    if (!clockInTime) return;
+    
+    const [h, m] = clockInTime.split(':').map(Number);
+    const clockIn = new Date();
+    clockIn.setHours(h, m, 0, 0);
+    
+    const now = new Date();
+    const diff = Math.floor((now - clockIn) / 1000 / 60); // minutes
+    const hours = Math.floor(diff / 60);
+    const mins = diff % 60;
+    
+    durationEl.textContent = `Working for ${hours}h ${mins}m`;
+}
+
+// ============================================
+// Clock In/Out
+// ============================================
+async function clockIn() {
+    const btn = document.getElementById('clockInBtn');
+    if (!btn) return;
+    
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.innerHTML = `
+        <svg class="w-12 h-12 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+    `;
+    
+    await submitAttendance('PRESENT', 'clock_in');
+}
+
+async function clockOut() {
+    const btn = document.getElementById('clockOutBtn');
+    if (!btn) return;
+    
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.innerHTML = `
+        <svg class="w-12 h-12 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+    `;
+    
+    await submitAttendance('PRESENT', 'clock_out');
+}
+
+async function submitLeave(leaveType) {
+    if (confirm(`Record ${getLeaveLabel(leaveType)} for today?`)) {
+        await submitAttendance(leaveType, null);
+    }
+}
+
+function getLeaveLabel(type) {
+    return { 'SICK': 'Sick Leave', 'ANNUAL': 'Annual Leave', 'FAMILY': 'Family Leave', 'UNPAID': 'Unpaid Leave' }[type] || type;
+}
+
+async function submitAttendance(attendanceType, timeType) {
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const clientUUID = crypto.randomUUID();
+    
+    const formData = new FormData();
+    formData.append('date', today);
+    formData.append('attendance_type', attendanceType);
+    formData.append('client_uuid', clientUUID);
+    
+    if (timeType === 'clock_in') formData.append('clock_in', currentTime);
+    if (timeType === 'clock_out') formData.append('clock_out', currentTime);
+    
+    if (gpsData) {
+        formData.append('gps_latitude', gpsData.latitude);
+        formData.append('gps_longitude', gpsData.longitude);
+        formData.append('gps_accuracy', gpsData.accuracy);
+        formData.append('gps_timestamp', gpsData.timestamp);
+    }
+    
+    if (navigator.onLine) {
+        try {
+            const response = await fetch('{% url "portals:student_attendance_submit" %}', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast('✅ ' + (timeType === 'clock_in' ? 'Clocked In!' : timeType === 'clock_out' ? 'Clocked Out!' : 'Recorded!'), 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                throw new Error(data.error || 'Failed');
+            }
+        } catch (error) {
+            showToast('❌ ' + error.message, 'error');
+            setTimeout(() => location.reload(), 1500);
+        }
+    } else {
+        await queueOffline(formData, clientUUID, attendanceType, timeType, currentTime);
+        showToast('📥 Saved offline', 'info');
+        updatePendingQueue();
+    }
+}
+
+async function queueOffline(formData, clientUUID, attendanceType, timeType, currentTime) {
+    const record = {
+        client_uuid: clientUUID,
+        date: formData.get('date'),
+        attendance_type: attendanceType,
+        clock_in: timeType === 'clock_in' ? currentTime : null,
+        clock_out: timeType === 'clock_out' ? currentTime : null,
+        gps_latitude: gpsData?.latitude,
+        gps_longitude: gpsData?.longitude,
+        gps_accuracy: gpsData?.accuracy,
+        gps_timestamp: gpsData?.timestamp,
+        offline_created: true,
+        timestamp: Date.now()
+    };
+    
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    await tx.objectStore(STORE_NAME).add(record);
+}
+
+// ============================================
+// Offline Queue
+// ============================================
+async function updatePendingQueue() {
+    if (!db) return;
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const request = tx.objectStore(STORE_NAME).getAll();
+    
+    request.onsuccess = () => {
+        const count = request.result.length;
+        const badge = document.getElementById('offlineQueueBadge');
+        document.getElementById('pendingCount').textContent = count;
+        badge.classList.toggle('hidden', count === 0);
+    };
+}
+
+async function syncOfflineQueue() {
+    if (!navigator.onLine) {
+        showToast('📡 Still offline', 'warning');
+        return;
+    }
+    
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const records = await new Promise(r => { const req = store.getAll(); req.onsuccess = () => r(req.result); });
+    
+    for (const record of records) {
+        try {
+            const formData = new FormData();
+            formData.append('date', record.date);
+            formData.append('attendance_type', record.attendance_type);
+            formData.append('client_uuid', record.client_uuid);
+            formData.append('offline_created', 'true');
+            if (record.clock_in) formData.append('clock_in', record.clock_in);
+            if (record.clock_out) formData.append('clock_out', record.clock_out);
+            if (record.gps_latitude) formData.append('gps_latitude', record.gps_latitude);
+            if (record.gps_longitude) formData.append('gps_longitude', record.gps_longitude);
+            if (record.gps_accuracy) formData.append('gps_accuracy', record.gps_accuracy);
+            
+            const response = await fetch('{% url "portals:student_attendance_submit" %}', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+            });
+            
+            if (response.ok) {
+                const deleteTx = db.transaction(STORE_NAME, 'readwrite');
+                deleteTx.objectStore(STORE_NAME).delete(record.id);
+            }
+        } catch (e) { console.error(e); }
+    }
+    
+    updatePendingQueue();
+    showToast('✅ Synced!', 'success');
+    setTimeout(() => location.reload(), 1000);
+}
+
+// ============================================
+// Bottom Sheet
+// ============================================
+let sheetExpanded = false;
+
+function toggleSheet() {
+    const sheet = document.getElementById('bottomSheet');
+    const arrow = document.getElementById('sheetArrow');
+    sheetExpanded = !sheetExpanded;
+    sheet.classList.toggle('expanded', sheetExpanded);
+    arrow.style.transform = sheetExpanded ? 'rotate(180deg)' : '';
+}
+
+// Touch swipe for bottom sheet
+let touchStartY = 0;
+document.getElementById('bottomSheet').addEventListener('touchstart', (e) => {
+    touchStartY = e.touches[0].clientY;
+});
+
+document.getElementById('bottomSheet').addEventListener('touchmove', (e) => {
+    const touchY = e.touches[0].clientY;
+    const diff = touchStartY - touchY;
+    
+    if (diff > 50 && !sheetExpanded) {
+        toggleSheet();
+    } else if (diff < -50 && sheetExpanded) {
+        toggleSheet();
+    }
+});
+
+// ============================================
+// Online/Offline
+// ============================================
+window.addEventListener('online', () => {
+    showToast('📡 Back online!', 'success');
+    updatePendingQueue();
+});
+
+window.addEventListener('offline', () => {
+    showToast('📴 Offline mode', 'warning');
+});
+
+// ============================================
+// Init
+// ============================================
+document.addEventListener('DOMContentLoaded', async () => {
+    await initDB();
+    captureGPS();
+    updatePendingQueue();
+    updateTime();
+    setInterval(updateTime, 1000);
+    
+    // Disable buttons until GPS ready
+    const clockInBtn = document.getElementById('clockInBtn');
+    const clockOutBtn = document.getElementById('clockOutBtn');
+    if (clockInBtn) clockInBtn.disabled = true;
+    if (clockOutBtn) clockOutBtn.disabled = true;
+});
+</script>
+{% endblock %}

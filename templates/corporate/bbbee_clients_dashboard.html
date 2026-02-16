@@ -1,0 +1,233 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}B-BBEE Clients Dashboard{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">B-BBEE Clients</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-900">B-BBEE Consulting Dashboard</h1>
+    <p class="text-gray-500 mt-1">Overview of all B-BBEE verification clients</p>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Total Clients</p>
+                <p class="text-2xl font-bold text-gray-900">{{ total_clients }}</p>
+            </div>
+            <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">In Progress</p>
+                <p class="text-2xl font-bold text-orange-600">{{ in_progress }}</p>
+            </div>
+            <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Verification Pending</p>
+                <p class="text-2xl font-bold text-yellow-600">{{ verification_pending }}</p>
+            </div>
+            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Completed</p>
+                <p class="text-2xl font-bold text-green-600">{{ completed }}</p>
+            </div>
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Expiring Soon</p>
+                <p class="text-2xl font-bold text-red-600">{{ expiring_soon }}</p>
+            </div>
+            <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enterprise Type Distribution -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="font-semibold text-gray-900 mb-4">Enterprise Distribution (FY{{ current_fy }})</h3>
+        <div class="space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">EME (≤R10m)</span>
+                <span class="font-semibold text-green-600">{{ enterprise_counts.EME|default:0 }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">QSE (R10-50m)</span>
+                <span class="font-semibold text-blue-600">{{ enterprise_counts.QSE|default:0 }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Generic (>R50m)</span>
+                <span class="font-semibold text-purple-600">{{ enterprise_counts.GENERIC|default:0 }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:col-span-2">
+        <h3 class="font-semibold text-gray-900 mb-4">Upcoming Verification Deadlines</h3>
+        {% if upcoming_deadlines %}
+        <div class="space-y-2">
+            {% for year in upcoming_deadlines %}
+            <a href="{% url 'corporate:bbbee_service_management' year.client.pk %}" 
+               class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                <div>
+                    <p class="font-medium text-gray-900">{{ year.client.company_name }}</p>
+                    <p class="text-xs text-gray-500">FY{{ year.financial_year }} • {{ year.get_enterprise_type_display }}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm font-medium {% if year.days_until_target < 7 %}text-red-600{% elif year.days_until_target < 14 %}text-yellow-600{% else %}text-gray-700{% endif %}">
+                        {{ year.target_verification_date|date:"d M Y" }}
+                    </p>
+                    <p class="text-xs text-gray-500">{{ year.days_until_target }} days</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm">No upcoming deadlines in the next 30 days.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Client List -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <div class="px-6 py-4 border-b border-gray-100">
+        <h3 class="font-semibold text-gray-900">B-BBEE Clients</h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enterprise Type</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Level</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Certificate Expiry</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for client in clients %}
+                {% with latest_year=client.bbbee_service_years.first %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <div>
+                            <p class="font-medium text-gray-900">{{ client.company_name }}</p>
+                            <p class="text-xs text-gray-500">{{ client.industry|default:"-" }}</p>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if latest_year %}
+                        <span class="px-2 py-1 text-xs rounded-full 
+                            {% if latest_year.enterprise_type == 'EME' %}bg-green-100 text-green-800
+                            {% elif latest_year.enterprise_type == 'QSE' %}bg-blue-100 text-blue-800
+                            {% else %}bg-purple-100 text-purple-800{% endif %}">
+                            {{ latest_year.get_enterprise_type_display }}
+                        </span>
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if latest_year and latest_year.outcome != 'PENDING' %}
+                        <span class="text-lg font-bold text-emerald-600">{{ latest_year.get_outcome_display }}</span>
+                        {% else %}
+                        <span class="text-gray-400">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if latest_year %}
+                        <span class="px-2 py-1 text-xs rounded-full 
+                            {% if latest_year.status == 'COMPLETED' or latest_year.status == 'CERTIFICATE_ISSUED' %}bg-green-100 text-green-800
+                            {% elif latest_year.status == 'VERIFIED' %}bg-blue-100 text-blue-800
+                            {% elif latest_year.status == 'NOT_STARTED' %}bg-gray-100 text-gray-800
+                            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {{ latest_year.get_status_display }}
+                        </span>
+                        {% else %}
+                        <span class="text-gray-400">No service year</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if latest_year.certificate_expiry_date %}
+                        <span class="{% if latest_year.certificate_days_remaining < 30 %}text-red-600{% elif latest_year.certificate_days_remaining < 60 %}text-yellow-600{% else %}text-gray-700{% endif %}">
+                            {{ latest_year.certificate_expiry_date|date:"d M Y" }}
+                        </span>
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{% url 'corporate:bbbee_service_management' client.pk %}" 
+                           class="inline-flex items-center px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 text-sm">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                            Manage
+                        </a>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                        No B-BBEE consulting clients found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

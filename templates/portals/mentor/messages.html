@@ -1,0 +1,500 @@
+{% extends "portals/mentor/base.html" %}
+{% load static %}
+
+{% block page_title %}Messages - Mentor Portal{% endblock %}
+
+{% block content %}
+<div class="messages-container">
+    <div class="messages-sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-comments"></i> Messages</h2>
+            <button class="btn btn-primary btn-sm" id="newMessageBtn">
+                <i class="fas fa-plus"></i> New
+            </button>
+        </div>
+        
+        <div class="thread-list">
+            {% for thread in threads %}
+            <div class="thread-item {% if thread.id == active_thread.id %}active{% endif %}" 
+                 data-thread-id="{{ thread.id }}">
+                <div class="thread-avatar">
+                    {% with other_user=thread.get_other_participant %}
+                    {% if other_user.profile_picture %}
+                    <img src="{{ other_user.profile_picture.url }}" alt="">
+                    {% else %}
+                    <div class="avatar-placeholder">
+                        {{ other_user.first_name.0 }}{{ other_user.last_name.0 }}
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+                <div class="thread-info">
+                    <h4>{{ thread.subject|truncatewords:5 }}</h4>
+                    <p class="last-message">{{ thread.last_message.content|truncatewords:10|default:"No messages yet" }}</p>
+                </div>
+                <div class="thread-meta">
+                    <span class="time">{{ thread.last_message.sent_at|timesince|default:"" }}</span>
+                    {% if thread.unread_count %}
+                    <span class="unread-badge">{{ thread.unread_count }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-threads">
+                <i class="fas fa-inbox"></i>
+                <p>No conversations yet</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="messages-main">
+        {% if active_thread %}
+        <div class="chat-header">
+            <div class="chat-info">
+                {% with other_user=active_thread.get_other_participant %}
+                <h3>{{ other_user.get_full_name }}</h3>
+                <p class="text-muted">{{ active_thread.subject }}</p>
+                {% endwith %}
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            {% for message in active_thread.messages.all %}
+            <div class="message {% if message.sender == request.user %}sent{% else %}received{% endif %}">
+                <div class="message-content">
+                    <p>{{ message.content }}</p>
+                    <span class="message-time">{{ message.sent_at|date:"d M, H:i" }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="chat-input">
+            <form method="post" id="messageForm">
+                {% csrf_token %}
+                <input type="hidden" name="thread_id" value="{{ active_thread.id }}">
+                <textarea name="content" placeholder="Type your message..." rows="2" required></textarea>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <div class="no-chat-selected">
+            <i class="fas fa-comments"></i>
+            <h3>Select a conversation</h3>
+            <p>Choose a conversation from the list or start a new one</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- New Message Modal -->
+<div class="modal" id="newMessageModal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-envelope"></i> New Message</h2>
+            <button type="button" class="modal-close">&times;</button>
+        </div>
+        <form method="post" action="{% url 'portals:mentor_messages' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="new_thread">
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="recipient">To:</label>
+                    <select name="recipient" id="recipient" required>
+                        <option value="">Select a learner...</option>
+                        {% for placement in placements %}
+                        <option value="{{ placement.learner.user.id }}">{{ placement.learner.get_full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="subject">Subject:</label>
+                    <input type="text" name="subject" id="subject" placeholder="Message subject..." required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="message">Message:</label>
+                    <textarea name="message" id="message" rows="4" placeholder="Your message..." required></textarea>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeNewMessageModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Send Message
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.messages-container {
+    display: flex;
+    height: calc(100vh - 80px);
+    background: #f5f7fa;
+}
+
+.messages-sidebar {
+    width: 320px;
+    background: white;
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.thread-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.thread-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s;
+}
+
+.thread-item:hover {
+    background: #f5f7fa;
+}
+
+.thread-item.active {
+    background: #e8f0fe;
+    border-left: 3px solid #2c5aa0;
+}
+
+.thread-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.thread-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #2c5aa0;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.thread-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.thread-info h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.thread-info .last-message {
+    margin: 0.25rem 0 0;
+    font-size: 0.8rem;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.thread-meta {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.thread-meta .time {
+    font-size: 0.75rem;
+    color: #999;
+}
+
+.unread-badge {
+    display: inline-block;
+    background: #e74c3c;
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 10px;
+    margin-top: 0.25rem;
+}
+
+.messages-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-header {
+    padding: 1rem;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.chat-header h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.message {
+    max-width: 70%;
+    display: flex;
+}
+
+.message.sent {
+    align-self: flex-end;
+}
+
+.message.received {
+    align-self: flex-start;
+}
+
+.message-content {
+    padding: 0.75rem 1rem;
+    border-radius: 16px;
+}
+
+.message.sent .message-content {
+    background: #2c5aa0;
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.message.received .message-content {
+    background: white;
+    border-bottom-left-radius: 4px;
+}
+
+.message-content p {
+    margin: 0;
+}
+
+.message-time {
+    display: block;
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-top: 0.25rem;
+}
+
+.chat-input {
+    padding: 1rem;
+    background: white;
+    border-top: 1px solid #e0e0e0;
+}
+
+.chat-input form {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.chat-input textarea {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    resize: none;
+}
+
+.chat-input button {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    padding: 0;
+}
+
+.no-chat-selected {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+}
+
+.no-chat-selected i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.empty-threads {
+    padding: 2rem;
+    text-align: center;
+    color: #999;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #999;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+    .messages-container {
+        flex-direction: column;
+    }
+    
+    .messages-sidebar {
+        width: 100%;
+        height: 200px;
+    }
+    
+    .message {
+        max-width: 85%;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Thread selection
+    document.querySelectorAll('.thread-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+            window.location.href = '?thread=' + this.dataset.threadId;
+        });
+    });
+    
+    // New message modal
+    document.getElementById('newMessageBtn').addEventListener('click', function() {
+        document.getElementById('newMessageModal').style.display = 'flex';
+    });
+    
+    document.querySelector('#newMessageModal .modal-close').addEventListener('click', closeNewMessageModal);
+    document.getElementById('newMessageModal').addEventListener('click', function(e) {
+        if (e.target === this) closeNewMessageModal();
+    });
+    
+    // Scroll to bottom of messages
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    // Message form
+    const messageForm = document.getElementById('messageForm');
+    if (messageForm) {
+        messageForm.addEventListener('submit', function(e) {
+            const textarea = this.querySelector('textarea');
+            if (!textarea.value.trim()) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+
+function closeNewMessageModal() {
+    document.getElementById('newMessageModal').style.display = 'none';
+}
+</script>
+{% endblock %}

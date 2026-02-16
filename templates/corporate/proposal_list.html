@@ -1,0 +1,190 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}Service Proposals{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:dashboard' %}" class="text-gray-700 hover:text-blue-600">Corporate</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">Proposals</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900">Service Proposals</h1>
+        <a href="{% url 'corporate:proposal_create' %}" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+            + New Proposal
+        </a>
+    </div>
+    
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow p-4">
+        <form method="get" class="flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-48">
+                <input type="text" name="search" value="{{ request.GET.search }}" 
+                    placeholder="Search proposals..."
+                    class="w-full border border-gray-300 rounded-md px-3 py-2">
+            </div>
+            <div>
+                <select name="status" class="border border-gray-300 rounded-md px-3 py-2">
+                    <option value="">All Statuses</option>
+                    <option value="DRAFT" {% if request.GET.status == 'DRAFT' %}selected{% endif %}>Draft</option>
+                    <option value="SENT" {% if request.GET.status == 'SENT' %}selected{% endif %}>Sent</option>
+                    <option value="ACCEPTED" {% if request.GET.status == 'ACCEPTED' %}selected{% endif %}>Accepted</option>
+                    <option value="REJECTED" {% if request.GET.status == 'REJECTED' %}selected{% endif %}>Rejected</option>
+                    <option value="EXPIRED" {% if request.GET.status == 'EXPIRED' %}selected{% endif %}>Expired</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">
+                Filter
+            </button>
+            <a href="{% url 'corporate:proposal_list' %}" class="text-gray-600 hover:text-gray-800 text-sm">
+                Clear
+            </a>
+        </form>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500">Draft</p>
+            <p class="text-2xl font-bold text-gray-600">{{ stats.draft_count }}</p>
+            <p class="text-xs text-gray-400">R{{ stats.draft_value|floatformat:0|intcomma }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500">Sent</p>
+            <p class="text-2xl font-bold text-blue-600">{{ stats.sent_count }}</p>
+            <p class="text-xs text-blue-400">R{{ stats.sent_value|floatformat:0|intcomma }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500">Accepted</p>
+            <p class="text-2xl font-bold text-green-600">{{ stats.accepted_count }}</p>
+            <p class="text-xs text-green-400">R{{ stats.accepted_value|floatformat:0|intcomma }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500">Rejected</p>
+            <p class="text-2xl font-bold text-red-600">{{ stats.rejected_count }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500">Win Rate</p>
+            <p class="text-2xl font-bold text-indigo-600">{{ stats.win_rate|floatformat:0 }}%</p>
+        </div>
+    </div>
+    
+    <!-- Proposals Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proposal</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valid Until</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for proposal in proposals %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <div>
+                            <a href="{% url 'corporate:proposal_detail' proposal.pk %}" class="font-medium text-blue-600 hover:text-blue-800">
+                                {{ proposal.proposal_number }}
+                            </a>
+                            <p class="text-sm text-gray-500">{{ proposal.title }}</p>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-sm text-gray-900">
+                            {% if proposal.client %}
+                            {{ proposal.client.company_name }}
+                            {% elif proposal.opportunity.client %}
+                            {{ proposal.opportunity.client.company_name }}
+                            {% elif proposal.opportunity.prospect_company_name %}
+                            {{ proposal.opportunity.prospect_company_name }} (Prospect)
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="font-medium text-gray-900">R{{ proposal.total_value|floatformat:0|intcomma }}</span>
+                        {% if proposal.discount_percentage %}
+                        <span class="text-xs text-red-500">({{ proposal.discount_percentage }}% off)</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if proposal.status == 'DRAFT' %}bg-gray-100 text-gray-800
+                            {% elif proposal.status == 'SENT' %}bg-blue-100 text-blue-800
+                            {% elif proposal.status == 'ACCEPTED' %}bg-green-100 text-green-800
+                            {% elif proposal.status == 'REJECTED' %}bg-red-100 text-red-800
+                            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {{ proposal.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        {% if proposal.valid_until %}
+                        <span class="{% if proposal.is_expired %}text-red-600{% endif %}">
+                            {{ proposal.valid_until|date:"d M Y" }}
+                        </span>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                        <div class="flex space-x-2">
+                            <a href="{% url 'corporate:proposal_detail' proposal.pk %}" class="text-blue-600 hover:text-blue-800">View</a>
+                            {% if proposal.status == 'DRAFT' %}
+                            <a href="{% url 'corporate:proposal_edit' proposal.pk %}" class="text-green-600 hover:text-green-800">Edit</a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                        <p class="text-lg">No proposals found</p>
+                        <a href="{% url 'corporate:proposal_create' %}" class="text-blue-600 hover:text-blue-800 mt-2 inline-block">
+                            Create your first proposal
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="flex justify-center">
+        <nav class="inline-flex rounded-md shadow">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 rounded-l-md">
+                Previous
+            </a>
+            {% endif %}
+            <span class="px-3 py-2 border-t border-b border-gray-300 bg-white text-gray-700">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 rounded-r-md">
+                Next
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,204 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}{{ position.title }}{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="flex items-center text-sm text-gray-500 mb-2">
+                <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <a href="{% url 'hr_admin:position_list' %}" class="hover:text-primary-600">Positions</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="text-gray-700">{{ position.code }}</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">{{ position.title }}</h1>
+        </div>
+        <div class="flex space-x-3">
+            <a href="{% url 'hr_admin:task_create' %}?position={{ position.pk }}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Task
+            </a>
+            <a href="{% url 'hr_admin:position_edit' pk=position.pk %}" 
+               class="inline-flex items-center px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-xl hover:bg-rose-700 transition shadow-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Edit
+            </a>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Info -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Position Details -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Position Details</h2>
+                <dl class="grid grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Code</dt>
+                        <dd class="text-sm text-gray-900 mt-1">{{ position.code }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Department</dt>
+                        <dd class="text-sm mt-1">
+                            {% if position.department %}
+                            <a href="{% url 'hr_admin:department_detail' pk=position.department.pk %}" class="text-rose-600 hover:text-rose-700">{{ position.department.name }}</a>
+                            {% else %}
+                            <span class="text-gray-500">Company-wide</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Reports To</dt>
+                        <dd class="text-sm mt-1">
+                            {% if position.reports_to %}
+                            <a href="{% url 'hr_admin:position_detail' pk=position.reports_to.pk %}" class="text-rose-600 hover:text-rose-700">{{ position.reports_to.title }}</a>
+                            {% else %}
+                            <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Salary Band</dt>
+                        <dd class="text-sm text-gray-900 mt-1">{{ position.get_salary_band_display|default:"—" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Salary Range</dt>
+                        <dd class="text-sm text-gray-900 mt-1">{{ position.get_salary_range_display }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Experience Required</dt>
+                        <dd class="text-sm text-gray-900 mt-1">{{ position.experience_required|default:"—" }}</dd>
+                    </div>
+                </dl>
+            </div>
+            
+            <!-- Job Description -->
+            {% if position.job_description_text or position.job_description %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Job Description</h2>
+                {% if position.job_description %}
+                <div class="mb-4">
+                    <a href="{{ position.job_description.url }}" target="_blank" 
+                       class="inline-flex items-center px-4 py-2 bg-rose-50 text-rose-700 rounded-lg hover:bg-rose-100 transition">
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Download Job Description
+                    </a>
+                </div>
+                {% endif %}
+                {% if position.job_description_text %}
+                <div class="prose prose-sm max-w-none text-gray-700">
+                    {{ position.job_description_text|linebreaks }}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- Tasks (KPIs) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Tasks & Responsibilities</h2>
+                    <a href="{% url 'hr_admin:task_create' %}?position={{ position.pk }}" class="text-sm text-rose-600 hover:text-rose-700 font-medium">+ Add Task</a>
+                </div>
+                {% if tasks %}
+                <div class="space-y-3">
+                    {% for task in tasks %}
+                    <div class="border border-gray-100 rounded-lg p-4 hover:border-rose-200 transition">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h3 class="font-medium text-gray-900">{{ task.title }}</h3>
+                                    <span class="text-xs px-2 py-0.5 rounded-full {% if task.priority == 'CRITICAL' %}bg-red-100 text-red-700{% elif task.priority == 'HIGH' %}bg-orange-100 text-orange-700{% elif task.priority == 'MEDIUM' %}bg-yellow-100 text-yellow-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                                        {{ task.get_priority_display }}
+                                    </span>
+                                </div>
+                                {% if task.description %}
+                                <p class="text-sm text-gray-500 mb-2">{{ task.description }}</p>
+                                {% endif %}
+                                <div class="flex items-center gap-4 text-xs text-gray-500">
+                                    <span>Weight: {{ task.weight }}%</span>
+                                    <span>Frequency: {{ task.get_frequency_display }}</span>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2 ml-4">
+                                <a href="{% url 'hr_admin:task_edit' pk=task.pk %}" class="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Edit">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </a>
+                                <a href="{% url 'hr_admin:task_delete' pk=task.pk %}" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Delete">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500 text-center py-4">No tasks defined for this position</p>
+                {% endif %}
+            </div>
+            
+            <!-- Qualifications -->
+            {% if position.minimum_qualifications or position.preferred_qualifications %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Qualifications</h2>
+                {% if position.minimum_qualifications %}
+                <div class="mb-4">
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">Minimum Requirements</h3>
+                    <p class="text-sm text-gray-600">{{ position.minimum_qualifications|linebreaks }}</p>
+                </div>
+                {% endif %}
+                {% if position.preferred_qualifications %}
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">Preferred Qualifications</h3>
+                    <p class="text-sm text-gray-600">{{ position.preferred_qualifications|linebreaks }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Current Staff -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Current Staff</h2>
+                {% if staff_members %}
+                <div class="space-y-3">
+                    {% for staff in staff_members %}
+                    <a href="{% url 'hr_admin:staff_detail' pk=staff.pk %}" class="flex items-center py-2 hover:bg-gray-50 rounded-lg px-2 -mx-2 transition">
+                        <div class="w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center text-rose-600 font-semibold text-sm mr-3">
+                            {{ staff.user.first_name.0|default:staff.user.email.0|upper }}
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ staff.user.get_full_name }}</p>
+                            <p class="text-xs text-gray-500">{{ staff.employee_number }}</p>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500 text-center py-4">No staff in this position</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

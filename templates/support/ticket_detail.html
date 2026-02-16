@@ -1,0 +1,58 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Ticket {{ ticket.id }} | Support | SkillsFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="flex items-start justify-between gap-4 mb-6">
+      <div>
+        <a href="{% url 'support:contact_support' %}" class="text-sm font-medium text-blue-600 hover:text-blue-700">← Back to tickets</a>
+        <h1 class="mt-3 text-2xl font-bold text-gray-900">{{ ticket.subject }}</h1>
+        <div class="mt-2 text-sm text-gray-500 flex flex-wrap gap-x-4 gap-y-1">
+          <span>Status: <span class="font-semibold text-gray-700">{{ ticket.get_status_display }}</span></span>
+          <span>Priority: <span class="font-semibold text-gray-700">{{ ticket.get_priority_display }}</span></span>
+          {% if ticket.category %}<span>Category: <span class="font-semibold text-gray-700">{{ ticket.category.name }}</span></span>{% endif %}
+          <span>Last activity: {{ ticket.last_activity_at|date:"M d, Y H:i" }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+      <h2 class="text-lg font-semibold text-gray-900">Conversation</h2>
+      <div class="mt-5 space-y-4">
+        {% for m in messages %}
+          <div class="rounded-2xl border border-gray-200 p-4 {% if m.sender == request.user %}bg-blue-50 border-blue-100{% else %}bg-white{% endif %}">
+            <div class="flex items-center justify-between text-xs text-gray-500">
+              <div class="font-semibold text-gray-700">
+                {{ m.sender.get_full_name|default:m.sender.username }}
+                {% if m.sender == request.user %}<span class="ml-2 text-blue-700">You</span>{% endif %}
+              </div>
+              <div>{{ m.created_at|date:"M d, Y H:i" }}</div>
+            </div>
+            <div class="mt-2 text-sm text-gray-800 leading-relaxed">
+              {{ m.body|linebreaksbr }}
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-sm text-gray-600">No messages yet.</div>
+        {% endfor %}
+      </div>
+
+      <div class="mt-6 border-t border-gray-100 pt-6">
+        <h3 class="text-base font-semibold text-gray-900">Reply</h3>
+        <form method="post" class="mt-3 space-y-3">
+          {% csrf_token %}
+          {{ form.body }}
+          <button class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-black">
+            Send reply
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

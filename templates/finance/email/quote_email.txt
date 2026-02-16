@@ -1,0 +1,32 @@
+Your Quote from {{ brand_name }}
+
+Dear {{ client_name }},
+
+Thank you for your interest in our programmes. Please find your quote attached to this email.
+
+QUOTE SUMMARY
+=============
+Quote Number: {{ quote.quote_number }}
+Date: {{ quote.quote_date|date:"d F Y" }}
+Academic Year: {{ quote.academic_year }}
+Payment Plan: {{ quote.get_payment_plan_display }}
+{% if quote.intake %}Intake: {{ quote.intake.code }}
+{% endif %}
+TOTAL: R {{ quote.total|floatformat:2 }}
+
+⏰ This quote is valid for 48 hours (expires {{ quote.valid_until|date:"d F Y" }})
+
+VIEW & ACCEPT ONLINE
+====================
+{{ public_url }}
+
+If you have any questions, please don't hesitate to contact us.
+
+Kind regards,
+{{ brand_name }} Team
+
+{% if quote.campus %}---
+{{ quote.campus.name }}
+{% if quote.campus.phone %}Phone: {{ quote.campus.phone }}{% endif %}
+{% if quote.campus.email %}Email: {{ quote.campus.email }}{% endif %}
+{% endif %}

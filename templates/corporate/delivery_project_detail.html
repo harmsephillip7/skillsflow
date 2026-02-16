@@ -1,0 +1,654 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}{{ project.name }} - Delivery Project{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:dashboard' %}" class="text-gray-700 hover:text-blue-600">Corporate</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:delivery_project_list' %}" class="text-gray-700 hover:text-blue-600">Projects</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">{{ project.project_number }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Quick Navigation for Specialized Services -->
+        {% if project.subscription.service.service_type == 'WSP_ATR' %}
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-blue-900">WSP/ATR Service Implementation</h3>
+                        <p class="text-sm text-blue-700">Manage IDPs, committees, meetings, and document submissions</p>
+                    </div>
+                </div>
+                <a href="{% url 'corporate:wspatr_management' client_pk=project.client.pk %}" 
+                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+                    Open WSP/ATR Management
+                    <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        {% elif project.subscription.service.service_type == 'EE_CONSULTING' %}
+        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0">
+                        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-purple-900">Employment Equity Implementation</h3>
+                        <p class="text-sm text-purple-700">Manage EE Plans, EEA reports, workforce analysis, and committees</p>
+                    </div>
+                </div>
+                <a href="{% url 'corporate:ee_service_management' client_pk=project.client.pk %}" 
+                   class="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700">
+                    Open EE Management
+                    <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        {% elif project.subscription.service.service_type == 'BEE_CONSULTING' %}
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0">
+                        <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-amber-900">B-BBEE Verification</h3>
+                        <p class="text-sm text-amber-700">Manage B-BBEE verification, scorecards, and documentation</p>
+                    </div>
+                </div>
+                <a href="{% url 'corporate:bbbee_service_management' client_pk=project.client.pk %}" 
+                   class="inline-flex items-center px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700">
+                    Open B-BBEE Management
+                    <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Project Header -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">{{ project.project_number }}</p>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ project.name }}</h1>
+                    <p class="text-gray-600 mt-1">{{ project.subscription.service.name }}</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                        {% if project.health == 'GREEN' %}bg-green-100 text-green-800
+                        {% elif project.health == 'AMBER' %}bg-yellow-100 text-yellow-800
+                        {% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ project.get_health_display }}
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                        {% if project.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800
+                        {% elif project.status == 'COMPLETED' %}bg-green-100 text-green-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ project.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            
+            {% if project.description %}
+            <p class="mt-4 text-gray-600">{{ project.description }}</p>
+            {% endif %}
+            
+            <!-- Progress Bar -->
+            <div class="mt-6">
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-gray-600">Overall Progress</span>
+                    <span class="font-semibold text-gray-900">{{ project.progress_percentage }}%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="h-3 rounded-full transition-all duration-500
+                        {% if project.health == 'GREEN' %}bg-green-500
+                        {% elif project.health == 'AMBER' %}bg-yellow-500
+                        {% else %}bg-red-500{% endif %}" 
+                        style="width: {{ project.progress_percentage }}%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Milestones -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Milestones</h2>
+            </div>
+            <div class="divide-y divide-gray-200">
+                {% for milestone in milestones %}
+                <div class="p-6">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full 
+                                    {% if milestone.status == 'COMPLETED' %}bg-green-100 text-green-600
+                                    {% elif milestone.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-600
+                                    {% elif milestone.status == 'BLOCKED' %}bg-red-100 text-red-600
+                                    {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                    {% if milestone.status == 'COMPLETED' %}✓
+                                    {% elif milestone.status == 'IN_PROGRESS' %}▶
+                                    {% elif milestone.status == 'BLOCKED' %}!
+                                    {% else %}{{ milestone.sequence }}{% endif %}
+                                </span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-medium text-gray-900">{{ milestone.name }}</h3>
+                                {% if milestone.description %}
+                                <p class="text-sm text-gray-500 mt-1">{{ milestone.description }}</p>
+                                {% endif %}
+                                {% if milestone.planned_end_date %}
+                                <p class="text-xs text-gray-400 mt-2">
+                                    Due: {{ milestone.planned_end_date|date:"d M Y" }}
+                                    {% if milestone.is_overdue and milestone.status not in 'COMPLETED,SKIPPED' %}
+                                    <span class="text-red-600 font-medium ml-2">⚠️ Overdue</span>
+                                    {% endif %}
+                                </p>
+                                {% endif %}
+                                {% if milestone.assigned_to %}
+                                <p class="text-xs text-gray-400">
+                                    Assigned: {{ milestone.assigned_to.get_full_name|default:milestone.assigned_to.username }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <form method="post" action="{% url 'corporate:milestone_status' milestone.pk %}" class="inline">
+                                {% csrf_token %}
+                                <select name="status" onchange="this.form.submit()" class="text-xs border border-gray-300 rounded px-2 py-1">
+                                    {% for code, name in milestone.STATUS_CHOICES %}
+                                    <option value="{{ code }}" {% if milestone.status == code %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Tasks within milestone -->
+                    {% if milestone.tasks.exists %}
+                    <div class="mt-4 ml-12 space-y-2">
+                        {% for task in milestone.tasks.all %}
+                        <div class="flex items-center justify-between p-2 rounded hover:bg-gray-50 group">
+                            <div class="flex items-center space-x-3 text-sm flex-1">
+                                <form method="post" action="{% url 'corporate:update_task_status' task.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="status" value="{% if task.status == 'DONE' %}TODO{% else %}DONE{% endif %}">
+                                    <button type="submit" class="w-5 h-5 rounded flex items-center justify-center cursor-pointer transition
+                                        {% if task.status == 'DONE' %}bg-green-500 text-white hover:bg-green-600
+                                        {% elif task.status == 'IN_PROGRESS' %}border-2 border-blue-500 hover:bg-blue-50
+                                        {% elif task.status == 'BLOCKED' %}bg-red-500 text-white hover:bg-red-600
+                                        {% else %}border-2 border-gray-300 hover:border-gray-400{% endif %}">
+                                        {% if task.status == 'DONE' %}✓{% endif %}
+                                    </button>
+                                </form>
+                                <span class="{% if task.status == 'DONE' %}line-through text-gray-400{% else %}text-gray-700{% endif %} flex-1">
+                                    {{ task.title }}
+                                    {% if task.requires_evidence %}
+                                        <span class="ml-1 text-xs {% if task.has_required_evidence %}text-green-600{% else %}text-orange-500{% endif %}" title="{% if task.has_required_evidence %}Evidence uploaded{% else %}Evidence required{% endif %}">
+                                            📎{% if not task.has_required_evidence %}!{% endif %}
+                                        </span>
+                                    {% endif %}
+                                    {% if task.client_visible %}
+                                        <span class="ml-1 text-xs text-blue-500" title="Visible to client">👁</span>
+                                    {% endif %}
+                                </span>
+                                {% if task.priority == 'URGENT' %}
+                                    <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">Urgent</span>
+                                {% elif task.priority == 'HIGH' %}
+                                    <span class="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">High</span>
+                                {% endif %}
+                                {% if task.due_date %}
+                                <span class="text-xs text-gray-400">({{ task.due_date|date:"d M" }})</span>
+                                {% endif %}
+                                {% if task.assigned_to %}
+                                <span class="text-xs text-gray-400">→ {{ task.assigned_to.get_full_name|truncatechars:15 }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition">
+                                <!-- Quick Status Dropdown -->
+                                <form method="post" action="{% url 'corporate:update_task_status' task.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <select name="status" onchange="this.form.submit()" class="text-xs border border-gray-200 rounded px-1 py-0.5">
+                                        {% for code, name in task.STATUS_CHOICES %}
+                                        <option value="{{ code }}" {% if task.status == code %}selected{% endif %}>{{ name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                                <!-- Edit Button -->
+                                <button onclick="openEditTaskModal({{ task.pk }}, '{{ task.title|escapejs }}', '{{ task.description|escapejs }}', '{{ task.priority }}', '{{ task.due_date|date:'Y-m-d' }}', {{ task.estimated_hours|default:'null' }}, {{ task.client_visible|yesno:'true,false' }}, {{ task.requires_evidence|yesno:'true,false' }}, {{ task.assigned_to.pk|default:'null' }})" 
+                                        class="p-1 text-gray-400 hover:text-blue-600" title="Edit">
+                                    ✏️
+                                </button>
+                                <!-- Evidence Button -->
+                                <button onclick="openEvidenceModal({{ task.pk }}, '{{ task.title|escapejs }}')" 
+                                        class="p-1 text-gray-400 hover:text-green-600" title="Upload Evidence">
+                                    📤
+                                </button>
+                                <!-- Delete Button -->
+                                <form method="post" action="{% url 'corporate:delete_task' task.pk %}" class="inline" onsubmit="return confirm('Delete this task?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="p-1 text-gray-400 hover:text-red-600" title="Delete">🗑</button>
+                                </form>
+                            </div>
+                        </div>
+                        <!-- Show task evidence -->
+                        {% if task.evidence.exists %}
+                        <div class="ml-10 pl-4 border-l-2 border-gray-200 space-y-1">
+                            {% for evidence in task.evidence.all %}
+                            <div class="flex items-center justify-between text-xs text-gray-500 py-1">
+                                <div class="flex items-center space-x-2">
+                                    <span>{% if evidence.is_image %}🖼{% else %}📄{% endif %}</span>
+                                    <a href="{{ evidence.file.url }}" target="_blank" class="text-blue-600 hover:text-blue-800">{{ evidence.name }}</a>
+                                    <span class="text-gray-400">{{ evidence.file_size|filesizeformat }}</span>
+                                </div>
+                                <form method="post" action="{% url 'corporate:delete_task_evidence' evidence.pk %}" class="inline" onsubmit="return confirm('Delete this evidence?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-gray-400 hover:text-red-600">×</button>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Add Task Button -->
+                    <div class="mt-4 ml-12">
+                        <button onclick="openAddTaskModal({{ milestone.pk }}, '{{ milestone.name|escapejs }}')" 
+                                class="text-sm text-blue-600 hover:text-blue-800 flex items-center space-x-1">
+                            <span>+</span><span>Add Task</span>
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-6 text-center text-gray-500">
+                    <p>No milestones defined yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Documents -->
+        {% if documents %}
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Documents</h2>
+            </div>
+            <div class="divide-y divide-gray-200">
+                {% for doc in documents %}
+                <div class="p-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-2xl">📄</span>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ doc.name }}</p>
+                            <p class="text-xs text-gray-500">{{ doc.get_document_type_display }} • v{{ doc.version }}</p>
+                        </div>
+                    </div>
+                    <a href="{{ doc.file.url }}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">Download</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        <!-- Project Info -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Project Details</h3>
+            <dl class="space-y-3">
+                <div>
+                    <dt class="text-sm text-gray-500">Client</dt>
+                    <dd class="text-sm font-medium">
+                        <a href="{% url 'corporate:client_360' project.client.pk %}" class="text-blue-600 hover:text-blue-800">
+                            {{ project.client.company_name }}
+                        </a>
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Service</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ project.subscription.service.name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Project Manager</dt>
+                    <dd class="text-sm font-medium text-gray-900">{% if project.project_manager %}{{ project.project_manager.get_full_name|default:project.project_manager.username }}{% else %}Not assigned{% endif %}</dd>
+                </div>
+                {% if project.client_contact %}
+                <div>
+                    <dt class="text-sm text-gray-500">Client Contact</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ project.client_contact.full_name }}</dd>
+                </div>
+                {% endif %}
+                <div>
+                    <dt class="text-sm text-gray-500">Planned Start</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ project.planned_start_date|date:"d M Y"|default:"-" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Planned End</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ project.planned_end_date|date:"d M Y"|default:"-" }}</dd>
+                </div>
+                {% if project.actual_start_date %}
+                <div>
+                    <dt class="text-sm text-gray-500">Actual Start</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ project.actual_start_date|date:"d M Y" }}</dd>
+                </div>
+                {% endif %}
+                {% if project.budget %}
+                <div>
+                    <dt class="text-sm text-gray-500">Budget</dt>
+                    <dd class="text-sm font-medium text-gray-900">R{{ project.budget|floatformat:0|intcomma }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+        
+        <!-- Progress Summary -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Progress Summary</h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Milestones</span>
+                    <span class="text-sm font-medium">{{ milestone_progress }}% complete</span>
+                </div>
+                <div class="grid grid-cols-4 gap-2">
+                    {% for milestone in milestones %}
+                    <div class="h-8 rounded 
+                        {% if milestone.status == 'COMPLETED' %}bg-green-500
+                        {% elif milestone.status == 'IN_PROGRESS' %}bg-blue-500
+                        {% elif milestone.status == 'BLOCKED' %}bg-red-500
+                        {% else %}bg-gray-200{% endif %}"
+                        title="{{ milestone.name }}: {{ milestone.get_status_display }}">
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="flex justify-between text-xs text-gray-500">
+                    <span>🟢 Completed</span>
+                    <span>🔵 In Progress</span>
+                    <span>🔴 Blocked</span>
+                    <span>⚪ Not Started</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Team Members -->
+        {% if team_members %}
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Team</h3>
+            <ul class="space-y-3">
+                {% for member in team_members %}
+                <li class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm font-medium">
+                        {{ member.get_full_name|slice:":1"|upper|default:"?" }}
+                    </div>
+                    <span class="text-sm text-gray-700">{{ member.get_full_name|default:member.username }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <!-- Health Notes -->
+        {% if project.health_notes %}
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Health Notes</h3>
+            <p class="text-sm text-gray-600">{{ project.health_notes }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Task Modal -->
+<div id="addTaskModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeAddTaskModal()"></div>
+        <div class="relative bg-white rounded-lg shadow-xl max-w-lg w-full">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Add Task to <span id="addTaskMilestoneName"></span></h3>
+                <form method="post" id="addTaskForm" action="">
+                    {% csrf_token %}
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Task Title *</label>
+                            <input type="text" name="title" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea name="description" rows="2" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                                <select name="priority" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                                    <option value="LOW">Low</option>
+                                    <option value="MEDIUM" selected>Medium</option>
+                                    <option value="HIGH">High</option>
+                                    <option value="URGENT">Urgent</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                                <input type="date" name="due_date" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                                <select name="assigned_to" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                                    <option value="">Unassigned</option>
+                                    {% for member in team_members %}
+                                    <option value="{{ member.pk }}">{{ member.get_full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Est. Hours</label>
+                                <input type="number" name="estimated_hours" step="0.5" min="0" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            </div>
+                        </div>
+                        <div class="flex space-x-6">
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="client_visible" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Visible to client</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="requires_evidence" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Requires evidence</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" onclick="closeAddTaskModal()" class="px-4 py-2 text-sm text-gray-700 hover:text-gray-900">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">Add Task</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Task Modal -->
+<div id="editTaskModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeEditTaskModal()"></div>
+        <div class="relative bg-white rounded-lg shadow-xl max-w-lg w-full">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Edit Task</h3>
+                <form method="post" id="editTaskForm" action="">
+                    {% csrf_token %}
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Task Title *</label>
+                            <input type="text" name="title" id="editTaskTitle" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea name="description" id="editTaskDescription" rows="2" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                                <select name="priority" id="editTaskPriority" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                                    <option value="LOW">Low</option>
+                                    <option value="MEDIUM">Medium</option>
+                                    <option value="HIGH">High</option>
+                                    <option value="URGENT">Urgent</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                                <input type="date" name="due_date" id="editTaskDueDate" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                                <select name="assigned_to" id="editTaskAssignedTo" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                                    <option value="">Unassigned</option>
+                                    {% for member in team_members %}
+                                    <option value="{{ member.pk }}">{{ member.get_full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Est. Hours</label>
+                                <input type="number" name="estimated_hours" id="editTaskEstHours" step="0.5" min="0" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            </div>
+                        </div>
+                        <div class="flex space-x-6">
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="client_visible" id="editTaskClientVisible" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Visible to client</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="requires_evidence" id="editTaskRequiresEvidence" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Requires evidence</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" onclick="closeEditTaskModal()" class="px-4 py-2 text-sm text-gray-700 hover:text-gray-900">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Evidence Upload Modal -->
+<div id="evidenceModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeEvidenceModal()"></div>
+        <div class="relative bg-white rounded-lg shadow-xl max-w-lg w-full">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Upload Evidence for <span id="evidenceTaskName"></span></h3>
+                <form method="post" id="evidenceForm" action="" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Evidence Name</label>
+                            <input type="text" name="evidence_name" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Leave blank to use filename">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea name="evidence_description" rows="2" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">File *</label>
+                            <input type="file" name="evidence_file" required accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <p class="text-xs text-gray-500 mt-1">Allowed: PDF, Word, Excel, Images (JPG, PNG, GIF)</p>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" onclick="closeEvidenceModal()" class="px-4 py-2 text-sm text-gray-700 hover:text-gray-900">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">Upload</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openAddTaskModal(milestoneId, milestoneName) {
+    document.getElementById('addTaskMilestoneName').textContent = milestoneName;
+    document.getElementById('addTaskForm').action = "{% url 'corporate:add_milestone_task' 0 %}".replace('0', milestoneId);
+    document.getElementById('addTaskModal').classList.remove('hidden');
+}
+
+function closeAddTaskModal() {
+    document.getElementById('addTaskModal').classList.add('hidden');
+}
+
+function openEditTaskModal(taskId, title, description, priority, dueDate, estHours, clientVisible, requiresEvidence, assignedTo) {
+    document.getElementById('editTaskForm').action = "{% url 'corporate:edit_task' 0 %}".replace('0', taskId);
+    document.getElementById('editTaskTitle').value = title;
+    document.getElementById('editTaskDescription').value = description;
+    document.getElementById('editTaskPriority').value = priority;
+    document.getElementById('editTaskDueDate').value = dueDate;
+    document.getElementById('editTaskEstHours').value = estHours || '';
+    document.getElementById('editTaskClientVisible').checked = clientVisible;
+    document.getElementById('editTaskRequiresEvidence').checked = requiresEvidence;
+    document.getElementById('editTaskAssignedTo').value = assignedTo || '';
+    document.getElementById('editTaskModal').classList.remove('hidden');
+}
+
+function closeEditTaskModal() {
+    document.getElementById('editTaskModal').classList.add('hidden');
+}
+
+function openEvidenceModal(taskId, taskName) {
+    document.getElementById('evidenceTaskName').textContent = taskName;
+    document.getElementById('evidenceForm').action = "{% url 'corporate:add_task_evidence' 0 %}".replace('0', taskId);
+    document.getElementById('evidenceModal').classList.remove('hidden');
+}
+
+function closeEvidenceModal() {
+    document.getElementById('evidenceModal').classList.add('hidden');
+}
+
+// Close modals on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAddTaskModal();
+        closeEditTaskModal();
+        closeEvidenceModal();
+    }
+});
+</script>
+{% endblock %}

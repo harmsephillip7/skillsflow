@@ -1,0 +1,341 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}{% if is_create %}Add{% else %}Edit{% endif %} Task Template{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div>
+        <nav class="flex items-center text-sm text-gray-500 mb-2">
+            <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a href="{% url 'admin:templateset_list' %}" class="hover:text-primary-600">Template Sets</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a href="{% url 'admin:templateset_detail' pk=template_set.pk %}" class="hover:text-primary-600">{{ template_set.name }}</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="text-gray-700">{% if is_create %}Add{% else %}Edit{% endif %} Task</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">{% if is_create %}Add Task Template{% else %}Edit {{ object.name }}{% endif %}</h1>
+        <p class="text-gray-500 mt-1">
+            {% if is_create %}Create a new task template for {{ template_set.name }}{% else %}Modify the task template configuration{% endif %}
+        </p>
+    </div>
+    
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Form -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Basic Information -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900">Template Information</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="id_name" class="block text-sm font-medium text-gray-700 mb-1">Internal Name <span class="text-red-500">*</span></label>
+                                {{ form.name }}
+                                <p class="mt-1 text-xs text-gray-500">Used to identify this template</p>
+                            </div>
+                            <div>
+                                <label for="id_sequence" class="block text-sm font-medium text-gray-700 mb-1">Sequence</label>
+                                {{ form.sequence }}
+                                <p class="mt-1 text-xs text-gray-500">Order of task creation</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trigger Configuration -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900">Trigger Configuration</h3>
+                        <p class="text-sm text-gray-500">When should this task be created?</p>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <!-- Trigger Type Selection -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Trigger Type <span class="text-red-500">*</span></label>
+                            <div class="grid grid-cols-3 gap-3">
+                                {% for value, label in trigger_types %}
+                                <label class="relative flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition
+                                              {% if form.trigger_type.value == value %}border-rose-500 bg-rose-50{% else %}border-gray-200 hover:border-gray-300{% endif %}">
+                                    <input type="radio" name="trigger_type" value="{{ value }}" 
+                                           class="sr-only" 
+                                           {% if form.trigger_type.value == value %}checked{% endif %}
+                                           onchange="updateTriggerFields()">
+                                    <div class="text-center">
+                                        {% if value == 'status' %}
+                                        <svg class="w-6 h-6 mx-auto mb-1 {% if form.trigger_type.value == value %}text-rose-600{% else %}text-gray-400{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        {% elif value == 'date' %}
+                                        <svg class="w-6 h-6 mx-auto mb-1 {% if form.trigger_type.value == value %}text-rose-600{% else %}text-gray-400{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                        {% else %}
+                                        <svg class="w-6 h-6 mx-auto mb-1 {% if form.trigger_type.value == value %}text-rose-600{% else %}text-gray-400{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                        </svg>
+                                        {% endif %}
+                                        <span class="text-sm font-medium {% if form.trigger_type.value == value %}text-rose-700{% else %}text-gray-600{% endif %}">{{ label }}</span>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Status Trigger Fields -->
+                        <div id="status-fields" class="space-y-4 p-4 bg-purple-50 rounded-lg border border-purple-100" style="display: none;">
+                            <h4 class="text-sm font-medium text-purple-800">Status Change Trigger</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="id_trigger_status" class="block text-sm font-medium text-gray-700 mb-1">Trigger Status</label>
+                                    {{ form.trigger_status }}
+                                    <p class="mt-1 text-xs text-gray-500">Task created when project reaches this status</p>
+                                </div>
+                                <div>
+                                    <label for="id_due_days_offset" class="block text-sm font-medium text-gray-700 mb-1">Due Days Offset</label>
+                                    {{ form.due_days_offset }}
+                                    <p class="mt-1 text-xs text-gray-500">Days from trigger when task is due</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Date Trigger Fields -->
+                        <div id="date-fields" class="space-y-4 p-4 bg-amber-50 rounded-lg border border-amber-100" style="display: none;">
+                            <h4 class="text-sm font-medium text-amber-800">Date Relative Trigger</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="id_date_reference" class="block text-sm font-medium text-gray-700 mb-1">Reference Date</label>
+                                    {{ form.date_reference }}
+                                    <p class="mt-1 text-xs text-gray-500">Which project date to use</p>
+                                </div>
+                                <div>
+                                    <label for="id_offset_days" class="block text-sm font-medium text-gray-700 mb-1">Offset Days</label>
+                                    {{ form.offset_days }}
+                                    <p class="mt-1 text-xs text-gray-500">Negative = before, Positive = after</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recurring Trigger Fields -->
+                        <div id="recurring-fields" class="space-y-4 p-4 bg-cyan-50 rounded-lg border border-cyan-100" style="display: none;">
+                            <h4 class="text-sm font-medium text-cyan-800">Recurring Trigger</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label for="id_recurring_interval" class="block text-sm font-medium text-gray-700 mb-1">Interval</label>
+                                    {{ form.recurring_interval }}
+                                </div>
+                                <div>
+                                    <label for="id_recurring_start_status" class="block text-sm font-medium text-gray-700 mb-1">Start Status</label>
+                                    {{ form.recurring_start_status }}
+                                </div>
+                                <div>
+                                    <label for="id_recurring_end_status" class="block text-sm font-medium text-gray-700 mb-1">End Status</label>
+                                    {{ form.recurring_end_status }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Task Details -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900">Task Details</h3>
+                        <p class="text-sm text-gray-500">Configure the generated task</p>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <label for="id_task_title_template" class="block text-sm font-medium text-gray-700 mb-1">Title Template <span class="text-red-500">*</span></label>
+                            {{ form.task_title_template }}
+                            <p class="mt-1 text-xs text-gray-500">Variables: {reference_number}, {title}, {qualification}, {learner_count}, {client_name}, {due_date}</p>
+                        </div>
+                        <div>
+                            <label for="id_task_description_template" class="block text-sm font-medium text-gray-700 mb-1">Description Template</label>
+                            {{ form.task_description_template }}
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="id_task_category" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                {{ form.task_category }}
+                            </div>
+                            <div>
+                                <label for="id_task_priority" class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                                {{ form.task_priority }}
+                            </div>
+                            <div>
+                                <label for="id_operational_category" class="block text-sm font-medium text-gray-700 mb-1">Operational Category</label>
+                                {{ form.operational_category }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Assignment -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900">Assignment</h3>
+                        <p class="text-sm text-gray-500">Who should this task be assigned to?</p>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="id_assigned_role" class="block text-sm font-medium text-gray-700 mb-1">Assigned Role <span class="text-red-500">*</span></label>
+                                {{ form.assigned_role }}
+                                <p class="mt-1 text-xs text-gray-500">Stakeholder role to assign task to</p>
+                            </div>
+                            <div>
+                                <label for="id_fallback_campus_role" class="block text-sm font-medium text-gray-700 mb-1">Fallback Role</label>
+                                {{ form.fallback_campus_role }}
+                                <p class="mt-1 text-xs text-gray-500">Campus role if stakeholder not found</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Template Set Info -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900">Template Set</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">{{ template_set.name }}</p>
+                                <p class="text-sm text-gray-500">{{ template_set.templates.count }} templates</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Options -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900">Options</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="recalculate_on_date_change" value="true"
+                                   class="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300 rounded"
+                                   {% if form.recalculate_on_date_change.value %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Recalculate on date change</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="is_active" value="true"
+                                   class="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300 rounded"
+                                   {% if form.is_active.value %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Active</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Form Errors -->
+                {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <div class="flex">
+                        <svg class="w-5 h-5 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div class="text-sm text-red-700">
+                            {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Actions -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 space-y-3">
+                        <button type="submit" 
+                                class="w-full flex items-center justify-center px-4 py-2.5 bg-rose-600 text-white font-medium rounded-lg hover:bg-rose-700 transition">
+                            <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            {% if is_create %}Create Task Template{% else %}Save Changes{% endif %}
+                        </button>
+                        <a href="{% url 'admin:templateset_detail' pk=template_set.pk %}" 
+                           class="w-full flex items-center justify-center px-4 py-2.5 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function updateTriggerFields() {
+    const triggerType = document.querySelector('input[name="trigger_type"]:checked');
+    const statusFields = document.getElementById('status-fields');
+    const dateFields = document.getElementById('date-fields');
+    const recurringFields = document.getElementById('recurring-fields');
+    
+    // Hide all
+    statusFields.style.display = 'none';
+    dateFields.style.display = 'none';
+    recurringFields.style.display = 'none';
+    
+    // Show relevant
+    if (triggerType) {
+        switch (triggerType.value) {
+            case 'status':
+                statusFields.style.display = 'block';
+                break;
+            case 'date':
+                dateFields.style.display = 'block';
+                break;
+            case 'recurring':
+                recurringFields.style.display = 'block';
+                break;
+        }
+    }
+    
+    // Update visual selection
+    document.querySelectorAll('input[name="trigger_type"]').forEach(input => {
+        const label = input.closest('label');
+        if (input.checked) {
+            label.classList.remove('border-gray-200');
+            label.classList.add('border-rose-500', 'bg-rose-50');
+            label.querySelector('svg').classList.remove('text-gray-400');
+            label.querySelector('svg').classList.add('text-rose-600');
+            label.querySelector('span').classList.remove('text-gray-600');
+            label.querySelector('span').classList.add('text-rose-700');
+        } else {
+            label.classList.remove('border-rose-500', 'bg-rose-50');
+            label.classList.add('border-gray-200');
+            label.querySelector('svg').classList.remove('text-rose-600');
+            label.querySelector('svg').classList.add('text-gray-400');
+            label.querySelector('span').classList.remove('text-rose-700');
+            label.querySelector('span').classList.add('text-gray-600');
+        }
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateTriggerFields();
+});
+</script>
+{% endblock %}

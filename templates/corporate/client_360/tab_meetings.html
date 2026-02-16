@@ -1,0 +1,156 @@
+<div class="space-y-6">
+    <!-- Upcoming Meetings -->
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="font-medium text-gray-900">Upcoming Meetings</h3>
+            <a href="{% url 'corporate:meeting_create' %}?client={{ client.pk }}" 
+               class="inline-flex items-center px-3 py-1.5 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Schedule Meeting
+            </a>
+        </div>
+        
+        <div class="divide-y divide-gray-200">
+            {% for meeting in upcoming_meetings %}
+            <div class="p-5 hover:bg-gray-50">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 w-14 h-14 bg-primary-100 rounded-lg flex flex-col items-center justify-center text-primary-700">
+                        <span class="text-lg font-bold">{{ meeting.scheduled_date|date:"d" }}</span>
+                        <span class="text-xs uppercase">{{ meeting.scheduled_date|date:"M" }}</span>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <div class="flex items-center justify-between">
+                            <a href="{% url 'corporate:meeting_detail' meeting.pk %}" class="font-medium text-gray-900 hover:text-primary-600">
+                                {{ meeting.title }}
+                            </a>
+                            <span class="px-2 py-1 text-xs rounded-full
+                                {% if meeting.meeting_type == 'TC_MEETING' %}bg-blue-100 text-blue-700
+                                {% elif meeting.meeting_type == 'EE_MEETING' %}bg-purple-100 text-purple-700
+                                {% elif meeting.meeting_type == 'REVIEW' %}bg-green-100 text-green-700
+                                {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                {{ meeting.get_meeting_type_display }}
+                            </span>
+                        </div>
+                        <div class="mt-1 flex items-center text-sm text-gray-500 space-x-4">
+                            <span>
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                {{ meeting.scheduled_date|time:"H:i" }}
+                            </span>
+                            {% if meeting.location %}
+                            <span>
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                {{ meeting.location }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Attendees -->
+                        {% if meeting.attendees.exists %}
+                        <div class="mt-2 flex items-center">
+                            <div class="flex -space-x-2">
+                                {% for attendee in meeting.attendees.all|slice:":4" %}
+                                <div class="w-6 h-6 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs text-gray-600">
+                                    {{ attendee.name.0 }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if meeting.attendees.count > 4 %}
+                            <span class="ml-2 text-xs text-gray-500">+{{ meeting.attendees.count|add:"-4" }} more</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="p-8 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No Upcoming Meetings</h3>
+                <p class="mt-1 text-sm text-gray-500">Schedule a meeting to get started.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Past Meetings -->
+    {% if past_meetings %}
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-200">
+            <h3 class="font-medium text-gray-900">Past Meetings</h3>
+        </div>
+        
+        <div class="divide-y divide-gray-200">
+            {% for meeting in past_meetings %}
+            <div class="p-5 hover:bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-gray-100 rounded-lg flex flex-col items-center justify-center text-gray-500 text-xs">
+                            <span class="font-medium">{{ meeting.scheduled_date|date:"d" }}</span>
+                            <span class="uppercase">{{ meeting.scheduled_date|date:"M" }}</span>
+                        </div>
+                        <div class="ml-3">
+                            <a href="{% url 'corporate:meeting_detail' meeting.pk %}" class="text-sm font-medium text-gray-900 hover:text-primary-600">
+                                {{ meeting.title }}
+                            </a>
+                            <p class="text-xs text-gray-500">{{ meeting.get_meeting_type_display }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        {% if meeting.minutes_uploaded %}
+                        <a href="{{ meeting.minutes.url }}" target="_blank" class="text-xs text-primary-600 hover:text-primary-700">
+                            View Minutes
+                        </a>
+                        {% endif %}
+                        <span class="px-2 py-1 text-xs rounded-full
+                            {% if meeting.status == 'COMPLETED' %}bg-green-100 text-green-700
+                            {% elif meeting.status == 'CANCELLED' %}bg-red-100 text-red-700
+                            {% else %}bg-gray-100 text-gray-700{% endif %}">
+                            {{ meeting.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if has_more_past_meetings %}
+        <div class="px-5 py-3 bg-gray-50 border-t border-gray-200">
+            <a href="{% url 'corporate:meeting_list' %}?client={{ client.pk }}" class="text-sm text-primary-600 hover:text-primary-700">
+                View all past meetings →
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Meeting Schedule Overview -->
+    <div class="bg-white rounded-lg border border-gray-200 p-5">
+        <h3 class="font-medium text-gray-900 mb-4">Meeting Schedule</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <h4 class="text-sm font-medium text-blue-700">Training Committee</h4>
+                <p class="text-2xl font-bold text-blue-800 mt-2">{{ tc_meeting_count }}</p>
+                <p class="text-xs text-blue-600 mt-1">Quarterly meetings</p>
+            </div>
+            <div class="p-4 bg-purple-50 rounded-lg border border-purple-100">
+                <h4 class="text-sm font-medium text-purple-700">EE Committee</h4>
+                <p class="text-2xl font-bold text-purple-800 mt-2">{{ ee_meeting_count }}</p>
+                <p class="text-xs text-purple-600 mt-1">Quarterly meetings</p>
+            </div>
+            <div class="p-4 bg-green-50 rounded-lg border border-green-100">
+                <h4 class="text-sm font-medium text-green-700">Reviews & Check-ins</h4>
+                <p class="text-2xl font-bold text-green-800 mt-2">{{ review_count }}</p>
+                <p class="text-xs text-green-600 mt-1">This year</p>
+            </div>
+        </div>
+    </div>
+</div>

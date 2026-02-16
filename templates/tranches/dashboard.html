@@ -1,0 +1,525 @@
+{% extends 'base/app_layout.html' %}
+{% load static admin_tags %}
+
+{% block title %}Tranche Payment Management - SkillsFlow{% endblock %}
+
+{% block page_title %}Tranche Payment Management{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Tranche Dashboard</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'tranches:tranche_list' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+        </svg>
+        View All
+    </a>
+    <a href="{% url 'tranches:tranche_calendar' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        Calendar
+    </a>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    
+    <!-- Hero Header -->
+    <div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold flex items-center">
+                    <svg class="w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    Tranche Payment & Evidence Management
+                </h2>
+                <p class="mt-2 text-emerald-100">Track funder payments, collect evidence, and manage submission deadlines</p>
+            </div>
+            <div class="text-right hidden md:block">
+                <p class="text-4xl font-bold">R{{ stats.total_value_pending|floatformat:0|default:0 }}</p>
+                <p class="text-sm text-emerald-100">Pending Value</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- KPI Cards Row 1 - Deadlines -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Due Today -->
+        <div class="bg-white rounded-xl shadow-sm border {% if stats.due_today > 0 %}border-red-200 bg-red-50{% else %}border-gray-100{% endif %} p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Due Today</p>
+                    <p class="mt-2 text-3xl font-bold {% if stats.due_today > 0 %}text-red-600{% else %}text-gray-900{% endif %}">{{ stats.due_today }}</p>
+                </div>
+                <div class="p-4 {% if stats.due_today > 0 %}bg-red-100{% else %}bg-gray-100{% endif %} rounded-full">
+                    <svg class="w-8 h-8 {% if stats.due_today > 0 %}text-red-600{% else %}text-gray-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'tranches:tranche_list' %}?quick=due_today" class="text-sm {% if stats.due_today > 0 %}text-red-600 hover:text-red-800{% else %}text-gray-600 hover:text-gray-800{% endif %} font-medium">View urgent →</a>
+            </div>
+        </div>
+        
+        <!-- Due This Week -->
+        <div class="bg-white rounded-xl shadow-sm border {% if stats.due_this_week > 0 %}border-yellow-200{% else %}border-gray-100{% endif %} p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Due This Week</p>
+                    <p class="mt-2 text-3xl font-bold {% if stats.due_this_week > 0 %}text-yellow-600{% else %}text-gray-900{% endif %}">{{ stats.due_this_week }}</p>
+                </div>
+                <div class="p-4 {% if stats.due_this_week > 0 %}bg-yellow-100{% else %}bg-gray-100{% endif %} rounded-full">
+                    <svg class="w-8 h-8 {% if stats.due_this_week > 0 %}text-yellow-600{% else %}text-gray-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'tranches:tranche_list' %}?quick=due_week" class="text-sm text-yellow-600 hover:text-yellow-800 font-medium">View upcoming →</a>
+            </div>
+        </div>
+        
+        <!-- Overdue -->
+        <div class="bg-white rounded-xl shadow-sm border {% if stats.overdue > 0 %}border-red-300 bg-red-50{% else %}border-gray-100{% endif %} p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Overdue</p>
+                    <p class="mt-2 text-3xl font-bold {% if stats.overdue > 0 %}text-red-700{% else %}text-green-600{% endif %}">{{ stats.overdue }}</p>
+                </div>
+                <div class="p-4 {% if stats.overdue > 0 %}bg-red-200{% else %}bg-green-100{% endif %} rounded-full">
+                    {% if stats.overdue > 0 %}
+                    <svg class="w-8 h-8 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    {% else %}
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mt-4">
+                {% if stats.overdue > 0 %}
+                <a href="{% url 'tranches:tranche_list' %}?quick=overdue" class="text-sm text-red-700 hover:text-red-900 font-medium">Action required →</a>
+                {% else %}
+                <span class="text-sm text-green-600 font-medium">All on track!</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Pending QC -->
+        <div class="bg-white rounded-xl shadow-sm border {% if stats.pending_qc > 0 %}border-blue-200{% else %}border-gray-100{% endif %} p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Pending QC</p>
+                    <p class="mt-2 text-3xl font-bold {% if stats.pending_qc > 0 %}text-blue-600{% else %}text-gray-900{% endif %}">{{ stats.pending_qc }}</p>
+                </div>
+                <div class="p-4 {% if stats.pending_qc > 0 %}bg-blue-100{% else %}bg-gray-100{% endif %} rounded-full">
+                    <svg class="w-8 h-8 {% if stats.pending_qc > 0 %}text-blue-600{% else %}text-gray-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'tranches:tranche_list' %}?quick=pending_qc" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Review queue →</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- KPI Cards Row 2 - Status -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- QC Failed -->
+        <div class="bg-white rounded-xl shadow-sm border {% if stats.qc_failed > 0 %}border-orange-200{% else %}border-gray-100{% endif %} p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">QC Failed / Rework</p>
+                    <p class="text-2xl font-bold {% if stats.qc_failed > 0 %}text-orange-600{% else %}text-gray-900{% endif %}">{{ stats.qc_failed }}</p>
+                </div>
+                <div class="p-3 {% if stats.qc_failed > 0 %}bg-orange-100{% else %}bg-gray-100{% endif %} rounded-full">
+                    <svg class="w-6 h-6 {% if stats.qc_failed > 0 %}text-orange-600{% else %}text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Submitted -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Submitted to Funder</p>
+                    <p class="text-2xl font-bold text-indigo-600">{{ stats.submitted }}</p>
+                </div>
+                <div class="p-3 bg-indigo-100 rounded-full">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Funder Queries -->
+        <div class="bg-white rounded-xl shadow-sm border {% if stats.with_queries > 0 %}border-purple-200{% else %}border-gray-100{% endif %} p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Funder Queries</p>
+                    <p class="text-2xl font-bold {% if stats.with_queries > 0 %}text-purple-600{% else %}text-gray-900{% endif %}">{{ stats.with_queries }}</p>
+                </div>
+                <div class="p-3 {% if stats.with_queries > 0 %}bg-purple-100{% else %}bg-gray-100{% endif %} rounded-full">
+                    <svg class="w-6 h-6 {% if stats.with_queries > 0 %}text-purple-600{% else %}text-gray-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Awaiting Payment -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Awaiting Payment</p>
+                    <p class="text-2xl font-bold text-emerald-600">{{ stats.awaiting_payment }}</p>
+                </div>
+                <div class="p-3 bg-emerald-100 rounded-full">
+                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column - Urgent Items -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Overdue Tranches Alert -->
+            {% if overdue_tranches %}
+            <div class="bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-red-100 bg-red-50 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-red-800 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        Overdue Tranches - Action Required
+                    </h3>
+                    <span class="text-sm text-red-600">{{ overdue_tranches|length }} items</span>
+                </div>
+                <ul class="divide-y divide-red-100">
+                    {% for tranche in overdue_tranches %}
+                    <li>
+                        <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="block px-6 py-4 hover:bg-red-50 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ tranche.name }}</p>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <span class="font-mono">{{ tranche.reference_number }}</span>
+                                        <span class="mx-2">•</span>
+                                        {{ tranche.training_notification.title|truncatechars:30 }}
+                                    </p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        {{ tranche.days_until_due|abs_value }} days overdue
+                                    </span>
+                                    <p class="text-xs text-gray-500 mt-1">R{{ tranche.amount|floatformat:0 }}</p>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <!-- Due Today -->
+            {% if due_today %}
+            <div class="bg-white rounded-xl shadow-sm border border-yellow-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-yellow-100 bg-yellow-50 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-yellow-800 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Due Today
+                    </h3>
+                    <span class="text-sm text-yellow-600">{{ due_today|length }} items</span>
+                </div>
+                <ul class="divide-y divide-yellow-100">
+                    {% for tranche in due_today %}
+                    <li>
+                        <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="block px-6 py-4 hover:bg-yellow-50 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ tranche.name }}</p>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <span class="font-mono">{{ tranche.reference_number }}</span>
+                                        <span class="mx-2">•</span>
+                                        {{ tranche.training_notification.title|truncatechars:30 }}
+                                    </p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        {{ tranche.get_status_display }}
+                                    </span>
+                                    <p class="text-xs text-gray-500 mt-1">R{{ tranche.amount|floatformat:0 }}</p>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <!-- Pending QC Queue -->
+            {% if pending_qc %}
+            <div class="bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-blue-100 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                        QC Review Queue
+                    </h3>
+                    <a href="{% url 'tranches:tranche_list' %}?quick=pending_qc" class="text-sm text-blue-600 hover:text-blue-800 font-medium">View all →</a>
+                </div>
+                <ul class="divide-y divide-gray-100">
+                    {% for tranche in pending_qc %}
+                    <li>
+                        <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="block px-6 py-4 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ tranche.name }}</p>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <span class="font-mono">{{ tranche.reference_number }}</span>
+                                        <span class="mx-2">•</span>
+                                        {{ tranche.training_notification.title|truncatechars:30 }}
+                                    </p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        Ready for QC
+                                    </span>
+                                    <p class="text-xs text-gray-500 mt-1">Due: {{ tranche.due_date|date:"d M" }}</p>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <!-- Funder Queries -->
+            {% if funder_queries %}
+            <div class="bg-white rounded-xl shadow-sm border border-purple-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-purple-100 bg-purple-50 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-purple-800 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Funder Queries - Response Required
+                    </h3>
+                    <span class="text-sm text-purple-600">{{ funder_queries|length }} items</span>
+                </div>
+                <ul class="divide-y divide-purple-100">
+                    {% for tranche in funder_queries %}
+                    <li>
+                        <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="block px-6 py-4 hover:bg-purple-50 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ tranche.name }}</p>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <span class="font-mono">{{ tranche.reference_number }}</span>
+                                        <span class="mx-2">•</span>
+                                        {{ tranche.training_notification.title|truncatechars:30 }}
+                                    </p>
+                                </div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                    Query
+                                </span>
+                            </div>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <!-- Due This Week -->
+            {% if due_this_week %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        Due This Week
+                    </h3>
+                    <a href="{% url 'tranches:tranche_list' %}?quick=due_week" class="text-sm text-primary-600 hover:text-primary-800 font-medium">View all →</a>
+                </div>
+                <ul class="divide-y divide-gray-100">
+                    {% for tranche in due_this_week %}
+                    <li>
+                        <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="block px-6 py-4 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ tranche.name }}</p>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <span class="font-mono">{{ tranche.reference_number }}</span>
+                                        <span class="mx-2">•</span>
+                                        {{ tranche.training_notification.title|truncatechars:30 }}
+                                    </p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-sm font-medium text-gray-900">{{ tranche.due_date|date:"D, d M" }}</span>
+                                    <p class="text-xs text-gray-500">{{ tranche.days_until_due }} days</p>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+        </div>
+        
+        <!-- Right Column - Sidebar -->
+        <div class="space-y-6">
+            
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        Quick Actions
+                    </h3>
+                </div>
+                <div class="p-4 space-y-2">
+                    <a href="{% url 'tranches:tranche_list' %}?quick=pending_qc" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                        Process QC Queue
+                    </a>
+                    <a href="{% url 'tranches:tranche_list' %}?quick=overdue" class="w-full inline-flex justify-center items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        View Overdue
+                    </a>
+                    <a href="{% url 'tranches:tranche_calendar' %}" class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        View Calendar
+                    </a>
+                    <hr class="my-2">
+                    <a href="{% url 'not_dashboard' %}" class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                        NOT Dashboard
+                    </a>
+                    <a href="{% url 'core:dashboard' %}" class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        Main Dashboard
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Recent Submissions -->
+            {% if recent_submissions %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                        Recent Submissions
+                    </h3>
+                </div>
+                <ul class="divide-y divide-gray-100">
+                    {% for submission in recent_submissions|slice:":5" %}
+                    <li>
+                        <a href="{% url 'tranches:tranche_detail' submission.tranche.pk %}" class="block px-6 py-3 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ submission.tranche.name|truncatechars:25 }}</p>
+                                    <p class="text-xs text-gray-500">{{ submission.submission_date|date:"d M Y" }}</p>
+                                </div>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                    {% if submission.status == 'PAID' %}bg-green-100 text-green-800
+                                    {% elif submission.status == 'APPROVED' %}bg-emerald-100 text-emerald-800
+                                    {% elif submission.status == 'SUBMITTED' %}bg-blue-100 text-blue-800
+                                    {% elif submission.status == 'QUERY' %}bg-purple-100 text-purple-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ submission.get_status_display }}
+                                </span>
+                            </div>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <!-- Upcoming Calendar Preview -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        Next 30 Days
+                    </h3>
+                    <a href="{% url 'tranches:tranche_calendar' %}" class="text-sm text-primary-600 hover:text-primary-800 font-medium">Full calendar →</a>
+                </div>
+                <ul class="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                    {% for tranche in upcoming_calendar %}
+                    <li>
+                        <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="block px-6 py-3 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium text-gray-900 truncate">{{ tranche.name|truncatechars:20 }}</p>
+                                    <p class="text-xs text-gray-500">{{ tranche.training_notification.reference_number }}</p>
+                                </div>
+                                <div class="ml-3 text-right">
+                                    <p class="text-sm font-medium text-gray-900">{{ tranche.due_date|date:"d M" }}</p>
+                                    <p class="text-xs text-gray-500">{{ tranche.days_until_due }}d</p>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                    {% empty %}
+                    <li class="px-6 py-8 text-center">
+                        <p class="text-sm text-gray-500">No upcoming tranches</p>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

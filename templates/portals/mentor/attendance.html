@@ -1,0 +1,411 @@
+{% extends "portals/mentor/base.html" %}
+{% load static %}
+
+{% block page_title %}Record Attendance - Mentor Portal{% endblock %}
+
+{% block content %}
+<div class="attendance-container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1><i class="fas fa-clock"></i> Record Attendance</h1>
+            <p class="text-muted">Record daily attendance for your learners</p>
+        </div>
+        <div class="date-selector">
+            <label for="attendance-date">Date:</label>
+            <input type="date" id="attendance-date" name="date" value="{{ selected_date|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}">
+        </div>
+    </div>
+
+    <!-- Attendance Form -->
+    <form method="post" id="attendance-form" class="attendance-form">
+        {% csrf_token %}
+        <input type="hidden" name="date" id="form-date" value="{{ selected_date|date:'Y-m-d' }}">
+        
+        <div class="attendance-grid">
+            {% for placement in placements %}
+            <div class="attendance-card" data-learner="{{ placement.learner.id }}">
+                <div class="learner-header">
+                    <div class="learner-avatar">
+                        {% if placement.learner.profile_picture %}
+                        <img src="{{ placement.learner.profile_picture.url }}" alt="">
+                        {% else %}
+                        <div class="avatar-placeholder">
+                            {{ placement.learner.first_name.0 }}{{ placement.learner.last_name.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="learner-info">
+                        <h3>{{ placement.learner.get_full_name }}</h3>
+                        <p>{{ placement.position|default:"Learner" }}</p>
+                    </div>
+                </div>
+
+                <div class="attendance-inputs">
+                    <!-- Attendance Type -->
+                    <div class="input-group">
+                        <label>Status</label>
+                        <select name="attendance_type_{{ placement.id }}" class="attendance-type" required>
+                            <option value="">Select...</option>
+                            <option value="PRESENT" {% if placement.today_attendance.attendance_type == 'PRESENT' %}selected{% endif %}>Present</option>
+                            <option value="ANNUAL" {% if placement.today_attendance.attendance_type == 'ANNUAL' %}selected{% endif %}>Annual Leave</option>
+                            <option value="SICK" {% if placement.today_attendance.attendance_type == 'SICK' %}selected{% endif %}>Sick Leave</option>
+                            <option value="FAMILY" {% if placement.today_attendance.attendance_type == 'FAMILY' %}selected{% endif %}>Family Responsibility</option>
+                            <option value="UNPAID" {% if placement.today_attendance.attendance_type == 'UNPAID' %}selected{% endif %}>Unpaid Leave</option>
+                            <option value="PUBLIC_HOLIDAY" {% if placement.today_attendance.attendance_type == 'PUBLIC_HOLIDAY' %}selected{% endif %}>Public Holiday</option>
+                            <option value="ABSENT" {% if placement.today_attendance.attendance_type == 'ABSENT' %}selected{% endif %}>Absent</option>
+                        </select>
+                    </div>
+
+                    <!-- Time Fields (shown only for Present) -->
+                    <div class="time-fields" style="{% if placement.today_attendance.attendance_type != 'PRESENT' %}display: none;{% endif %}">
+                        <div class="input-group">
+                            <label>Clock In</label>
+                            <input type="time" name="clock_in_{{ placement.id }}" 
+                                   value="{{ placement.today_attendance.clock_in|time:'H:i'|default:'' }}">
+                        </div>
+                        <div class="input-group">
+                            <label>Clock Out</label>
+                            <input type="time" name="clock_out_{{ placement.id }}"
+                                   value="{{ placement.today_attendance.clock_out|time:'H:i'|default:'' }}">
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="input-group notes-group">
+                        <label>Notes</label>
+                        <textarea name="notes_{{ placement.id }}" rows="2" 
+                                  placeholder="Optional notes...">{{ placement.today_attendance.notes|default:'' }}</textarea>
+                    </div>
+
+                    <!-- Verify Checkbox -->
+                    <div class="verify-section">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="verified_{{ placement.id }}" 
+                                   {% if placement.today_attendance.mentor_verified %}checked{% endif %}>
+                            <span>I verify this attendance record is accurate</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state full-width">
+                <i class="fas fa-user-slash"></i>
+                <h3>No Learners Assigned</h3>
+                <p>You don't have any learners assigned to you yet.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if placements %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save"></i> Save Attendance
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="window.location.reload()">
+                <i class="fas fa-undo"></i> Reset
+            </button>
+        </div>
+        {% endif %}
+    </form>
+
+    <!-- Attendance Summary -->
+    <div class="attendance-summary">
+        <h2><i class="fas fa-chart-pie"></i> Today's Summary</h2>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <span class="count present">{{ summary.present|default:0 }}</span>
+                <span class="label">Present</span>
+            </div>
+            <div class="summary-item">
+                <span class="count leave">{{ summary.leave|default:0 }}</span>
+                <span class="label">On Leave</span>
+            </div>
+            <div class="summary-item">
+                <span class="count absent">{{ summary.absent|default:0 }}</span>
+                <span class="label">Absent</span>
+            </div>
+            <div class="summary-item">
+                <span class="count pending">{{ summary.pending|default:0 }}</span>
+                <span class="label">Not Recorded</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.attendance-container {
+    padding: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page-header h1 {
+    margin: 0;
+    color: #1e3c72;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.date-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.date-selector input {
+    border: 1px solid #ddd;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.attendance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.attendance-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.learner-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #2c5aa0 0%, #1e3c72 100%);
+    color: white;
+}
+
+.learner-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.3);
+}
+
+.learner-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.learner-info h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.learner-info p {
+    margin: 0;
+    opacity: 0.8;
+    font-size: 0.85rem;
+}
+
+.attendance-inputs {
+    padding: 1rem;
+}
+
+.input-group {
+    margin-bottom: 1rem;
+}
+
+.input-group label {
+    display: block;
+    font-weight: 500;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+    color: #555;
+}
+
+.input-group select,
+.input-group input,
+.input-group textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.input-group select:focus,
+.input-group input:focus,
+.input-group textarea:focus {
+    border-color: #2c5aa0;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+}
+
+.time-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.verify-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.checkbox-label input {
+    width: auto;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.attendance-summary {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.attendance-summary h2 {
+    margin: 0 0 1rem;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.summary-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.summary-item .count {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.summary-item .count.present { color: #27ae60; }
+.summary-item .count.leave { color: #f39c12; }
+.summary-item .count.absent { color: #e74c3c; }
+.summary-item .count.pending { color: #95a5a6; }
+
+.summary-item .label {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #999;
+}
+
+.empty-state.full-width {
+    grid-column: 1 / -1;
+    background: white;
+    border-radius: 12px;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .time-fields {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Date change handler
+    document.getElementById('attendance-date').addEventListener('change', function() {
+        document.getElementById('form-date').value = this.value;
+        // Reload page with new date
+        window.location.href = window.location.pathname + '?date=' + this.value;
+    });
+    
+    // Show/hide time fields based on attendance type
+    document.querySelectorAll('.attendance-type').forEach(function(select) {
+        select.addEventListener('change', function() {
+            const card = this.closest('.attendance-card');
+            const timeFields = card.querySelector('.time-fields');
+            
+            if (this.value === 'PRESENT') {
+                timeFields.style.display = 'grid';
+            } else {
+                timeFields.style.display = 'none';
+            }
+        });
+    });
+    
+    // Auto-calculate hours when times change
+    document.querySelectorAll('input[type="time"]').forEach(function(input) {
+        input.addEventListener('change', function() {
+            const card = this.closest('.attendance-card');
+            const clockIn = card.querySelector('input[name^="clock_in"]').value;
+            const clockOut = card.querySelector('input[name^="clock_out"]').value;
+            
+            if (clockIn && clockOut) {
+                const start = new Date('2000-01-01 ' + clockIn);
+                const end = new Date('2000-01-01 ' + clockOut);
+                const hours = (end - start) / (1000 * 60 * 60);
+                console.log('Hours worked:', hours.toFixed(2));
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

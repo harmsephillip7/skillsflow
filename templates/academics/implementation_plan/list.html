@@ -1,0 +1,150 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Implementation Plans - {{ qualification.short_title }} - SkillsFlow{% endblock %}
+
+{% block page_title %}Implementation Plan Templates{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'academics:qualification_list' %}" class="text-primary-600 hover:text-primary-800">Qualifications</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'academics:qualification_detail' qualification.pk %}" class="text-primary-600 hover:text-primary-800">{{ qualification.short_title }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Implementation Plans</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'academics:implementation_plan_create' qualification.pk %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    New Implementation Plan
+</a>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Qualification Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 font-mono">{{ qualification.saqa_id }}</p>
+                <h2 class="text-xl font-bold text-gray-900">{{ qualification.title }}</h2>
+                <p class="text-sm text-gray-500 mt-1">{{ qualification.get_qualification_type_display }} • NQF {{ qualification.nqf_level }} • {{ qualification.credits }} Credits</p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-500">Duration</p>
+                <p class="text-lg font-semibold text-gray-900">{{ qualification.minimum_duration_months }} - {{ qualification.maximum_duration_months }} months</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Implementation Plans Grid -->
+    {% if implementation_plans %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for plan in implementation_plans %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">{{ plan.name }}</h3>
+                        <p class="text-sm text-gray-500">{{ plan.get_delivery_mode_display }}</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        {% if plan.is_default %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Default
+                        </span>
+                        {% endif %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if plan.status == 'ACTIVE' %}bg-blue-100 text-blue-800
+                            {% elif plan.status == 'DRAFT' %}bg-gray-100 text-gray-800
+                            {% else %}bg-amber-100 text-amber-800{% endif %}">
+                            {{ plan.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                {% if plan.description %}
+                <p class="text-sm text-gray-600 mb-4">{{ plan.description|truncatewords:20 }}</p>
+                {% endif %}
+                
+                <!-- Stats -->
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="text-center p-3 bg-gray-50 rounded-lg">
+                        <p class="text-2xl font-bold text-gray-900">{{ plan.total_weeks }}</p>
+                        <p class="text-xs text-gray-500">Weeks</p>
+                    </div>
+                    <div class="text-center p-3 bg-blue-50 rounded-lg">
+                        <p class="text-2xl font-bold text-blue-600">{{ plan.phases.count }}</p>
+                        <p class="text-xs text-gray-500">Phases</p>
+                    </div>
+                    <div class="text-center p-3 bg-green-50 rounded-lg">
+                        <p class="text-2xl font-bold text-green-600">{{ plan.hours_per_day }}h</p>
+                        <p class="text-xs text-gray-500">Per Day</p>
+                    </div>
+                </div>
+                
+                <!-- Session Structure -->
+                <div class="flex items-center space-x-4 text-sm text-gray-600 mb-4">
+                    <span class="flex items-center">
+                        <svg class="w-4 h-4 mr-1 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                        {{ plan.classroom_hours_per_day }}h Classroom
+                    </span>
+                    <span class="flex items-center">
+                        <svg class="w-4 h-4 mr-1 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        </svg>
+                        {{ plan.practical_hours_per_day }}h Practical
+                    </span>
+                </div>
+            </div>
+            
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                <a href="{% url 'academics:implementation_plan_detail' plan.pk %}" class="text-primary-600 hover:text-primary-800 text-sm font-medium">
+                    View Details →
+                </a>
+                <a href="{% url 'academics:implementation_plan_edit' plan.pk %}" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+        <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900">No Implementation Plans Yet</h3>
+        <p class="mt-2 text-gray-500 max-w-sm mx-auto">
+            Create a implementation plan template to define how this qualification should be delivered, including module sequencing and session structure.
+        </p>
+        <a href="{% url 'academics:implementation_plan_create' qualification.pk %}" class="mt-6 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Create First Implementation Plan
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

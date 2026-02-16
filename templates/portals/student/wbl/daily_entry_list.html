@@ -1,0 +1,235 @@
+{% extends "portals/student/base.html" %}
+{% load static %}
+
+{% block page_title %}Daily Entries{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 pb-20">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-teal-600 to-teal-700 text-white">
+        <div class="px-4 py-6">
+            <div class="flex items-center gap-2 mb-2">
+                <a href="{% url 'portals:student_wbl_dashboard' %}" class="text-teal-100 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <h1 class="text-2xl font-bold">Daily Entries</h1>
+            </div>
+            <p class="text-teal-100 text-sm">Track daily tasks and practical evidence</p>
+        </div>
+    </header>
+
+    <div class="px-4 -mt-4">
+        {% if no_learner_profile or no_placement %}
+        <!-- No Profile/Placement -->
+        <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 class="font-medium text-gray-900 mb-1">
+                {% if no_learner_profile %}No Learner Profile{% else %}No Active Placement{% endif %}
+            </h3>
+            <p class="text-sm text-gray-500">
+                {% if no_learner_profile %}
+                Your learner profile hasn't been set up yet. Please contact support.
+                {% else %}
+                You need an active workplace placement to log daily entries.
+                {% endif %}
+            </p>
+        </div>
+        {% else %}
+
+        <!-- Create Today's Entry Button -->
+        {% if can_create_today %}
+        <a href="{% url 'portals:student_daily_entry_create' %}" 
+           class="block bg-gradient-to-r from-teal-500 to-emerald-500 rounded-xl p-4 mb-4 text-white shadow-lg hover:shadow-xl transition">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg">Create Today's Entry</h3>
+                        <p class="text-teal-100 text-sm">{{ today|date:"l, d F Y" }}</p>
+                    </div>
+                </div>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </a>
+        {% elif today_entry %}
+        <a href="{% url 'portals:student_daily_entry_detail' today_entry.id %}" 
+           class="block bg-white rounded-xl p-4 mb-4 shadow-sm border-l-4 border-teal-500 hover:shadow-md transition">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Today's Entry</h3>
+                        <p class="text-sm text-gray-500">{{ today_entry.tasks_count }} task{{ today_entry.tasks_count|pluralize }}</p>
+                    </div>
+                </div>
+                <span class="px-2 py-1 text-xs font-medium rounded-full
+                    {% if today_entry.learner_signed %}bg-green-100 text-green-700{% else %}bg-amber-100 text-amber-700{% endif %}">
+                    {% if today_entry.learner_signed %}Signed{% else %}In Progress{% endif %}
+                </span>
+            </div>
+        </a>
+        {% endif %}
+
+        <!-- Month/Year Filter -->
+        <div class="bg-white rounded-xl shadow-sm p-3 mb-4">
+            <form method="get" class="flex gap-2">
+                <select name="month" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                    {% for m_num, m_name in months %}
+                    <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="year" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                    {% for y in years %}
+                    <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition">
+                    Go
+                </button>
+            </form>
+        </div>
+
+        <!-- Monthly Summary -->
+        <div class="grid grid-cols-4 gap-2 mb-4">
+            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
+                <span class="text-xl font-bold text-teal-600">{{ monthly_summary.total_entries|default:0 }}</span>
+                <p class="text-xs text-gray-500 mt-1">Entries</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
+                <span class="text-xl font-bold text-green-600">{{ monthly_summary.present_days|default:0 }}</span>
+                <p class="text-xs text-gray-500 mt-1">Present</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
+                <span class="text-xl font-bold text-blue-600">{{ monthly_summary.tasks_completed|default:0 }}</span>
+                <p class="text-xs text-gray-500 mt-1">Tasks</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-3 text-center">
+                <span class="text-xl font-bold text-purple-600">{{ monthly_summary.total_hours|default:0|floatformat:1 }}</span>
+                <p class="text-xs text-gray-500 mt-1">Hours</p>
+            </div>
+        </div>
+
+        <!-- Entries List -->
+        {% if entries %}
+        <div class="space-y-3">
+            {% for entry in entries %}
+            <a href="{% url 'portals:student_daily_entry_detail' entry.id %}" 
+               class="block bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center
+                            {% if entry.attendance_status == 'PRESENT' %}bg-green-100
+                            {% elif entry.attendance_status == 'ABSENT' %}bg-red-100
+                            {% elif entry.attendance_status == 'SICK_LEAVE' %}bg-amber-100
+                            {% else %}bg-gray-100{% endif %}">
+                            <span class="text-lg font-bold 
+                                {% if entry.attendance_status == 'PRESENT' %}text-green-600
+                                {% elif entry.attendance_status == 'ABSENT' %}text-red-600
+                                {% elif entry.attendance_status == 'SICK_LEAVE' %}text-amber-600
+                                {% else %}text-gray-600{% endif %}">
+                                {{ entry.entry_date.day }}
+                            </span>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900">{{ entry.entry_date|date:"l" }}</h3>
+                            <p class="text-sm text-gray-500">{{ entry.entry_date|date:"d F Y" }}</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full
+                        {% if entry.attendance_status == 'PRESENT' %}bg-green-100 text-green-700
+                        {% elif entry.attendance_status == 'ABSENT' %}bg-red-100 text-red-700
+                        {% elif entry.attendance_status == 'SICK_LEAVE' %}bg-amber-100 text-amber-700
+                        {% elif entry.attendance_status == 'ANNUAL_LEAVE' %}bg-blue-100 text-blue-700
+                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                        {{ entry.get_attendance_status_display }}
+                    </span>
+                </div>
+
+                <!-- Tasks & Hours -->
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex gap-4">
+                        <span class="text-gray-600">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                            </svg>
+                            {{ entry.tasks_count }} task{{ entry.tasks_count|pluralize }}
+                        </span>
+                        <span class="text-gray-600">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            {{ entry.hours_worked|floatformat:1 }}h
+                        </span>
+                        {% if entry.clock_in %}
+                        <span class="text-gray-600">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                            </svg>
+                            {{ entry.clock_in }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </div>
+
+                <!-- Sign-off Status -->
+                <div class="mt-3 pt-3 border-t border-gray-100 flex items-center gap-3 text-xs">
+                    <span class="{% if entry.learner_signed %}text-green-600{% else %}text-gray-400{% endif %}">
+                        {% if entry.learner_signed %}✓{% else %}○{% endif %} Learner
+                    </span>
+                    <span class="{% if entry.mentor_signed %}text-green-600{% else %}text-gray-400{% endif %}">
+                        {% if entry.mentor_signed %}✓{% else %}○{% endif %} Mentor
+                    </span>
+                    {% if entry.task_completions.exists %}
+                    <span class="text-blue-600 ml-auto">
+                        <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        Evidence
+                    </span>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+            <div class="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+            </div>
+            <h3 class="font-medium text-gray-900 mb-1">No Entries This Month</h3>
+            <p class="text-sm text-gray-500 mb-4">Start tracking your daily tasks and evidence.</p>
+            <a href="{% url 'portals:student_daily_entry_create' %}" 
+               class="inline-flex items-center px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Create Entry
+            </a>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

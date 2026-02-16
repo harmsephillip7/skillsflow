@@ -1,0 +1,140 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Deadlines - Corporate Portal{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Deadlines & Reminders</h1>
+        <p class="mt-1 text-sm text-gray-500">Track important dates and deliverables</p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+        <a href="{% url 'portals:corporate_dashboard' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if no_client %}
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+    <i class="fas fa-exclamation-triangle text-amber-500 text-4xl mb-3"></i>
+    <h3 class="text-lg font-semibold text-amber-800">No Corporate Account Linked</h3>
+</div>
+{% else %}
+
+<div class="space-y-6">
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-4">
+        <a href="?filter=upcoming" class="bg-white rounded-xl shadow-sm border {% if filter_type == 'upcoming' %}border-primary-500 ring-2 ring-primary-100{% else %}border-gray-100{% endif %} p-4 hover:border-primary-500 transition">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-clock text-amber-600"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold text-gray-900">{{ counts.upcoming }}</p>
+                    <p class="text-xs text-gray-500">Upcoming</p>
+                </div>
+            </div>
+        </a>
+        
+        <a href="?filter=overdue" class="bg-white rounded-xl shadow-sm border {% if filter_type == 'overdue' %}border-primary-500 ring-2 ring-primary-100{% else %}border-gray-100{% endif %} p-4 hover:border-primary-500 transition">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-exclamation-circle text-red-600"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold {% if counts.overdue > 0 %}text-red-600{% else %}text-gray-900{% endif %}">{{ counts.overdue }}</p>
+                    <p class="text-xs text-gray-500">Overdue</p>
+                </div>
+            </div>
+        </a>
+        
+        <a href="?filter=completed" class="bg-white rounded-xl shadow-sm border {% if filter_type == 'completed' %}border-primary-500 ring-2 ring-primary-100{% else %}border-gray-100{% endif %} p-4 hover:border-primary-500 transition">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-600"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold text-gray-900">{{ counts.completed }}</p>
+                    <p class="text-xs text-gray-500">Completed</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Deadlines List -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900">
+                {% if filter_type == 'upcoming' %}
+                <i class="fas fa-clock text-amber-600 mr-2"></i>Upcoming Deadlines
+                {% elif filter_type == 'overdue' %}
+                <i class="fas fa-exclamation-circle text-red-600 mr-2"></i>Overdue Items
+                {% else %}
+                <i class="fas fa-check-circle text-green-600 mr-2"></i>Completed
+                {% endif %}
+            </h3>
+        </div>
+        
+        {% if deadlines %}
+        <div class="divide-y divide-gray-100">
+            {% for deadline in deadlines %}
+            <div class="px-6 py-4 {% if deadline.deadline_date < today and not deadline.is_completed %}bg-red-50{% endif %}">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center {% if deadline.is_completed %}bg-green-100{% elif deadline.deadline_date < today %}bg-red-100{% else %}bg-amber-100{% endif %}">
+                            {% if deadline.is_completed %}
+                            <i class="fas fa-check text-green-600"></i>
+                            {% elif deadline.deadline_date < today %}
+                            <i class="fas fa-exclamation text-red-600"></i>
+                            {% else %}
+                            <i class="fas fa-calendar text-amber-600"></i>
+                            {% endif %}
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="font-medium text-gray-900">{{ deadline.title }}</h4>
+                            <p class="text-sm text-gray-500 mt-1">{{ deadline.get_reminder_type_display }}</p>
+                            {% if deadline.description %}
+                            <p class="text-sm text-gray-600 mt-2">{{ deadline.description }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-medium {% if deadline.deadline_date < today and not deadline.is_completed %}text-red-600{% else %}text-gray-900{% endif %}">
+                            {{ deadline.deadline_date|date:"d M Y" }}
+                        </p>
+                        {% if deadline.deadline_date >= today and not deadline.is_completed %}
+                        {% with days_left=deadline.deadline_date|timesince:today %}
+                        <p class="text-xs text-gray-500">{{ days_left }} left</p>
+                        {% endwith %}
+                        {% elif deadline.deadline_date < today and not deadline.is_completed %}
+                        <p class="text-xs text-red-600 font-medium">Overdue</p>
+                        {% elif deadline.is_completed %}
+                        <p class="text-xs text-green-600">Completed {{ deadline.completed_date|date:"d M" }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-gray-500">
+            <i class="fas fa-calendar-check text-3xl text-gray-300 mb-3"></i>
+            <p>
+                {% if filter_type == 'upcoming' %}
+                No upcoming deadlines.
+                {% elif filter_type == 'overdue' %}
+                No overdue items. Great job!
+                {% else %}
+                No completed items yet.
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

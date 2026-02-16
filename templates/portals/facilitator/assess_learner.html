@@ -1,0 +1,284 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Assess: {{ result.enrollment.learner.user.get_full_name }} - {{ result.activity.title }}{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                <li><a href="{% url 'portals:facilitator_dashboard' %}" class="hover:text-primary-600">Dashboard</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li><a href="{% url 'portals:facilitator_pending_assessments' %}" class="hover:text-primary-600">Pending</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li class="text-gray-900">Assess</li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">Assess Learner</h1>
+        <p class="mt-1 text-sm text-gray-500">Record assessment result for {{ result.activity.title }}</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Learner & Assessment Info -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Learner Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-semibold text-gray-900 mb-4">
+                <i class="fas fa-user-graduate text-primary-600 mr-2"></i>Learner Details
+            </h3>
+            <div class="flex items-center">
+                <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mr-4">
+                    <span class="text-xl font-bold text-primary-700">{{ result.enrollment.learner.user.first_name|slice:":1" }}{{ result.enrollment.learner.user.last_name|slice:":1" }}</span>
+                </div>
+                <div>
+                    <h4 class="text-lg font-medium text-gray-900">{{ result.enrollment.learner.user.get_full_name }}</h4>
+                    <p class="text-sm text-gray-500">{{ result.enrollment.learner.id_number|default:"-" }}</p>
+                    <p class="text-sm text-gray-500">{{ result.enrollment.cohort.name }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assessment Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-semibold text-gray-900 mb-4">
+                <i class="fas fa-clipboard-list text-amber-600 mr-2"></i>Assessment Details
+            </h3>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-sm text-gray-500">Assessment</p>
+                    <p class="font-medium text-gray-900">{{ result.activity.title }}</p>
+                </div>
+                <div class="flex gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Type</p>
+                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium 
+                            {% if result.activity.activity_type == 'TEST' %}bg-red-100 text-red-800
+                            {% elif result.activity.activity_type == 'ASSIGNMENT' %}bg-blue-100 text-blue-800
+                            {% elif result.activity.activity_type == 'PRACTICAL' %}bg-green-100 text-green-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ result.activity.get_activity_type_display }}
+                        </span>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Weight</p>
+                        <p class="font-medium text-gray-900">{{ result.activity.weight }}%</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Attempt</p>
+                        <p class="font-medium text-gray-900">#{{ result.attempt_number }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment Form -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="font-semibold text-gray-900 mb-6">
+            <i class="fas fa-edit text-amber-600 mr-2"></i>Record Result
+        </h3>
+        
+        <form id="assessmentForm" method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Score Input -->
+            <div>
+                <label for="percentage_score" class="block text-sm font-medium text-gray-700 mb-2">
+                    Percentage Score
+                </label>
+                <div class="relative">
+                    <input type="number" 
+                           id="percentage_score" 
+                           name="percentage_score"
+                           min="0" 
+                           max="100" 
+                           step="0.1"
+                           value="{{ result.percentage_score|default:'' }}"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-2xl font-bold text-center"
+                           placeholder="0">
+                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-2xl text-gray-400">%</span>
+                </div>
+                <p class="mt-1 text-sm text-gray-500">Enter the learner's score out of 100</p>
+            </div>
+
+            <!-- Result Selection -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Result
+                </label>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <label class="result-option">
+                        <input type="radio" name="result" value="C" class="sr-only peer" {% if result.result == 'C' %}checked{% endif %}>
+                        <div class="p-4 border-2 border-gray-200 rounded-xl cursor-pointer transition
+                                    peer-checked:border-green-500 peer-checked:bg-green-50
+                                    hover:border-green-300">
+                            <div class="flex flex-col items-center text-center">
+                                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
+                                    <i class="fas fa-check text-green-600 text-xl"></i>
+                                </div>
+                                <span class="font-medium text-gray-900">Competent</span>
+                                <span class="text-xs text-gray-500">Pass</span>
+                            </div>
+                        </div>
+                    </label>
+                    
+                    <label class="result-option">
+                        <input type="radio" name="result" value="NYC" class="sr-only peer" {% if result.result == 'NYC' %}checked{% endif %}>
+                        <div class="p-4 border-2 border-gray-200 rounded-xl cursor-pointer transition
+                                    peer-checked:border-red-500 peer-checked:bg-red-50
+                                    hover:border-red-300">
+                            <div class="flex flex-col items-center text-center">
+                                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
+                                    <i class="fas fa-times text-red-600 text-xl"></i>
+                                </div>
+                                <span class="font-medium text-gray-900">NYC</span>
+                                <span class="text-xs text-gray-500">Not Yet Competent</span>
+                            </div>
+                        </div>
+                    </label>
+                    
+                    <label class="result-option">
+                        <input type="radio" name="result" value="ABS" class="sr-only peer" {% if result.result == 'ABS' %}checked{% endif %}>
+                        <div class="p-4 border-2 border-gray-200 rounded-xl cursor-pointer transition
+                                    peer-checked:border-gray-500 peer-checked:bg-gray-50
+                                    hover:border-gray-300">
+                            <div class="flex flex-col items-center text-center">
+                                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                                    <i class="fas fa-user-slash text-gray-600 text-xl"></i>
+                                </div>
+                                <span class="font-medium text-gray-900">Absent</span>
+                                <span class="text-xs text-gray-500">Did not attend</span>
+                            </div>
+                        </div>
+                    </label>
+                    
+                    <label class="result-option">
+                        <input type="radio" name="result" value="DEF" class="sr-only peer" {% if result.result == 'DEF' %}checked{% endif %}>
+                        <div class="p-4 border-2 border-gray-200 rounded-xl cursor-pointer transition
+                                    peer-checked:border-amber-500 peer-checked:bg-amber-50
+                                    hover:border-amber-300">
+                            <div class="flex flex-col items-center text-center">
+                                <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-2">
+                                    <i class="fas fa-clock text-amber-600 text-xl"></i>
+                                </div>
+                                <span class="font-medium text-gray-900">Deferred</span>
+                                <span class="text-xs text-gray-500">Postponed</span>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Assessor Feedback -->
+            <div>
+                <label for="assessor_comments" class="block text-sm font-medium text-gray-700 mb-2">
+                    Assessor Feedback (Optional)
+                </label>
+                <textarea id="assessor_comments" 
+                          name="assessor_comments" 
+                          rows="3"
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          placeholder="Provide feedback for the learner...">{{ result.assessor_comments|default:'' }}</textarea>
+            </div>
+
+            <!-- Submit Options -->
+            <div class="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-200">
+                <button type="submit" 
+                        name="action" 
+                        value="save_draft"
+                        class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition">
+                    <i class="fas fa-save mr-2"></i>Save as Draft
+                </button>
+                <button type="submit" 
+                        name="action" 
+                        value="submit_moderation"
+                        class="flex-1 px-6 py-3 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 transition">
+                    <i class="fas fa-paper-plane mr-2"></i>Submit for Moderation
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Previous Attempts (if any) -->
+    {% if previous_attempts %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="font-semibold text-gray-900 mb-4">
+            <i class="fas fa-history text-gray-600 mr-2"></i>Previous Attempts
+        </h3>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Attempt</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Score</th>
+                        <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Result</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Assessor</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for attempt in previous_attempts %}
+                    <tr>
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">#{{ attempt.attempt_number }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">{{ attempt.assessment_date|date:"d M Y" }}</td>
+                        <td class="px-4 py-3 text-center">
+                            {% if attempt.percentage_score %}
+                            <span class="font-bold {% if attempt.percentage_score >= 50 %}text-green-600{% else %}text-red-600{% endif %}">
+                                {{ attempt.percentage_score|floatformat:0 }}%
+                            </span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            {% if attempt.result == 'C' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">Competent</span>
+                            {% elif attempt.result == 'NYC' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">NYC</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">{{ attempt.get_result_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600">{{ attempt.assessor.get_full_name|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Actions -->
+    <div class="flex justify-between">
+        <a href="{% url 'portals:facilitator_pending_assessments' %}" class="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Pending
+        </a>
+        <a href="{% url 'portals:facilitator_learner_progress' result.enrollment.id %}" class="px-4 py-2 text-primary-600 hover:text-primary-700 font-medium">
+            View Full Progress <i class="fas fa-arrow-right ml-2"></i>
+        </a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-set result based on score
+    const scoreInput = document.getElementById('percentage_score');
+    const resultInputs = document.querySelectorAll('input[name="result"]');
+    
+    scoreInput.addEventListener('input', function() {
+        const score = parseFloat(this.value);
+        if (!isNaN(score)) {
+            if (score >= 50) {
+                document.querySelector('input[name="result"][value="C"]').checked = true;
+            } else if (score < 50 && score >= 0) {
+                document.querySelector('input[name="result"][value="NYC"]').checked = true;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,208 @@
+{% extends 'base/app_layout.html' %}
+
+{% block title %}{% if object %}Edit Opportunity{% else %}New Opportunity{% endif %} - Corporate{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:crm_dashboard' %}" class="text-gray-700 hover:text-blue-600">CRM</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:opportunity_list' %}" class="text-gray-700 hover:text-blue-600">Opportunities</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">{% if object %}Edit{% else %}New{% endif %}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-6 border-b border-gray-200">
+            <h1 class="text-xl font-semibold text-gray-900">{% if object %}Edit Opportunity{% else %}New Opportunity{% endif %}</h1>
+        </div>
+        
+        <form method="post" class="p-6">
+            {% csrf_token %}
+            
+            <!-- Client Section -->
+            <div class="mb-8">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">Client Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Existing Client</label>
+                        <select name="client" id="id_client" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- Select existing client or enter prospect details below --</option>
+                            {% for client in form.fields.client.queryset %}
+                            <option value="{{ client.pk }}" {% if form.instance.client_id == client.pk %}selected{% endif %}>{{ client.company_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div id="prospect-fields" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg {% if form.instance.client %}hidden{% endif %}">
+                        <p class="md:col-span-2 text-sm text-gray-500">Or enter prospect details (for new clients):</p>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Prospect Company Name</label>
+                            <input type="text" name="prospect_company_name" value="{{ form.instance.prospect_company_name|default:'' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+                            <input type="text" name="prospect_contact_name" value="{{ form.instance.prospect_contact_name|default:'' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" name="prospect_email" value="{{ form.instance.prospect_email|default:'' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                            <input type="tel" name="prospect_phone" value="{{ form.instance.prospect_phone|default:'' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Opportunity Details -->
+            <div class="mb-8">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">Opportunity Details</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                        <input type="text" name="title" value="{{ form.instance.title|default:'' }}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">{{ form.instance.description|default:'' }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Opportunity Type</label>
+                        <select name="opportunity_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            {% for code, name in form.fields.opportunity_type.choices %}
+                            <option value="{{ code }}" {% if form.instance.opportunity_type == code %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Stage</label>
+                        <select name="stage" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            {% for code, name in form.fields.stage.choices %}
+                            <option value="{{ code }}" {% if form.instance.stage == code %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                        <select name="priority" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            {% for code, name in form.fields.priority.choices %}
+                            <option value="{{ code }}" {% if form.instance.priority == code %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Lead Source</label>
+                        <select name="lead_source" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">---------</option>
+                            {% for source in lead_sources %}
+                            <option value="{{ source.pk }}" {% if form.instance.lead_source_id == source.pk %}selected{% endif %}>{{ source.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Value & Dates -->
+            <div class="mb-8">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">Value & Timeline</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Value (R)</label>
+                        <input type="number" name="estimated_value" value="{{ form.instance.estimated_value|default:'' }}" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Probability (%)</label>
+                        <input type="number" name="probability" value="{{ form.instance.probability|default:'50' }}" min="0" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Expected Close Date</label>
+                        <input type="date" name="expected_close_date" value="{{ form.instance.expected_close_date|date:'Y-m-d' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Services -->
+            <div class="mb-8">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">Proposed Services</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {% for service in services %}
+                    <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
+                        <input type="checkbox" name="proposed_services" value="{{ service.pk }}" 
+                               {% if service.pk in selected_services %}checked{% endif %}
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <span class="ml-3 text-sm text-gray-700">{{ service.name }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Referral Source -->
+            <div class="mb-8">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">Additional Information</h2>
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Referral Source</label>
+                        <input type="text" name="referral_source" value="{{ form.instance.referral_source|default:'' }}" placeholder="Who referred this opportunity?" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea name="notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">{{ form.instance.notes|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Close Details (for editing) -->
+            {% if object and object.stage in 'CLOSED_LOST' %}
+            <div class="mb-8">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">Loss Details</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Loss Reason</label>
+                        <textarea name="loss_reason" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">{{ form.instance.loss_reason|default:'' }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Competitor</label>
+                        <input type="text" name="competitor" value="{{ form.instance.competitor|default:'' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <a href="{% if object %}{% url 'corporate:opportunity_detail' object.pk %}{% else %}{% url 'corporate:opportunity_list' %}{% endif %}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    {% if object %}Update{% else %}Create{% endif %} Opportunity
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('id_client').addEventListener('change', function() {
+    const prospectFields = document.getElementById('prospect-fields');
+    if (this.value) {
+        prospectFields.classList.add('hidden');
+    } else {
+        prospectFields.classList.remove('hidden');
+    }
+});
+</script>
+{% endblock %}

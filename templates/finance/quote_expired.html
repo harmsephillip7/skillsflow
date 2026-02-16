@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quote Expired - {{ brand.name|default:"SkillsFlow" }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full mx-4">
+        <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+                <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            
+            <h1 class="mt-6 text-2xl font-bold text-gray-900">Quote Expired</h1>
+            
+            <p class="mt-4 text-gray-600">
+                This quote ({{ quote.quote_number }}) has expired and is no longer valid for acceptance.
+            </p>
+            
+            <p class="mt-2 text-sm text-gray-500">
+                The quote was valid until {{ quote.valid_until|date:"d F Y" }}.
+            </p>
+            
+            <div class="mt-8 space-y-3">
+                <p class="text-sm text-gray-600">
+                    If you're still interested, please contact us to request a new quote.
+                </p>
+                
+                {% if quote.campus %}
+                <div class="text-sm text-gray-500">
+                    <p class="font-medium text-gray-700">{{ quote.campus.name }}</p>
+                    {% if quote.campus.phone %}
+                    <p>Phone: {{ quote.campus.phone }}</p>
+                    {% endif %}
+                    {% if quote.campus.email %}
+                    <p>Email: {{ quote.campus.email }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

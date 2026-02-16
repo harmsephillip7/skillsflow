@@ -1,0 +1,69 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ guide.title }} | Training Guides | SkillsFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="flex items-start justify-between gap-4 mb-6">
+      <div>
+        <a href="{% url 'support:training_guides' %}" class="text-sm font-medium text-blue-600 hover:text-blue-700">← Back to Guides</a>
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold px-2 py-1 rounded-full {% if guide.difficulty == 'advanced' %}bg-purple-50 text-purple-700{% elif guide.difficulty == 'intermediate' %}bg-amber-50 text-amber-700{% else %}bg-emerald-50 text-emerald-700{% endif %}">
+            {{ guide.get_difficulty_display }}
+          </span>
+          <span class="text-xs text-gray-500">~{{ guide.estimated_minutes }} min</span>
+          {% if progress.is_completed %}
+            <span class="text-xs font-semibold px-2 py-1 rounded-full bg-blue-600 text-white">Completed</span>
+          {% else %}
+            <span class="text-xs font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-700">In progress</span>
+          {% endif %}
+        </div>
+        <h1 class="mt-3 text-2xl font-bold text-gray-900">{{ guide.title }}</h1>
+        {% if guide.summary %}
+          <p class="mt-2 text-gray-600">{{ guide.summary }}</p>
+        {% endif %}
+      </div>
+
+      <form method="post" class="shrink-0">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle_complete" />
+        <button class="px-4 py-2 rounded-xl {% if progress.is_completed %}bg-gray-900{% else %}bg-blue-600{% endif %} text-white text-sm font-medium hover:opacity-90">
+          {% if progress.is_completed %}Mark as in progress{% else %}Mark as completed{% endif %}
+        </button>
+      </form>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+      <div class="prose max-w-none text-gray-800 leading-relaxed">
+        {{ guide.content|linebreaksbr }}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
+      <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <h2 class="text-lg font-semibold text-gray-900">Operationalization</h2>
+        <p class="mt-2 text-sm text-gray-700">
+          For maximum impact, turn this guide into a <span class="font-semibold">workflow</span> with role-based tasks, approvals, and evidence attachments.
+        </p>
+        <ul class="mt-4 space-y-2 text-sm text-gray-700">
+          <li class="flex gap-2"><span class="text-blue-600">•</span> Create a workflow template for this runbook</li>
+          <li class="flex gap-2"><span class="text-blue-600">•</span> Assign tasks per role (Admin, HR, Finance, Facilitator)</li>
+          <li class="flex gap-2"><span class="text-blue-600">•</span> Attach evidence and export audit-ready reports</li>
+        </ul>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <h3 class="text-base font-semibold text-gray-900">Need assistance?</h3>
+        <p class="mt-2 text-sm text-gray-600">Open a ticket and reference this guide to speed up resolution.</p>
+        <a href="{% url 'support:contact_support' %}" class="inline-flex mt-5 w-full justify-center px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+          Contact Support
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

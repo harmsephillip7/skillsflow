@@ -1,0 +1,342 @@
+{% extends 'portals/officer/base.html' %}
+{% load static %}
+
+{% block title %}Dispute #{{ dispute.id }} - Officer Portal{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Dispute #{{ dispute.id }}</h1>
+            <p class="text-gray-600 mt-1">{{ dispute.learner.get_full_name }} - {{ dispute.stipend_calculation.month }}/{{ dispute.stipend_calculation.year }}</p>
+        </div>
+        <a href="{% url 'portals:officer_dispute_list' %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+            ← Back to List
+        </a>
+    </div>
+    
+    <!-- Status Banner -->
+    <div class="rounded-xl p-6
+        {% if dispute.status == 'PENDING' %}bg-amber-50 border border-amber-200
+        {% elif dispute.status == 'UNDER_REVIEW' %}bg-blue-50 border border-blue-200
+        {% elif dispute.status == 'ESCALATED' %}bg-purple-50 border border-purple-200
+        {% elif dispute.status == 'RESOLVED' %}bg-green-50 border border-green-200
+        {% endif %}">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="flex items-center space-x-3">
+                    <span class="px-4 py-2 text-sm font-semibold rounded-full
+                        {% if dispute.status == 'PENDING' %}bg-amber-200 text-amber-800
+                        {% elif dispute.status == 'UNDER_REVIEW' %}bg-blue-200 text-blue-800
+                        {% elif dispute.status == 'ESCALATED' %}bg-purple-200 text-purple-800
+                        {% elif dispute.status == 'RESOLVED' %}bg-green-200 text-green-800
+                        {% endif %}">
+                        {{ dispute.get_status_display }}
+                    </span>
+                    {% if dispute.is_overdue %}
+                    <span class="px-3 py-1 text-sm font-semibold bg-red-200 text-red-800 rounded-full">
+                        ⚠️ OVERDUE SLA
+                    </span>
+                    {% endif %}
+                </div>
+                <p class="text-sm text-gray-700 mt-2">
+                    Submitted {{ dispute.submitted_at|date:"d M Y H:i" }}
+                    {% if dispute.status == 'PENDING' %}
+                    • SLA Deadline: {{ dispute.sla_deadline|date:"d M Y H:i" }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column - Dispute Details -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Learner Reason -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Learner's Dispute Reason</h2>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <p class="text-gray-900 whitespace-pre-wrap">{{ dispute.reason }}</p>
+                </div>
+            </div>
+            
+            <!-- Stipend Calculation Details -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Stipend Calculation Details</h2>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-600">Period:</span>
+                        <span class="font-semibold text-gray-900">{{ dispute.stipend_calculation.month }}/{{ dispute.stipend_calculation.year }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-600">Gross Amount:</span>
+                        <span class="font-semibold text-gray-900">R{{ dispute.stipend_calculation.gross_amount }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-600">Total Deductions:</span>
+                        <span class="font-semibold text-red-600">-R{{ dispute.stipend_calculation.total_deductions }}</span>
+                    </div>
+                    <div class="flex justify-between py-3 bg-primary-50 px-4 rounded-lg mt-2">
+                        <span class="font-semibold text-gray-900">Net Amount:</span>
+                        <span class="text-xl font-bold text-primary-600">R{{ dispute.stipend_calculation.net_amount }}</span>
+                    </div>
+                </div>
+                
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h3 class="font-semibold text-gray-900 mb-3">Attendance Breakdown</h3>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Total Days:</span>
+                            <span class="font-medium">{{ dispute.stipend_calculation.total_working_days }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Present:</span>
+                            <span class="font-medium text-green-600">{{ dispute.stipend_calculation.days_present }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Sick Leave:</span>
+                            <span class="font-medium">{{ dispute.stipend_calculation.days_sick_leave }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Annual Leave:</span>
+                            <span class="font-medium">{{ dispute.stipend_calculation.days_annual_leave }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Family Leave:</span>
+                            <span class="font-medium">{{ dispute.stipend_calculation.days_family_leave }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Absent:</span>
+                            <span class="font-medium text-red-600">{{ dispute.stipend_calculation.days_absent }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Response Section (if exists) -->
+            {% if dispute.response %}
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <div class="flex items-center mb-3">
+                    <svg class="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                    </svg>
+                    <h3 class="font-semibold text-blue-900">Officer Response</h3>
+                </div>
+                <p class="text-blue-900 whitespace-pre-wrap">{{ dispute.response }}</p>
+                <p class="text-sm text-blue-700 mt-3">
+                    By {{ dispute.reviewed_by.get_full_name }} on {{ dispute.reviewed_at|date:"d M Y H:i" }}
+                </p>
+            </div>
+            {% endif %}
+            
+            <!-- Resolution Section (if exists) -->
+            {% if dispute.resolution %}
+            <div class="bg-green-50 border border-green-200 rounded-xl p-6">
+                <div class="flex items-center mb-3">
+                    <svg class="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h3 class="font-semibold text-green-900">Final Resolution</h3>
+                </div>
+                <p class="text-green-900 whitespace-pre-wrap">{{ dispute.resolution }}</p>
+            </div>
+            {% endif %}
+            
+            <!-- Action Form (if not resolved) -->
+            {% if dispute.status != 'RESOLVED' and dispute.status != 'CLOSED' %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Take Action</h2>
+                
+                <form id="responseForm" class="space-y-4">
+                    <div>
+                        <label for="responseText" class="block text-sm font-medium text-gray-700 mb-2">
+                            Your Response <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="responseText" rows="5" required
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="Provide a detailed response to the learner..."></textarea>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button type="button" onclick="submitAction('resolve')" 
+                                class="flex-1 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-200">
+                            ✓ Resolve Dispute
+                        </button>
+                        <button type="button" onclick="submitAction('under_review')" 
+                                class="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200">
+                            👁️ Mark Under Review
+                        </button>
+                        <button type="button" onclick="submitAction('escalate')" 
+                                class="flex-1 px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 focus:ring-4 focus:ring-purple-200">
+                            ⬆️ Escalate to Management
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+            
+        </div>
+        
+        <!-- Right Column - Sidebar Info -->
+        <div class="space-y-6">
+            
+            <!-- Learner Info -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Learner Information</h3>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <div class="text-gray-600">Name:</div>
+                        <div class="font-medium text-gray-900">{{ dispute.learner.get_full_name }}</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-600">ID Number:</div>
+                        <div class="font-medium text-gray-900">{{ dispute.learner.id_number|default:"N/A" }}</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-600">Campus:</div>
+                        <div class="font-medium text-gray-900">{{ dispute.stipend_calculation.placement.campus.name }}</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-600">Employer:</div>
+                        <div class="font-medium text-gray-900">{{ dispute.stipend_calculation.placement.host.employer.company_name }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Timeline -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Timeline</h3>
+                <div class="space-y-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                                <svg class="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-3">
+                            <div class="text-sm font-medium text-gray-900">Submitted</div>
+                            <div class="text-xs text-gray-500">{{ dispute.submitted_at|date:"d M Y H:i" }}</div>
+                        </div>
+                    </div>
+                    
+                    {% if dispute.reviewed_at %}
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-3">
+                            <div class="text-sm font-medium text-gray-900">Reviewed</div>
+                            <div class="text-xs text-gray-500">{{ dispute.reviewed_at|date:"d M Y H:i" }}</div>
+                            <div class="text-xs text-gray-600">By {{ dispute.reviewed_by.get_full_name }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if dispute.escalated_at %}
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                                <svg class="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-3">
+                            <div class="text-sm font-medium text-gray-900">Escalated</div>
+                            <div class="text-xs text-gray-500">{{ dispute.escalated_at|date:"d M Y H:i" }}</div>
+                            {% if dispute.escalated_to %}
+                            <div class="text-xs text-gray-600">To {{ dispute.escalated_to.get_full_name }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- SLA Warning -->
+            {% if dispute.status == 'PENDING' %}
+            <div class="{% if dispute.is_overdue %}bg-red-50 border border-red-200{% else %}bg-amber-50 border border-amber-200{% endif %} rounded-xl p-6">
+                <div class="flex items-start">
+                    <svg class="w-6 h-6 {% if dispute.is_overdue %}text-red-600{% else %}text-amber-600{% endif %} mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <h4 class="font-semibold {% if dispute.is_overdue %}text-red-900{% else %}text-amber-900{% endif %}">
+                            {% if dispute.is_overdue %}SLA OVERDUE{% else %}SLA Deadline{% endif %}
+                        </h4>
+                        <p class="text-sm {% if dispute.is_overdue %}text-red-700{% else %}text-amber-700{% endif %} mt-1">
+                            {{ dispute.sla_deadline|date:"d M Y H:i" }}
+                        </p>
+                        <p class="text-xs {% if dispute.is_overdue %}text-red-600{% else %}text-amber-600{% endif %} mt-2">
+                            Must be resolved within 3 working days
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function submitAction(action) {
+    const responseText = document.getElementById('responseText').value.trim();
+    
+    if (!responseText) {
+        alert('Please provide a response');
+        return;
+    }
+    
+    let confirmMsg = '';
+    if (action === 'resolve') {
+        confirmMsg = 'Resolve this dispute? The learner will be notified of your decision.';
+    } else if (action === 'escalate') {
+        confirmMsg = 'Escalate this dispute to management?';
+    } else {
+        confirmMsg = 'Mark this dispute as under review?';
+    }
+    
+    if (!confirm(confirmMsg)) return;
+    
+    try {
+        const response = await fetch('{% url "portals:officer_dispute_respond" dispute.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                action: action,
+                response: responseText
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Network error: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

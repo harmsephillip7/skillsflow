@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quote {{ quote.quote_number }} - {{ brand.name|default:"SkillsFlow" }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-3xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    {% if brand and brand.logo %}
+                    <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" class="h-10">
+                    {% else %}
+                    <h1 class="text-2xl font-bold text-gray-900">{{ brand.name|default:"SkillsFlow" }}</h1>
+                    {% endif %}
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-500">Quote</p>
+                    <p class="text-lg font-semibold text-gray-900">{{ quote.quote_number }}</p>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <main class="max-w-3xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        
+        <!-- Status Banner -->
+        {% if is_accepted %}
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <span class="text-green-800 font-medium">This quote has been accepted</span>
+            </div>
+            <p class="mt-1 text-sm text-green-700">Accepted on {{ quote.accepted_at|date:"d F Y" }} at {{ quote.accepted_at|time:"H:i" }}</p>
+        </div>
+        {% elif is_rejected %}
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+                <span class="text-red-800 font-medium">This quote has been declined</span>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Quote Card -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            
+            <!-- Quote Header -->
+            <div class="px-6 py-5 border-b border-gray-100">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Quote for</p>
+                        <h2 class="text-xl font-bold text-gray-900">{{ client_name }}</h2>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-gray-500">Valid until</p>
+                        <p class="text-lg font-semibold text-gray-900">{{ quote.valid_until|date:"d F Y" }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quote Details -->
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-100">
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <p class="text-gray-500">Quote Date</p>
+                        <p class="font-medium text-gray-900">{{ quote.quote_date|date:"d F Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Academic Year</p>
+                        <p class="font-medium text-gray-900">{{ quote.academic_year }}</p>
+                    </div>
+                    {% if quote.intake %}
+                    <div>
+                        <p class="text-gray-500">Intake</p>
+                        <p class="font-medium text-gray-900">{{ quote.intake.code }}</p>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <p class="text-gray-500">Payment Plan</p>
+                        <p class="font-medium text-gray-900">{{ quote.get_payment_plan_display }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Line Items -->
+            <div class="px-6 py-4">
+                <h3 class="text-sm font-semibold text-gray-900 mb-4">Quote Items</h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-2 text-xs font-medium text-gray-500 uppercase">Description</th>
+                                <th class="text-right py-2 text-xs font-medium text-gray-500 uppercase">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for item in quote.line_items.all %}
+                            <tr>
+                                <td class="py-3">
+                                    <p class="text-sm text-gray-900">{{ item.description }}</p>
+                                    {% if item.discount_reason %}
+                                    <p class="text-xs text-green-600">{{ item.discount_reason }}</p>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 text-right">
+                                    <p class="text-sm font-medium text-gray-900">R {{ item.line_total|floatformat:2 }}</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-t border-gray-200">
+                                <td class="py-3 text-sm font-medium text-gray-900">Subtotal</td>
+                                <td class="py-3 text-right text-sm font-medium text-gray-900">R {{ quote.subtotal|floatformat:2 }}</td>
+                            </tr>
+                            {% if quote.vat_amount > 0 %}
+                            <tr>
+                                <td class="py-2 text-sm text-gray-500">VAT ({{ quote.vat_rate }}%)</td>
+                                <td class="py-2 text-right text-sm text-gray-500">R {{ quote.vat_amount|floatformat:2 }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr class="bg-blue-50 -mx-6">
+                                <td class="py-4 px-6 text-base font-bold text-gray-900">Total</td>
+                                <td class="py-4 px-6 text-right text-xl font-bold text-blue-600">R {{ quote.total|floatformat:2 }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Payment Schedule -->
+            {% if payment_schedule %}
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                <h3 class="text-sm font-semibold text-gray-900 mb-4">Payment Schedule</h3>
+                
+                <div class="space-y-2">
+                    {% for schedule in payment_schedule %}
+                    <div class="flex items-center justify-between py-2 {% if not forloop.last %}border-b border-gray-200{% endif %}">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ schedule.description }}</p>
+                            <p class="text-xs text-gray-500">Due: {{ schedule.due_date|date:"d F Y" }}</p>
+                        </div>
+                        <p class="text-sm font-semibold text-gray-900">R {{ schedule.amount|floatformat:2 }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Accept/Reject Buttons -->
+            {% if can_accept %}
+            <div class="px-6 py-6 bg-white border-t border-gray-100">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button onclick="acceptQuote()" id="accept-btn" class="flex-1 inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Accept Quote
+                    </button>
+                    <button onclick="rejectQuote()" id="reject-btn" class="flex-1 inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        Decline
+                    </button>
+                </div>
+                <p class="mt-3 text-xs text-gray-500 text-center">
+                    By accepting this quote, you agree to the terms and conditions. This quote expires on {{ quote.valid_until|date:"d F Y" }}.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Terms -->
+        {% if quote.terms %}
+        <div class="mt-6 bg-white rounded-xl shadow-sm p-6">
+            <h3 class="text-sm font-semibold text-gray-900 mb-2">Terms & Conditions</h3>
+            <p class="text-sm text-gray-600">{{ quote.terms|linebreaks }}</p>
+        </div>
+        {% endif %}
+        
+        <!-- Contact -->
+        <div class="mt-6 text-center text-sm text-gray-500">
+            <p>Questions about this quote?</p>
+            <p class="mt-1">
+                {% if quote.campus %}
+                Contact us at {{ quote.campus.phone|default:"" }} or {{ quote.campus.email|default:"" }}
+                {% else %}
+                Contact your sales representative for more information.
+                {% endif %}
+            </p>
+        </div>
+    </main>
+    
+    <script>
+    const token = '{{ quote.public_token }}';
+    
+    function acceptQuote() {
+        if (!confirm('Are you sure you want to accept this quote?')) return;
+        
+        const btn = document.getElementById('accept-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...';
+        
+        fetch(`/finance/quotes/public/${token}/accept/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+                btn.disabled = false;
+                btn.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Accept Quote';
+            }
+        })
+        .catch(error => {
+            alert('Error accepting quote: ' + error);
+            btn.disabled = false;
+            btn.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Accept Quote';
+        });
+    }
+    
+    function rejectQuote() {
+        if (!confirm('Are you sure you want to decline this quote?')) return;
+        
+        const btn = document.getElementById('reject-btn');
+        btn.disabled = true;
+        btn.innerHTML = 'Processing...';
+        
+        fetch(`/finance/quotes/public/${token}/reject/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+                btn.disabled = false;
+                btn.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg> Decline';
+            }
+        })
+        .catch(error => {
+            alert('Error rejecting quote: ' + error);
+            btn.disabled = false;
+            btn.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg> Decline';
+        });
+    }
+    </script>
+</body>
+</html>

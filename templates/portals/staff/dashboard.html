@@ -1,0 +1,227 @@
+{% extends 'base/dashboard.html' %}
+{% load static %}
+
+{% block title %}Staff Dashboard | SkillsFlow{% endblock %}
+
+{% block page_title %}Staff Dashboard{% endblock %}
+
+{% block dashboard_nav %}
+<nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex space-x-8">
+                <a href="{% url 'portals:staff_dashboard' %}" 
+                   class="border-blue-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Dashboard
+                </a>
+                <a href="{% url 'admin:index' %}" 
+                   class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Admin Panel
+                </a>
+                <a href="{% url 'workflows:instance_list' %}" 
+                   class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Workflows
+                </a>
+            </div>
+            <div class="flex items-center">
+                <span class="text-sm text-gray-500">{{ user.email }}</span>
+            </div>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="space-y-6">
+    <!-- Welcome Banner -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-6 text-white">
+        <h2 class="text-2xl font-bold mb-2">Welcome back, {{ user.first_name|default:user.email }}</h2>
+        <p class="text-blue-100">Here's your overview for today.</p>
+    </div>
+
+    <!-- Quick Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {% for widget in widgets %}
+        {% if widget.type == 'stats' %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-sm font-medium text-gray-500 mb-4">{{ widget.title }}</h3>
+            <div class="space-y-3">
+                {% for key, value in widget.data.items %}
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600">{{ key|title }}</span>
+                    <span class="text-2xl font-bold text-gray-900">{{ value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% empty %}
+        <div class="col-span-full bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Getting Started</h3>
+            <p class="text-gray-600">Welcome to SkillsFlow! Configure your dashboard widgets in settings.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Pending Tasks -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="p-6 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-800">My Tasks</h3>
+            </div>
+            <div class="divide-y divide-gray-100">
+                {% for task in tasks %}
+                <div class="p-4 hover:bg-gray-50 transition">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-900">{{ task.title }}</h4>
+                            <p class="text-sm text-gray-500 mt-1">{{ task.description|truncatewords:20 }}</p>
+                        </div>
+                        <div class="flex items-center space-x-2 ml-4">
+                            {% if task.priority == 'urgent' %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">Urgent</span>
+                            {% elif task.priority == 'high' %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">High</span>
+                            {% else %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Normal</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if task.due_date %}
+                    <div class="mt-2 text-xs text-gray-400">
+                        Due: {{ task.due_date|date:"j M Y" }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="p-8 text-center text-gray-500">
+                    <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    <p class="mt-2">No pending tasks</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Notifications & Announcements -->
+        <div class="space-y-6">
+            <!-- Notifications -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="p-6 border-b border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-800">Notifications</h3>
+                </div>
+                <div class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                    {% for notification in notifications %}
+                    <div class="p-4 hover:bg-gray-50 transition">
+                        <p class="text-sm text-gray-800">{{ notification.message }}</p>
+                        <span class="text-xs text-gray-400">{{ notification.created_at|timesince }} ago</span>
+                    </div>
+                    {% empty %}
+                    <div class="p-4 text-center text-gray-500">
+                        <p class="text-sm">No new notifications</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Announcements -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="p-6 border-b border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-800">Announcements</h3>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for announcement in announcements %}
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            {% if announcement.is_pinned %}
+                            <span class="text-yellow-500 mr-2">📌</span>
+                            {% endif %}
+                            <div>
+                                <h4 class="font-medium text-gray-900">{{ announcement.title }}</h4>
+                                <p class="text-sm text-gray-500 mt-1">{{ announcement.content|truncatewords:15 }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-4 text-center text-gray-500">
+                        <p class="text-sm">No announcements</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <a href="{% url 'learners:list' %}" 
+               class="flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 transition group">
+                <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2 group-hover:bg-blue-200 transition">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </div>
+                <span class="text-sm font-medium text-gray-700">Learners</span>
+            </a>
+            <a href="{% url 'admin:enrollment_list' %}" 
+               class="flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 transition group">
+                <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-2 group-hover:bg-green-200 transition">
+                    <svg class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                    </svg>
+                </div>
+                <span class="text-sm font-medium text-gray-700">Enrollments</span>
+            </a>
+            <a href="{% url 'admin:assessmentresult_list' %}" 
+               class="flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 transition group">
+                <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mb-2 group-hover:bg-yellow-200 transition">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <span class="text-sm font-medium text-gray-700">Assessments</span>
+            </a>
+            <a href="{% url 'admin:invoice_list' %}" 
+               class="flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 transition group">
+                <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-2 group-hover:bg-purple-200 transition">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </div>
+                <span class="text-sm font-medium text-gray-700">Invoices</span>
+            </a>
+            <a href="{% url 'admin:dashboard' %}" 
+               class="flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 transition group">
+                <div class="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center mb-2 group-hover:bg-pink-200 transition">
+                    <svg class="w-6 h-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                </div>
+                <span class="text-sm font-medium text-gray-700">CRM Leads</span>
+            </a>
+            <a href="{% url 'core:reports' %}" 
+               class="flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 transition group">
+                <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mb-2 group-hover:bg-indigo-200 transition">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <span class="text-sm font-medium text-gray-700">Reports</span>
+            </a>
+            <a href="{% url 'integrations:hub' %}" 
+               class="flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 transition group">
+                <div class="w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center mb-2 group-hover:bg-cyan-200 transition">
+                    <svg class="w-6 h-6 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <span class="text-sm font-medium text-gray-700">Integrations</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

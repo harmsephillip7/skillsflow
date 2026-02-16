@@ -1,0 +1,281 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Moderate: {{ result.enrollment.learner.user.get_full_name }} - {{ result.activity.title }}{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                <li><a href="{% url 'portals:facilitator_dashboard' %}" class="hover:text-primary-600">Dashboard</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li><a href="{% url 'portals:facilitator_pending_assessments' %}?status=PENDING_MOD" class="hover:text-primary-600">Moderation</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li class="text-gray-900">Review</li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">Moderate Assessment</h1>
+        <p class="mt-1 text-sm text-gray-500">Review and verify assessment result</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Assessment Summary Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-purple-50 border-b border-purple-100 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                        <i class="fas fa-check-double text-purple-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-purple-900">Pending Moderation</h3>
+                        <p class="text-sm text-purple-700">Review the assessment result below</p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-200 text-purple-800">
+                    <i class="fas fa-clock mr-2"></i>Awaiting Review
+                </span>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Learner Info -->
+                <div>
+                    <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Learner</h4>
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mr-3">
+                            <span class="text-lg font-bold text-primary-700">{{ result.enrollment.learner.user.first_name|slice:":1" }}{{ result.enrollment.learner.user.last_name|slice:":1" }}</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ result.enrollment.learner.user.get_full_name }}</p>
+                            <p class="text-sm text-gray-500">{{ result.enrollment.learner.id_number|default:"-" }}</p>
+                            <p class="text-sm text-gray-500">{{ result.enrollment.cohort.name }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assessment Info -->
+                <div>
+                    <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Assessment</h4>
+                    <p class="font-medium text-gray-900">{{ result.activity.title }}</p>
+                    <p class="text-sm text-gray-500">{{ result.activity.module.title }}</p>
+                    <div class="flex items-center gap-3 mt-2">
+                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium 
+                            {% if result.activity.activity_type == 'TEST' %}bg-red-100 text-red-800
+                            {% elif result.activity.activity_type == 'ASSIGNMENT' %}bg-blue-100 text-blue-800
+                            {% elif result.activity.activity_type == 'PRACTICAL' %}bg-green-100 text-green-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ result.activity.get_activity_type_display }}
+                        </span>
+                        <span class="text-sm text-gray-500">Attempt #{{ result.attempt_number }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment Result to Review -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="font-semibold text-gray-900 mb-6">
+            <i class="fas fa-clipboard-check text-amber-600 mr-2"></i>Assessment Result
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <!-- Score -->
+            <div class="text-center p-6 bg-gray-50 rounded-xl">
+                <p class="text-xs font-medium text-gray-500 uppercase mb-2">Score</p>
+                {% if result.percentage_score is not None %}
+                <p class="text-5xl font-bold {% if result.percentage_score >= 70 %}text-green-600{% elif result.percentage_score >= 50 %}text-amber-600{% else %}text-red-600{% endif %}">
+                    {{ result.percentage_score|floatformat:0 }}%
+                </p>
+                {% else %}
+                <p class="text-3xl font-bold text-gray-400">N/A</p>
+                {% endif %}
+            </div>
+            
+            <!-- Result -->
+            <div class="text-center p-6 bg-gray-50 rounded-xl">
+                <p class="text-xs font-medium text-gray-500 uppercase mb-2">Result</p>
+                <div class="flex items-center justify-center">
+                    {% if result.result == 'C' %}
+                    <div class="flex flex-col items-center">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-2">
+                            <i class="fas fa-check text-green-600 text-2xl"></i>
+                        </div>
+                        <span class="font-bold text-green-600">Competent</span>
+                    </div>
+                    {% elif result.result == 'NYC' %}
+                    <div class="flex flex-col items-center">
+                        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-2">
+                            <i class="fas fa-times text-red-600 text-2xl"></i>
+                        </div>
+                        <span class="font-bold text-red-600">Not Yet Competent</span>
+                    </div>
+                    {% elif result.result == 'ABS' %}
+                    <div class="flex flex-col items-center">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                            <i class="fas fa-user-slash text-gray-600 text-2xl"></i>
+                        </div>
+                        <span class="font-bold text-gray-600">Absent</span>
+                    </div>
+                    {% else %}
+                    <div class="flex flex-col items-center">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                            <i class="fas fa-question text-gray-600 text-2xl"></i>
+                        </div>
+                        <span class="font-bold text-gray-600">{{ result.get_result_display }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Assessor -->
+            <div class="text-center p-6 bg-gray-50 rounded-xl">
+                <p class="text-xs font-medium text-gray-500 uppercase mb-2">Assessed By</p>
+                <p class="font-medium text-gray-900">{{ result.assessor.get_full_name|default:"Not specified" }}</p>
+                <p class="text-sm text-gray-500 mt-1">{{ result.assessment_date|date:"d M Y" }}</p>
+            </div>
+        </div>
+
+        {% if result.assessor_comments %}
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+            <h4 class="text-sm font-medium text-amber-800 mb-2">
+                <i class="fas fa-comment mr-2"></i>Assessor Comments
+            </h4>
+            <p class="text-amber-900">{{ result.assessor_comments }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Moderation Form -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="font-semibold text-gray-900 mb-6">
+            <i class="fas fa-gavel text-purple-600 mr-2"></i>Moderation Decision
+        </h3>
+        
+        <form id="moderationForm" method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Moderation Decision -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-3">
+                    Do you agree with this result?
+                </label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label class="decision-option">
+                        <input type="radio" name="decision" value="AGREE" class="sr-only peer" required>
+                        <div class="p-4 border-2 border-gray-200 rounded-xl cursor-pointer transition
+                                    peer-checked:border-green-500 peer-checked:bg-green-50
+                                    hover:border-green-300">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                                    <i class="fas fa-thumbs-up text-green-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-900 block">Agree & Approve</span>
+                                    <span class="text-sm text-gray-500">Result is correct, finalize it</span>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                    
+                    <label class="decision-option">
+                        <input type="radio" name="decision" value="DISAGREE" class="sr-only peer">
+                        <div class="p-4 border-2 border-gray-200 rounded-xl cursor-pointer transition
+                                    peer-checked:border-red-500 peer-checked:bg-red-50
+                                    hover:border-red-300">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                                    <i class="fas fa-thumbs-down text-red-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-900 block">Disagree & Return</span>
+                                    <span class="text-sm text-gray-500">Send back for re-assessment</span>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Adjusted Score (if disagreeing) -->
+            <div id="adjustedScoreSection" class="hidden">
+                <label for="adjusted_score" class="block text-sm font-medium text-gray-700 mb-2">
+                    Adjusted Score (Optional)
+                </label>
+                <div class="flex items-center gap-4">
+                    <div class="relative flex-1">
+                        <input type="number" 
+                               id="adjusted_score" 
+                               name="adjusted_score"
+                               min="0" 
+                               max="100" 
+                               step="0.1"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                               placeholder="Enter adjusted score">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="adjusted_result" value="C" class="form-radio text-green-600">
+                            <span class="ml-2 text-sm">Competent</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="adjusted_result" value="NYC" class="form-radio text-red-600">
+                            <span class="ml-2 text-sm">NYC</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Moderator Comments -->
+            <div>
+                <label for="moderator_comments" class="block text-sm font-medium text-gray-700 mb-2">
+                    Moderator Comments <span class="text-red-500">*</span>
+                </label>
+                <textarea id="moderator_comments" 
+                          name="moderator_comments" 
+                          rows="3"
+                          required
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          placeholder="Provide your moderation comments..."></textarea>
+                <p class="mt-1 text-sm text-gray-500">Comments are required for moderation records</p>
+            </div>
+
+            <!-- Submit -->
+            <div class="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-200">
+                <a href="{% url 'portals:facilitator_pending_assessments' %}?status=PENDING_MOD" 
+                   class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition text-center">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to List
+                </a>
+                <button type="submit" 
+                        class="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition">
+                    <i class="fas fa-gavel mr-2"></i>Submit Moderation
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const decisionInputs = document.querySelectorAll('input[name="decision"]');
+    const adjustedSection = document.getElementById('adjustedScoreSection');
+    
+    decisionInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            if (this.value === 'DISAGREE') {
+                adjustedSection.classList.remove('hidden');
+            } else {
+                adjustedSection.classList.add('hidden');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

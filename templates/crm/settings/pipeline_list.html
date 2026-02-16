@@ -1,0 +1,351 @@
+{% extends 'crm/crm_base.html' %}
+{% load static humanize %}
+
+{% block title %}Pipeline Settings - CRM - SkillsFlow{% endblock %}
+
+{% block page_title %}Pipeline Settings{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:dashboard' %}" class="text-gray-500 hover:text-gray-700">CRM</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Pipeline Settings</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<button type="button" onclick="openCreateModal()" 
+        class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+    </svg>
+    Create Pipeline
+</button>
+{% endblock %}
+
+{% block crm_content %}
+<div class="space-y-6">
+    
+    <!-- Info Banner -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex">
+            <svg class="w-5 h-5 text-blue-600 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <h3 class="text-sm font-medium text-blue-800">Pipeline Configuration</h3>
+                <p class="mt-1 text-sm text-blue-700">
+                    Configure your sales pipelines here. Each pipeline can have its own stages, communication templates, 
+                    and automation rules. Click on a pipeline to edit its stages and blueprints.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pipeline Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for pipeline in pipelines %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow overflow-hidden">
+            <!-- Pipeline Header -->
+            <div class="p-5 border-b border-gray-100" style="border-left: 4px solid {{ pipeline.color }};">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-lg font-semibold text-gray-900 truncate">{{ pipeline.name }}</h3>
+                        <p class="text-sm text-gray-500">{{ pipeline.get_learner_type_display }}</p>
+                        {% if pipeline.campus %}
+                        <p class="text-xs text-gray-400 mt-1">{{ pipeline.campus.name }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center space-x-1 ml-2">
+                        {% if pipeline.is_default %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                            Default
+                        </span>
+                        {% endif %}
+                        {% if not pipeline.is_active %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                            Inactive
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if pipeline.description %}
+                <p class="mt-2 text-sm text-gray-600 line-clamp-2">{{ pipeline.description }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Pipeline Stats -->
+            <div class="px-5 py-3 bg-gray-50 grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <p class="text-lg font-semibold text-gray-900">{{ pipeline.stages_total }}</p>
+                    <p class="text-xs text-gray-500">Stages</p>
+                </div>
+                <div>
+                    <p class="text-lg font-semibold text-gray-900">{{ pipeline.leads_total|default:0 }}</p>
+                    <p class="text-xs text-gray-500">Leads</p>
+                </div>
+                <div>
+                    <p class="text-lg font-semibold text-gray-900">{{ pipeline.default_communication_frequency_days }}d</p>
+                    <p class="text-xs text-gray-500">Frequency</p>
+                </div>
+            </div>
+            
+            <!-- Stages Preview -->
+            <div class="px-5 py-3 border-t border-gray-100">
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Stages</p>
+                <div class="flex flex-wrap gap-1">
+                    {% for stage in pipeline.stages.all|slice:":6" %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" 
+                          style="background-color: {{ stage.color }}20; color: {{ stage.color }};">
+                        {{ stage.name }}
+                    </span>
+                    {% endfor %}
+                    {% if pipeline.stages.count > 6 %}
+                    <span class="text-xs text-gray-400">+{{ pipeline.stages.count|add:"-6" }} more</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="px-5 py-3 border-t border-gray-100 flex justify-between items-center">
+                <a href="{% url 'crm:pipeline_detail_settings' pipeline.pk %}" 
+                   class="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-700">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Configure
+                </a>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="duplicatePipeline({{ pipeline.pk }}, '{{ pipeline.name }}')"
+                            class="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100" title="Duplicate">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                    </button>
+                    {% if pipeline.leads_count == 0 %}
+                    <button type="button" onclick="deletePipeline({{ pipeline.pk }}, '{{ pipeline.name }}')"
+                            class="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50" title="Delete">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full">
+            <div class="text-center py-12 bg-white rounded-xl border border-gray-200">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No pipelines configured</h3>
+                <p class="mt-1 text-sm text-gray-500">Get started by creating your first sales pipeline.</p>
+                <div class="mt-6">
+                    <button type="button" onclick="openCreateModal()"
+                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Create Pipeline
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Create Pipeline Modal -->
+<div id="create-pipeline-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">Create New Pipeline</h3>
+                <button type="button" onclick="closeCreateModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <form id="create-pipeline-form" class="p-6 space-y-4">
+            <!-- Campus -->
+            <div>
+                <label for="pipeline-campus" class="block text-sm font-medium text-gray-700 mb-1">Campus *</label>
+                <select id="pipeline-campus" name="campus_id" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">Select Campus</option>
+                    {% for campus in campuses %}
+                    <option value="{{ campus.pk }}">{{ campus.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Name -->
+            <div>
+                <label for="pipeline-name" class="block text-sm font-medium text-gray-700 mb-1">Pipeline Name *</label>
+                <input type="text" id="pipeline-name" name="name" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                       placeholder="e.g., School Leaver 2026">
+            </div>
+            
+            <!-- Learner Type -->
+            <div>
+                <label for="pipeline-type" class="block text-sm font-medium text-gray-700 mb-1">Learner Type *</label>
+                <select id="pipeline-type" name="learner_type" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">Select Type</option>
+                    {% for value, label in learner_types %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Description -->
+            <div>
+                <label for="pipeline-description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea id="pipeline-description" name="description" rows="2"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                          placeholder="Brief description of this pipeline..."></textarea>
+            </div>
+            
+            <!-- Color & Frequency -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="pipeline-color" class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                    <input type="color" id="pipeline-color" name="color" value="#3B82F6"
+                           class="w-full h-10 px-1 py-1 border border-gray-300 rounded-lg cursor-pointer">
+                </div>
+                <div>
+                    <label for="pipeline-frequency" class="block text-sm font-medium text-gray-700 mb-1">Comm. Frequency</label>
+                    <select id="pipeline-frequency" name="default_communication_frequency_days"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                        {% for days, label in frequency_choices %}
+                        <option value="{{ days }}" {% if days == 14 %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+                <strong>Note:</strong> Default stages will be created automatically. You can customize them after creation.
+            </div>
+        </form>
+        <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+            <button type="button" onclick="closeCreateModal()"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                Cancel
+            </button>
+            <button type="button" onclick="createPipeline()"
+                    class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700">
+                Create Pipeline
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openCreateModal() {
+    document.getElementById('create-pipeline-modal').classList.remove('hidden');
+}
+
+function closeCreateModal() {
+    document.getElementById('create-pipeline-modal').classList.add('hidden');
+    document.getElementById('create-pipeline-form').reset();
+}
+
+async function createPipeline() {
+    const form = document.getElementById('create-pipeline-form');
+    const formData = new FormData(form);
+    
+    const data = {
+        campus_id: formData.get('campus_id'),
+        name: formData.get('name'),
+        learner_type: formData.get('learner_type'),
+        description: formData.get('description'),
+        color: formData.get('color'),
+        default_communication_frequency_days: formData.get('default_communication_frequency_days')
+    };
+    
+    if (!data.campus_id || !data.name || !data.learner_type) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+    
+    try {
+        const response = await fetch('{% url "crm:pipeline_create" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            window.location.href = '{% url "crm:pipeline_detail_settings" 0 %}'.replace('0', result.pipeline_id);
+        } else {
+            alert(result.error || 'Failed to create pipeline.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    }
+}
+
+async function deletePipeline(id, name) {
+    if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`{% url "crm:pipeline_delete" 0 %}`.replace('0', id), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            window.location.reload();
+        } else {
+            alert(result.error || 'Failed to delete pipeline.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    }
+}
+
+function duplicatePipeline(id, name) {
+    alert('Duplicate functionality coming soon! For now, create a new pipeline and configure stages manually.');
+}
+
+// Close modal on outside click
+document.getElementById('create-pipeline-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCreateModal();
+    }
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeCreateModal();
+    }
+});
+</script>
+{% endblock %}

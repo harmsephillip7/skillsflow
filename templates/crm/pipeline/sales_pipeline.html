@@ -1,0 +1,1677 @@
+{% extends 'crm/crm_base.html' %}
+{% load static humanize %}
+
+{% block title %}Sales Pipeline - CRM - SkillsFlow{% endblock %}
+
+{% block page_title %}Sales Pipeline{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:dashboard' %}" class="text-gray-500 hover:text-gray-700">CRM</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Sales Pipeline</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <!-- Notification Bell -->
+    <button type="button" onclick="toggleNotifications()" class="relative p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100" id="notification-bell">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+        {% if unread_notifications > 0 %}
+        <span class="absolute top-0 right-0 block h-4 w-4 rounded-full bg-red-500 text-xs text-white font-semibold flex items-center justify-center" id="notification-count">
+            {{ unread_notifications }}
+        </span>
+        {% endif %}
+    </button>
+    
+    <!-- Campus Selector (for cross-campus sales) -->
+    {% if show_campus_selector %}
+    <select onchange="updateFilters()" id="campus-select"
+            class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+        <option value="">All Campuses</option>
+        {% for campus in all_campuses %}
+        <option value="{{ campus.pk }}" {% if campus == selected_campus %}selected{% endif %}>
+            {{ campus.name }}{% if campus == user_campus %} (Your Campus){% endif %}
+        </option>
+        {% endfor %}
+    </select>
+    {% endif %}
+    
+    <!-- Pipeline Selector -->
+    {% if all_pipelines|length > 1 %}
+    <select onchange="updateFilters()" id="pipeline-select"
+            class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+        {% for pipeline in all_pipelines %}
+        <option value="{{ pipeline.pk }}" {% if pipeline == current_pipeline %}selected{% endif %}>
+            {{ pipeline.name }}
+        </option>
+        {% endfor %}
+    </select>
+    {% endif %}
+    
+    <!-- My/All Toggle -->
+    <div class="flex rounded-lg border border-gray-300 overflow-hidden">
+        <button type="button" onclick="setShowAll(false)" id="my-leads-btn"
+           class="px-4 py-2 text-sm font-medium {% if not show_all %}bg-primary-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+            My Leads
+        </button>
+        <button type="button" onclick="setShowAll(true)" id="all-leads-btn"
+           class="px-4 py-2 text-sm font-medium {% if show_all %}bg-primary-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+            All Leads
+        </button>
+    </div>
+    
+    <a href="{% url 'crm:lead_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        Add Lead
+    </a>
+</div>
+
+<script>
+let showAll = {{ show_all|yesno:"true,false" }};
+
+function updateFilters() {
+    const campusSelect = document.getElementById('campus-select');
+    const pipelineSelect = document.getElementById('pipeline-select');
+    
+    let url = '?';
+    if (campusSelect && campusSelect.value) {
+        url += 'campus=' + campusSelect.value + '&';
+    }
+    if (pipelineSelect && pipelineSelect.value) {
+        url += 'pipeline=' + pipelineSelect.value + '&';
+    }
+    if (showAll) {
+        url += 'show_all=1';
+    }
+    window.location.href = url.replace(/&$/, '');
+}
+
+function setShowAll(value) {
+    showAll = value;
+    updateFilters();
+}
+</script>
+{% endblock %}
+
+{% block crm_content %}
+{% if not current_pipeline %}
+<div class="text-center py-12">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <h3 class="mt-2 text-sm font-medium text-gray-900">No pipelines configured</h3>
+    <p class="mt-1 text-sm text-gray-500">Get started by creating a pipeline for your sales process.</p>
+</div>
+{% else %}
+
+<div class="space-y-6">
+    
+    <!-- Attention Needed Section -->
+    {% if dashboard.attention_needed %}
+    <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200 p-4">
+        <h3 class="text-sm font-semibold text-yellow-800 mb-3 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            Needs Attention
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            {% if dashboard.attention_needed.overdue_leads %}
+            <a href="{% url 'crm:lead_list' %}?filter=follow_up_overdue" class="bg-white rounded-lg p-3 border border-yellow-200 hover:border-yellow-400 transition-colors">
+                <div class="text-2xl font-bold text-red-600">{{ dashboard.attention_needed.overdue_leads|length }}</div>
+                <div class="text-sm text-gray-600">Overdue follow-ups</div>
+            </a>
+            {% endif %}
+            {% if dashboard.attention_needed.hot_leads %}
+            <div class="bg-white rounded-lg p-3 border border-yellow-200">
+                <div class="text-2xl font-bold text-orange-600">{{ dashboard.attention_needed.hot_leads|length }}</div>
+                <div class="text-sm text-gray-600">Hot leads (high engagement)</div>
+            </div>
+            {% endif %}
+            {% if dashboard.attention_needed.stale_leads %}
+            <div class="bg-white rounded-lg p-3 border border-yellow-200">
+                <div class="text-2xl font-bold text-gray-600">{{ dashboard.attention_needed.stale_leads|length }}</div>
+                <div class="text-sm text-gray-600">Stale leads (no activity)</div>
+            </div>
+            {% endif %}
+            {% if dashboard.recent_engagements %}
+            <div class="bg-white rounded-lg p-3 border border-green-200">
+                <div class="text-2xl font-bold text-green-600">{{ dashboard.recent_engagements|length }}</div>
+                <div class="text-sm text-gray-600">Recent engagements</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-sm font-medium text-gray-500">Total in Pipeline</div>
+            <div class="mt-1 text-2xl font-bold text-gray-900">{{ dashboard.pipeline_stats.total_leads|default:0 }}</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-sm font-medium text-gray-500">This Week</div>
+            <div class="mt-1 text-2xl font-bold text-primary-600">{{ dashboard.pipeline_stats.this_week|default:0 }}</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-sm font-medium text-gray-500">Hot Leads</div>
+            <div class="mt-1 text-2xl font-bold text-orange-600">{{ dashboard.pipeline_stats.hot_leads|default:0 }}</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-sm font-medium text-gray-500">Follow-ups Today</div>
+            <div class="mt-1 text-2xl font-bold text-blue-600">{{ dashboard.today_follow_ups|length }}</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-sm font-medium text-gray-500">Conversion Rate</div>
+            <div class="mt-1 text-2xl font-bold text-green-600">{{ dashboard.pipeline_stats.conversion_rate|floatformat:1|default:"--" }}%</div>
+        </div>
+    </div>
+    
+    <!-- Kanban Board -->
+    <div class="flex space-x-4 overflow-x-auto pb-4" id="kanban-board">
+        {% for stage_data in stages %}
+        <div class="flex-shrink-0 w-80" data-stage-id="{{ stage_data.stage.pk }}">
+            <!-- Column Header -->
+            <div class="flex items-center justify-between mb-3 px-1">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 rounded-full mr-2" style="background-color: {{ stage_data.stage.color|default:'#6B7280' }}"></div>
+                    <span class="font-semibold text-gray-900">{{ stage_data.stage.name }}</span>
+                    <span class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                        {{ stage_data.total_count }}
+                    </span>
+                </div>
+                {% if stage_data.win_probability %}
+                <span class="text-xs text-gray-500">{{ stage_data.win_probability }}%</span>
+                {% endif %}
+            </div>
+            
+            <!-- Cards Container -->
+            <div class="space-y-3 min-h-[200px] bg-gray-50 rounded-lg p-2" 
+                 id="stage-{{ stage_data.stage.pk }}"
+                 ondrop="dropCard(event)" 
+                 ondragover="allowDrop(event)">
+                
+                {% for lead in stage_data.leads %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-3 cursor-grab active:cursor-grabbing lead-card"
+                     draggable="true"
+                     ondragstart="dragStart(event)"
+                     data-lead-id="{{ lead.pk }}"
+                     data-has-qualification="{{ lead.qualification_interest|yesno:'true,false' }}">
+                    
+                    <div class="flex items-start justify-between">
+                        <a href="{% url 'crm:lead_detail' lead.pk %}" class="text-sm font-medium text-gray-900 hover:text-primary-600">
+                            {{ lead.get_full_name }}
+                        </a>
+                        <div class="flex items-center space-x-1">
+                            {% if lead.has_pre_approval %}
+                            {% if lead.pre_approval_status == 'SENT' %}
+                            <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-700" title="Pre-approval sent: {{ lead.pre_approval_number }}">📨</span>
+                            {% elif lead.pre_approval_status == 'VIEWED' %}
+                            <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-purple-100 text-purple-700" title="Pre-approval viewed: {{ lead.pre_approval_number }}">👀</span>
+                            {% elif lead.pre_approval_status == 'ACCEPTED' %}
+                            <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-green-100 text-green-700" title="Pre-approval accepted: {{ lead.pre_approval_number }}">✅</span>
+                            {% endif %}
+                            {% endif %}
+                            {% if lead.qualification_interest %}
+                            <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-green-100 text-green-700" title="Ready for quote">💰</span>
+                            {% else %}
+                            <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-orange-100 text-orange-700" title="No qualification set">⚠️</span>
+                            {% endif %}
+                            {% if lead.engagement_score >= 50 %}
+                            <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-red-100 text-red-800" title="High engagement">
+                                🔥
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if lead.qualification_interest %}
+                    <p class="mt-1 text-xs text-gray-500 truncate">
+                        {{ lead.qualification_interest.short_title }}
+                    </p>
+                    {% else %}
+                    <p class="mt-1 text-xs text-orange-500 truncate">
+                        No qualification selected
+                    </p>
+                    {% endif %}
+                    
+                    <div class="mt-2 flex items-center justify-between">
+                        <div class="flex items-center space-x-2 text-xs text-gray-400">
+                            {% if lead.phone %}
+                            <span title="Phone">📱</span>
+                            {% endif %}
+                            {% if lead.email %}
+                            <span title="Email">✉️</span>
+                            {% endif %}
+                            {% if lead.whatsapp_number %}
+                            <span title="WhatsApp" class="text-green-500">💬</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="flex items-center space-x-1">
+                            <button type="button" onclick="openQuickAction('{{ lead.pk }}', 'call')" 
+                                    class="p-1 text-gray-400 hover:text-green-600 rounded" title="Log call">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                                </svg>
+                            </button>
+                            <button type="button" onclick="openDocumentRequestModal('{{ lead.pk }}', '{{ lead.get_full_name }}')" 
+                                    class="p-1 text-gray-400 hover:text-blue-600 rounded" title="Request Documents">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Primary Action: Quick Quote Button -->
+                    <button type="button" onclick="openQuoteModal('{{ lead.pk }}')" 
+                            class="mt-2 w-full py-2 px-3 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors flex items-center justify-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        💰 Quick Quote
+                    </button>
+                    
+                    <!-- Quick Stage Actions -->
+                    <div class="mt-2 pt-2 border-t border-gray-100 space-y-2">
+                        {% if stage_data.stage.code == 'NEW' %}
+                        <button type="button" onclick="moveToNextStage('{{ lead.pk }}', 'CONTACTED')" 
+                                class="w-full py-1.5 px-2 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors">
+                            ✓ Mark Contacted
+                        </button>
+                        {% elif stage_data.stage.code == 'CONTACTED' %}
+                        <button type="button" onclick="moveToNextStage('{{ lead.pk }}', 'INTERESTED')" 
+                                class="w-full py-1.5 px-2 text-xs font-medium text-purple-700 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors">
+                            ✓ Mark Interested
+                        </button>
+                        {% elif stage_data.stage.code == 'INTERESTED' %}
+                        <button type="button" onclick="openPreApprovalModal('{{ lead.pk }}', '{{ lead.get_full_name }}'{% if lead.qualification_interest %}, '{{ lead.qualification_interest.name }}'{% endif %})" 
+                                class="w-full py-1.5 px-2 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 transition-colors">
+                            ✅ Pre-Approve & Send Letter
+                        </button>
+                        {% elif stage_data.stage.code == 'PRE_APPROVED' %}
+                        <button type="button" onclick="moveToNextStage('{{ lead.pk }}', 'APPLICATION')" 
+                                class="w-full py-1.5 px-2 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors">
+                            📋 Start Application
+                        </button>
+                        {% elif stage_data.stage.code == 'APPLICATION' %}
+                        <div class="flex space-x-2">
+                            <button type="button" onclick="moveToNextStage('{{ lead.pk }}', 'ENROLLED')" 
+                                    class="flex-1 py-1.5 px-2 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 transition-colors">
+                                🎓 Enrolled
+                            </button>
+                            <button type="button" onclick="markAsLost('{{ lead.pk }}')" 
+                                    class="flex-1 py-1.5 px-2 text-xs font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 transition-colors">
+                                ✗ Lost
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if lead.stage_entered_at %}
+                    <div class="mt-2 text-xs text-gray-400">
+                        In stage for {{ lead.stage_entered_at|timesince }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-sm text-gray-400">
+                    No leads in this stage
+                </div>
+                {% endfor %}
+                
+                {% if stage_data.total_count > 20 %}
+                <div class="text-center py-2">
+                    <a href="{% url 'crm:lead_list' %}?stage={{ stage_data.stage.pk }}" class="text-xs text-primary-600 hover:text-primary-700">
+                        View all {{ stage_data.total_count }} leads →
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="w-full text-center py-12 text-gray-500">
+            <p>No stages defined for this pipeline.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Notification Panel (Hidden by default) -->
+<div id="notification-panel" class="hidden fixed right-4 top-20 w-96 bg-white rounded-xl shadow-xl border border-gray-200 z-50 max-h-[80vh] overflow-hidden">
+    <div class="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+        <h3 class="font-semibold text-gray-900">Notifications</h3>
+        <a href="{% url 'crm:notifications' %}" class="text-xs text-primary-600 hover:text-primary-700">View all</a>
+    </div>
+    <div id="notification-list" class="overflow-y-auto max-h-[60vh]">
+        <div class="p-4 text-center text-gray-500 text-sm">Loading...</div>
+    </div>
+</div>
+
+<!-- Quick Action Modal -->
+<div id="quick-action-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeQuickAction()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 id="quick-action-title" class="text-lg font-semibold text-gray-900 mb-4">Log Call</h3>
+            <form id="quick-action-form" onsubmit="submitQuickAction(event)">
+                <input type="hidden" id="qa-lead-id" name="lead_id">
+                <input type="hidden" id="qa-action" name="action" value="log_call">
+                
+                <div id="qa-call-fields">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Call Outcome</label>
+                        <select name="outcome" class="w-full rounded-lg border-gray-300">
+                            <option value="ANSWERED">Answered</option>
+                            <option value="NO_ANSWER">No Answer</option>
+                            <option value="VOICEMAIL">Voicemail</option>
+                            <option value="BUSY">Busy</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea name="notes" rows="3" class="w-full rounded-lg border-gray-300" placeholder="Call notes..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeQuickAction()" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Pre-Approval Modal -->
+<div id="pre-approval-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closePreApprovalModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="text-left">
+                    <h3 class="text-lg font-semibold text-gray-900">Pre-Approve Lead</h3>
+                    <p class="text-sm text-gray-500" id="pre-approval-lead-name">Lead Name</p>
+                </div>
+            </div>
+            
+            <form id="pre-approval-form" onsubmit="submitPreApproval(event)">
+                <input type="hidden" id="pa-lead-id" name="lead_id">
+                
+                <div class="bg-blue-50 rounded-lg p-3 mb-4 text-left">
+                    <p class="text-sm text-blue-800 font-medium">Qualification Interest:</p>
+                    <p class="text-sm text-blue-700" id="pre-approval-qualification">Not selected</p>
+                </div>
+                
+                <div class="space-y-4 text-left">
+                    <div>
+                        <label class="flex items-start space-x-3 cursor-pointer">
+                            <input type="checkbox" name="entry_requirements_confirmed" required
+                                   class="mt-1 rounded border-gray-300 text-green-600 focus:ring-green-500">
+                            <div>
+                                <span class="text-sm font-medium text-gray-900">Entry requirements can be met</span>
+                                <p class="text-xs text-gray-500">I confirm the prospective learner meets or can meet the entry requirements</p>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-start space-x-3 cursor-pointer">
+                            <input type="checkbox" name="verbal_commitment" required
+                                   class="mt-1 rounded border-gray-300 text-green-600 focus:ring-green-500">
+                            <div>
+                                <span class="text-sm font-medium text-gray-900">Verbal commitment received</span>
+                                <p class="text-xs text-gray-500">The lead has verbally expressed commitment to enroll</p>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                        <textarea name="notes" rows="2" class="w-full rounded-lg border-gray-300 text-sm" 
+                                  placeholder="Any relevant notes about the pre-approval..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="mt-6 bg-green-50 rounded-lg p-3 text-left">
+                    <p class="text-sm text-green-800">
+                        <strong>What happens next:</strong><br>
+                        • A Pre-Approval Letter will be generated<br>
+                        • The letter will be sent via the lead's preferred contact method<br>
+                        • The lead will be moved to the "Pre-Approved" stage
+                    </p>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closePreApprovalModal()" 
+                            class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
+                        ✅ Pre-Approve & Send Letter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Pre-Approval Success Modal (Next Step Choice) -->
+<div id="pre-approval-success-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-0 overflow-hidden">
+            
+            <!-- Success Header -->
+            <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-6 text-center">
+                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-white">🎉 Pre-Approval Sent!</h3>
+                <p class="text-green-100 mt-1" id="pa-success-message">Pre-approval letter sent successfully</p>
+            </div>
+            
+            <div class="p-6">
+                <!-- Letter Details -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">Letter Number:</span>
+                        <span class="font-mono font-semibold text-gray-900" id="pa-success-letter-number">--</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm mt-2">
+                        <span class="text-gray-500">Sent Via:</span>
+                        <span class="font-medium text-gray-900" id="pa-success-sent-via">--</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm mt-2" id="pa-success-minor-row" style="display: none;">
+                        <span class="text-gray-500">Minor (Under 18):</span>
+                        <span class="text-amber-600 font-medium">Parent notification sent</span>
+                    </div>
+                </div>
+                
+                <h4 class="font-semibold text-gray-900 mb-4 text-center">What would you like to do next?</h4>
+                
+                <!-- Options -->
+                <div class="space-y-3">
+                    <!-- Continue Nurture Option -->
+                    <button onclick="chooseNurtureOption()" 
+                            class="w-full flex items-start p-4 border-2 border-gray-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-colors text-left group">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-purple-200 transition-colors">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="font-semibold text-gray-900">Continue Nurturing</p>
+                            <p class="text-sm text-gray-500 mt-1">Keep lead warm with automated follow-ups. Best if learner needs more time to decide.</p>
+                        </div>
+                    </button>
+                    
+                    <!-- Start Application Option -->
+                    <button onclick="chooseApplicationOption()" 
+                            class="w-full flex items-start p-4 border-2 border-gray-200 rounded-xl hover:border-green-300 hover:bg-green-50 transition-colors text-left group">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-green-200 transition-colors">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="font-semibold text-gray-900">Guide to Application</p>
+                            <p class="text-sm text-gray-500 mt-1">Move to application stage. Best if learner is ready to enroll now.</p>
+                        </div>
+                    </button>
+                </div>
+                
+                <!-- Self-Service Note -->
+                <div class="mt-6 bg-blue-50 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-sm text-blue-700">
+                            <strong>Tip:</strong> The learner received a link to start their application online. 
+                            You'll be notified when they take action.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Portal Link -->
+                <div class="mt-4 text-center">
+                    <p class="text-xs text-gray-400">Portal link sent to learner:</p>
+                    <a id="pa-success-portal-link" href="#" target="_blank" class="text-xs text-purple-600 hover:underline break-all"></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lost Reason Modal -->
+<div id="lost-reason-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeLostReasonModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Mark Lead as Lost</h3>
+            <form id="lost-reason-form" onsubmit="submitLostReason(event)">
+                <input type="hidden" id="lost-lead-id" name="lead_id">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Lost Reason</label>
+                    <select name="lost_reason" required class="w-full rounded-lg border-gray-300">
+                        <option value="">Select a reason...</option>
+                        <option value="PRICE">Too Expensive</option>
+                        <option value="TIMING">Wrong Timing</option>
+                        <option value="COMPETITOR">Chose Competitor</option>
+                        <option value="UNQUALIFIED">Not Qualified</option>
+                        <option value="NO_RESPONSE">No Response</option>
+                        <option value="PERSONAL">Personal Reasons</option>
+                        <option value="LOCATION">Location Issue</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea name="notes" rows="2" class="w-full rounded-lg border-gray-300" 
+                              placeholder="Additional details..."></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeLostReasonModal()" 
+                            class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium">
+                        Mark as Lost
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Document Request Modal -->
+<div id="document-request-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeDocumentRequestModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                </div>
+                <div class="text-left">
+                    <h3 class="text-lg font-semibold text-gray-900">Request Documents</h3>
+                    <p class="text-sm text-gray-500" id="doc-request-lead-name">Lead Name</p>
+                </div>
+            </div>
+            
+            <form id="document-request-form" onsubmit="submitDocumentRequest(event)">
+                <input type="hidden" id="doc-request-lead-id" name="lead_id">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Documents Needed</label>
+                    <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                        <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" name="document_types" value="ID_COPY" 
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">ID Copy / Passport</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" name="document_types" value="MATRIC" 
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Matric Certificate</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" name="document_types" value="PROOF_ADDRESS" 
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Proof of Address</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" name="document_types" value="QUALIFICATION" 
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Prior Qualification</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" name="document_types" value="CV" 
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Curriculum Vitae</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" name="document_types" value="BANK_CONFIRM" 
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Bank Confirmation</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" name="document_types" value="PARENT_ID" 
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Parent/Guardian ID</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" name="document_types" value="PARENT_CONSENT" 
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Parent/Guardian Consent</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input type="checkbox" name="document_types" value="OTHER" 
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Other Document</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Send Via</label>
+                    <select name="send_via" class="w-full rounded-lg border-gray-300">
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="email">Email</option>
+                        <option value="both">Both (WhatsApp & Email)</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Custom Message (optional)</label>
+                    <textarea name="message" rows="2" class="w-full rounded-lg border-gray-300 text-sm" 
+                              placeholder="Add a personal note to the document request..."></textarea>
+                </div>
+                
+                <div class="bg-blue-50 rounded-lg p-3 mb-4 text-left">
+                    <p class="text-sm text-blue-800">
+                        <strong>What happens:</strong> A secure upload link (valid for 14 days) will be sent to the lead. 
+                        You'll be notified when documents are uploaded.
+                    </p>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeDocumentRequestModal()" 
+                            class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+                        Cancel
+                    </button>
+                    <button type="submit" id="doc-request-submit-btn"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
+                        📄 Send Document Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Quote Modal -->
+<div id="quote-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeQuoteModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-2xl w-full p-0 overflow-hidden">
+            
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="text-left">
+                            <h3 class="text-lg font-semibold text-white">Quick Quote</h3>
+                            <p class="text-sm text-amber-100" id="quote-modal-lead-name">Lead Name</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeQuoteModal()" class="text-white/80 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6">
+                <!-- Loading State -->
+                <div id="quote-modal-loading" class="text-center py-8">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-500 mx-auto"></div>
+                    <p class="mt-3 text-gray-500">Loading quote options...</p>
+                </div>
+                
+                <!-- Form Content (hidden until loaded) -->
+                <div id="quote-modal-content" class="hidden">
+                    <input type="hidden" id="quote-lead-id">
+                    
+                    <!-- Step 1: Qualification Selection -->
+                    <div id="quote-step-1">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold mr-2">1</span>
+                                Select Qualification
+                            </label>
+                            <select id="quote-qualification" onchange="updateQuotePricing()" 
+                                    class="w-full rounded-lg border-gray-300 focus:border-amber-500 focus:ring-amber-500">
+                                <option value="">-- Select a qualification --</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Pricing Warning -->
+                        <div id="quote-pricing-warning" class="hidden mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <div class="flex">
+                                <svg class="h-5 w-5 text-yellow-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                <p class="text-sm text-yellow-700" id="quote-pricing-warning-text"></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Pricing Breakdown -->
+                        <div id="quote-pricing-section" class="hidden mb-4 bg-gray-50 rounded-lg p-4">
+                            <h4 class="text-sm font-medium text-gray-700 mb-3">Fee Breakdown</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Registration Fee</span>
+                                    <span class="font-medium" id="quote-reg-fee">R 0.00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Tuition Fee</span>
+                                    <span class="font-medium" id="quote-tuition-fee">R 0.00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Materials Fee</span>
+                                    <span class="font-medium" id="quote-materials-fee">R 0.00</span>
+                                </div>
+                                <div class="flex justify-between pt-2 border-t border-gray-200">
+                                    <span class="text-gray-900 font-semibold">Total</span>
+                                    <span class="text-lg font-bold text-amber-600" id="quote-total">R 0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Payment Option -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold mr-2">2</span>
+                                Payment Option
+                            </label>
+                            <select id="quote-payment-option" class="w-full rounded-lg border-gray-300 focus:border-amber-500 focus:ring-amber-500">
+                                <option value="">-- Select payment option (optional) --</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Send Options -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold mr-2">3</span>
+                                Send Quote Via
+                            </label>
+                            <div class="flex flex-wrap gap-3">
+                                <label id="quote-whatsapp-option" class="flex items-center space-x-2 cursor-pointer bg-green-50 border border-green-200 rounded-lg px-4 py-2 hover:bg-green-100 transition-colors">
+                                    <input type="checkbox" id="quote-send-whatsapp" checked 
+                                           class="rounded border-green-300 text-green-600 focus:ring-green-500">
+                                    <span class="text-green-700">💬 WhatsApp</span>
+                                    <span id="quote-whatsapp-number" class="text-xs text-green-600"></span>
+                                </label>
+                                <label id="quote-email-option" class="flex items-center space-x-2 cursor-pointer bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 hover:bg-blue-100 transition-colors">
+                                    <input type="checkbox" id="quote-send-email" 
+                                           class="rounded border-blue-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="text-blue-700">✉️ Email</span>
+                                    <span id="quote-email-address" class="text-xs text-blue-600"></span>
+                                </label>
+                            </div>
+                            <p class="mt-2 text-xs text-gray-500">Select one or both channels to send the quote</p>
+                        </div>
+                        
+                        <!-- Notes -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                            <textarea id="quote-notes" rows="2" class="w-full rounded-lg border-gray-300 text-sm focus:border-amber-500 focus:ring-amber-500" 
+                                      placeholder="Any additional notes for this quote..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2: Preview/Confirmation (hidden initially) -->
+                    <div id="quote-step-2" class="hidden">
+                        <div class="text-center py-4">
+                            <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                            <h4 class="text-lg font-semibold text-gray-900" id="quote-success-title">Quote Created!</h4>
+                            <p class="text-sm text-gray-500 mt-1" id="quote-success-message"></p>
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-gray-600">Quote Number</span>
+                                <span class="font-mono font-semibold text-gray-900" id="quote-result-number"></span>
+                            </div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-gray-600">Total Amount</span>
+                                <span class="font-semibold text-amber-600" id="quote-result-amount"></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Valid Until</span>
+                                <span class="text-gray-900" id="quote-result-valid"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <a id="quote-preview-link" href="#" target="_blank" 
+                               class="flex-1 inline-flex items-center justify-center px-4 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                Preview Quote
+                            </a>
+                            <a id="quote-pdf-link" href="#" target="_blank"
+                               class="flex-1 inline-flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                Download PDF
+                            </a>
+                        </div>
+                        
+                        <div id="quote-send-results" class="mt-4 text-center text-sm text-green-600 hidden">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-200">
+                <button type="button" onclick="closeQuoteModal()" 
+                        class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+                    Close
+                </button>
+                <div id="quote-action-buttons">
+                    <button type="button" onclick="submitQuote()" id="quote-submit-btn"
+                            class="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-medium inline-flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                        Create & Send Quote
+                    </button>
+                </div>
+                <div id="quote-done-button" class="hidden">
+                    <button type="button" onclick="closeQuoteModalAndRefresh()" 
+                            class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let draggedCard = null;
+
+function dragStart(event) {
+    draggedCard = event.target.closest('.lead-card');
+    draggedCard.classList.add('opacity-50');
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', draggedCard.dataset.leadId);
+}
+
+function allowDrop(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    event.currentTarget.classList.add('bg-primary-50', 'border-primary-300');
+}
+
+function dropCard(event) {
+    event.preventDefault();
+    const container = event.currentTarget;
+    container.classList.remove('bg-primary-50', 'border-primary-300');
+    
+    if (!draggedCard) return;
+    
+    const leadId = draggedCard.dataset.leadId;
+    const newStageId = container.closest('[data-stage-id]').dataset.stageId;
+    
+    // Move the card visually
+    container.appendChild(draggedCard);
+    draggedCard.classList.remove('opacity-50');
+    
+    // Update server
+    fetch('{% url "crm:pipeline_move_stage" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            lead_id: leadId,
+            stage_id: newStageId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        location.reload();
+    });
+    
+    draggedCard = null;
+}
+
+// Notification panel
+function toggleNotifications() {
+    const panel = document.getElementById('notification-panel');
+    const isHidden = panel.classList.contains('hidden');
+    
+    if (isHidden) {
+        panel.classList.remove('hidden');
+        loadNotifications();
+    } else {
+        panel.classList.add('hidden');
+    }
+}
+
+function loadNotifications() {
+    fetch('{% url "crm:notifications_api" %}')
+    .then(response => response.json())
+    .then(data => {
+        const list = document.getElementById('notification-list');
+        
+        if (data.notifications.length === 0) {
+            list.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">No new notifications</div>';
+            return;
+        }
+        
+        list.innerHTML = data.notifications.map(n => `
+            <div class="p-3 border-b border-gray-100 hover:bg-gray-50">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full ${n.priority === 'high' ? 'bg-red-100' : 'bg-blue-100'} flex items-center justify-center">
+                        ${getNotificationIcon(n.type)}
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="text-sm font-medium text-gray-900">${n.title}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">${n.message}</p>
+                        <p class="text-xs text-gray-400 mt-1">${timeAgo(n.created_at)}</p>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    });
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        'quote_viewed': '👁️',
+        'email_open': '📧',
+        'form_submitted': '📝',
+        'call_back': '📞',
+        'default': '🔔'
+    };
+    return icons[type] || icons.default;
+}
+
+function timeAgo(dateStr) {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+}
+
+// Quick actions
+function openQuickAction(leadId, action) {
+    document.getElementById('qa-lead-id').value = leadId;
+    document.getElementById('qa-action').value = action;
+    document.getElementById('quick-action-modal').classList.remove('hidden');
+}
+
+function closeQuickAction() {
+    document.getElementById('quick-action-modal').classList.add('hidden');
+}
+
+function submitQuickAction(event) {
+    event.preventDefault();
+    const form = event.target;
+    const leadId = form.querySelector('#qa-lead-id').value;
+    const action = form.querySelector('#qa-action').value;
+    
+    const data = {
+        lead_id: leadId,
+        action: action,
+        notes: form.querySelector('[name="notes"]')?.value || '',
+        outcome: form.querySelector('[name="outcome"]')?.value || ''
+    };
+    
+    fetch('{% url "crm:lead_quick_actions" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            closeQuickAction();
+            // Show success toast
+            showToast(data.message, 'success');
+        }
+    });
+}
+
+// Quick stage transitions
+function moveToNextStage(leadId, stageCode) {
+    // Show loading state
+    showToast('Moving lead...', 'info');
+    
+    fetch('{% url "crm:pipeline_move_stage_by_code" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            lead_id: leadId,
+            stage_code: stageCode
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showToast(data.error, 'error');
+        } else {
+            showToast(data.message || 'Lead moved successfully!', 'success');
+            // Reload to show updated pipeline
+            setTimeout(() => location.reload(), 500);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Failed to move lead', 'error');
+    });
+}
+
+// Pre-approval modal
+function openPreApprovalModal(leadId, leadName, qualification) {
+    document.getElementById('pa-lead-id').value = leadId;
+    document.getElementById('pre-approval-lead-name').textContent = leadName;
+    document.getElementById('pre-approval-qualification').textContent = qualification || 'Not selected - please set qualification interest first';
+    document.getElementById('pre-approval-modal').classList.remove('hidden');
+}
+
+function closePreApprovalModal() {
+    document.getElementById('pre-approval-modal').classList.add('hidden');
+    document.getElementById('pre-approval-form').reset();
+}
+
+function submitPreApproval(event) {
+    event.preventDefault();
+    const form = event.target;
+    const leadId = form.querySelector('#pa-lead-id').value;
+    
+    const data = {
+        lead_id: leadId,
+        entry_requirements_confirmed: form.querySelector('[name="entry_requirements_confirmed"]').checked,
+        verbal_commitment: form.querySelector('[name="verbal_commitment"]').checked,
+        notes: form.querySelector('[name="notes"]').value
+    };
+    
+    showToast('Processing pre-approval...', 'info');
+    
+    fetch('{% url "crm:lead_pre_approve" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showToast(data.error, 'error');
+        } else {
+            closePreApprovalModal();
+            showPreApprovalSuccessModal(data);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Failed to process pre-approval', 'error');
+    });
+}
+
+// Pre-approval success modal
+let currentPreApprovalLeadId = null;
+
+function showPreApprovalSuccessModal(data) {
+    currentPreApprovalLeadId = data.lead?.id;
+    
+    // Populate success modal
+    document.getElementById('pa-success-message').textContent = data.message || 'Pre-approval letter sent!';
+    document.getElementById('pa-success-letter-number').textContent = data.letter_number || '--';
+    document.getElementById('pa-success-sent-via').textContent = (data.sent_via || 'Email').toUpperCase();
+    
+    // Show minor row if applicable
+    const minorRow = document.getElementById('pa-success-minor-row');
+    if (data.is_minor) {
+        minorRow.style.display = 'flex';
+    } else {
+        minorRow.style.display = 'none';
+    }
+    
+    // Set portal link
+    const portalLinkEl = document.getElementById('pa-success-portal-link');
+    if (data.portal_url) {
+        portalLinkEl.href = data.portal_url;
+        portalLinkEl.textContent = window.location.origin + data.portal_url;
+    }
+    
+    // Show modal
+    document.getElementById('pre-approval-success-modal').classList.remove('hidden');
+}
+
+function closePreApprovalSuccessModal() {
+    document.getElementById('pre-approval-success-modal').classList.add('hidden');
+    currentPreApprovalLeadId = null;
+}
+
+function chooseNurtureOption() {
+    // Enable nurture automation for the lead and close modal
+    showToast('Nurture sequence activated! Automated follow-ups will continue.', 'success');
+    closePreApprovalSuccessModal();
+    setTimeout(() => location.reload(), 500);
+}
+
+function chooseApplicationOption() {
+    // Move to application stage
+    if (!currentPreApprovalLeadId) {
+        showToast('Unable to move to application stage', 'error');
+        closePreApprovalSuccessModal();
+        return;
+    }
+    
+    showToast('Moving to application stage...', 'info');
+    
+    fetch('{% url "crm:pipeline_move_stage_by_code" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            lead_id: currentPreApprovalLeadId,
+            stage_code: 'APPLICATION',
+            notes: 'Moved to application after pre-approval'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showToast(data.error, 'error');
+        } else {
+            showToast('Moved to application stage!', 'success');
+            closePreApprovalSuccessModal();
+            setTimeout(() => location.reload(), 500);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Failed to move to application', 'error');
+    });
+}
+
+// Document request modal
+function openDocumentRequestModal(leadId, leadName) {
+    document.getElementById('doc-request-lead-id').value = leadId;
+    document.getElementById('doc-request-lead-name').textContent = leadName;
+    // Reset checkboxes
+    document.querySelectorAll('#document-request-form input[name="document_types"]').forEach(cb => cb.checked = false);
+    document.getElementById('document-request-modal').classList.remove('hidden');
+}
+
+function closeDocumentRequestModal() {
+    document.getElementById('document-request-modal').classList.add('hidden');
+    document.getElementById('document-request-form').reset();
+}
+
+function submitDocumentRequest(event) {
+    event.preventDefault();
+    const form = event.target;
+    const leadId = form.querySelector('#doc-request-lead-id').value;
+    
+    // Get selected document types
+    const documentTypes = Array.from(form.querySelectorAll('[name="document_types"]:checked'))
+        .map(cb => cb.value);
+    
+    if (documentTypes.length === 0) {
+        showToast('Please select at least one document type', 'error');
+        return;
+    }
+    
+    const data = {
+        lead_id: leadId,
+        document_types: documentTypes,
+        send_via: form.querySelector('[name="send_via"]').value,
+        message: form.querySelector('[name="message"]').value
+    };
+    
+    const submitBtn = document.getElementById('doc-request-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending...';
+    
+    fetch(`/crm/leads/${leadId}/send-document-link/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '📄 Send Document Request';
+        
+        if (data.error) {
+            showToast(data.error, 'error');
+        } else if (data.success) {
+            closeDocumentRequestModal();
+            showToast(data.message || 'Document request sent!', 'success');
+        } else {
+            showToast('Failed to send document request', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        submitBtn.disabled = false;
+        submitBtn.textContent = '📄 Send Document Request';
+        showToast('Failed to send document request', 'error');
+    });
+}
+
+// Lost reason modal
+function markAsLost(leadId) {
+    document.getElementById('lost-lead-id').value = leadId;
+    document.getElementById('lost-reason-modal').classList.remove('hidden');
+}
+
+function closeLostReasonModal() {
+    document.getElementById('lost-reason-modal').classList.add('hidden');
+    document.getElementById('lost-reason-form').reset();
+}
+
+function submitLostReason(event) {
+    event.preventDefault();
+    const form = event.target;
+    const leadId = form.querySelector('#lost-lead-id').value;
+    
+    const data = {
+        lead_id: leadId,
+        stage_code: 'LOST',
+        lost_reason: form.querySelector('[name="lost_reason"]').value,
+        notes: form.querySelector('[name="notes"]').value
+    };
+    
+    fetch('{% url "crm:pipeline_move_stage_by_code" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showToast(data.error, 'error');
+        } else {
+            closeLostReasonModal();
+            showToast('Lead marked as lost', 'success');
+            setTimeout(() => location.reload(), 500);
+        }
+    });
+}
+
+// Toast notification helper
+function showToast(message, type) {
+    // Remove existing toast
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast-notification fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 
+                       ${type === 'success' ? 'bg-green-600 text-white' : 
+                         type === 'error' ? 'bg-red-600 text-white' : 
+                         'bg-blue-600 text-white'}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// Close notification panel when clicking outside
+document.addEventListener('click', function(event) {
+    const panel = document.getElementById('notification-panel');
+    const bell = document.getElementById('notification-bell');
+    
+    if (!panel.classList.contains('hidden') && 
+        !panel.contains(event.target) && 
+        !bell.contains(event.target)) {
+        panel.classList.add('hidden');
+    }
+});
+
+// Remove drag styling when leaving containers
+document.querySelectorAll('[ondrop]').forEach(container => {
+    container.addEventListener('dragleave', function(e) {
+        this.classList.remove('bg-primary-50', 'border-primary-300');
+    });
+});
+
+// ============================================
+// Quick Quote Modal Functions
+// ============================================
+
+let quoteModalData = null;
+
+function openQuoteModal(leadId) {
+    const modal = document.getElementById('quote-modal');
+    const loading = document.getElementById('quote-modal-loading');
+    const content = document.getElementById('quote-modal-content');
+    const step1 = document.getElementById('quote-step-1');
+    const step2 = document.getElementById('quote-step-2');
+    const actionButtons = document.getElementById('quote-action-buttons');
+    const doneButton = document.getElementById('quote-done-button');
+    
+    // Reset modal state
+    loading.classList.remove('hidden');
+    content.classList.add('hidden');
+    step1.classList.remove('hidden');
+    step2.classList.add('hidden');
+    actionButtons.classList.remove('hidden');
+    doneButton.classList.add('hidden');
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Fetch quote data
+    fetch(`/crm/api/leads/${leadId}/quick-quote-data/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                quoteModalData = data;
+                populateQuoteModal(data);
+                loading.classList.add('hidden');
+                content.classList.remove('hidden');
+            } else {
+                showToast(data.error || 'Failed to load quote data', 'error');
+                closeQuoteModal();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Failed to load quote data', 'error');
+            closeQuoteModal();
+        });
+}
+
+function populateQuoteModal(data) {
+    // Set lead ID and name
+    document.getElementById('quote-lead-id').value = data.lead.id;
+    document.getElementById('quote-modal-lead-name').textContent = data.lead.full_name;
+    
+    // Populate qualification dropdown
+    const qualSelect = document.getElementById('quote-qualification');
+    qualSelect.innerHTML = '<option value="">-- Select a qualification --</option>';
+    data.qualifications.forEach(q => {
+        const option = document.createElement('option');
+        option.value = q.id;
+        option.textContent = q.short_title || q.title;
+        if (data.qualification && data.qualification.id === q.id) {
+            option.selected = true;
+        }
+        qualSelect.appendChild(option);
+    });
+    
+    // Populate payment options
+    const paymentSelect = document.getElementById('quote-payment-option');
+    paymentSelect.innerHTML = '<option value="">-- Select payment option (optional) --</option>';
+    data.payment_options.forEach(po => {
+        const option = document.createElement('option');
+        option.value = po.id;
+        option.textContent = po.name + (po.num_installments > 1 ? ` (${po.num_installments} installments)` : '');
+        paymentSelect.appendChild(option);
+    });
+    
+    // Set up send options
+    const whatsappOption = document.getElementById('quote-whatsapp-option');
+    const emailOption = document.getElementById('quote-email-option');
+    const whatsappCheck = document.getElementById('quote-send-whatsapp');
+    const emailCheck = document.getElementById('quote-send-email');
+    
+    if (data.lead.has_whatsapp) {
+        whatsappOption.classList.remove('opacity-50');
+        whatsappCheck.disabled = false;
+        whatsappCheck.checked = true;  // Default to WhatsApp
+        document.getElementById('quote-whatsapp-number').textContent = data.lead.whatsapp || data.lead.phone;
+    } else {
+        whatsappOption.classList.add('opacity-50');
+        whatsappCheck.disabled = true;
+        whatsappCheck.checked = false;
+    }
+    
+    if (data.lead.has_email) {
+        emailOption.classList.remove('opacity-50');
+        emailCheck.disabled = false;
+        document.getElementById('quote-email-address').textContent = data.lead.email;
+    } else {
+        emailOption.classList.add('opacity-50');
+        emailCheck.disabled = true;
+        emailCheck.checked = false;
+    }
+    
+    // If qualification is set, show pricing
+    if (data.qualification) {
+        updateQuotePricing();
+    }
+}
+
+function updateQuotePricing() {
+    const qualId = document.getElementById('quote-qualification').value;
+    const pricingSection = document.getElementById('quote-pricing-section');
+    const warningSection = document.getElementById('quote-pricing-warning');
+    
+    if (!qualId) {
+        pricingSection.classList.add('hidden');
+        warningSection.classList.add('hidden');
+        return;
+    }
+    
+    // Fetch pricing for selected qualification
+    const year = new Date().getFullYear();
+    fetch(`/crm/api/qualification-pricing/?qualification_id=${qualId}&enrollment_year=CURRENT`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const pricing = data.pricing;
+                document.getElementById('quote-reg-fee').textContent = formatCurrency(pricing.registration_fee);
+                document.getElementById('quote-tuition-fee').textContent = formatCurrency(pricing.tuition_fee);
+                document.getElementById('quote-materials-fee').textContent = formatCurrency(pricing.materials_fee);
+                document.getElementById('quote-total').textContent = formatCurrency(pricing.total_price);
+                
+                pricingSection.classList.remove('hidden');
+                
+                // Show warning if no pricing
+                if (pricing.source === 'default' || pricing.total_price === 0) {
+                    document.getElementById('quote-pricing-warning-text').textContent = 
+                        'No pricing configured for this qualification. Quote will be created with R0.00 - you can update it manually later.';
+                    warningSection.classList.remove('hidden');
+                } else {
+                    warningSection.classList.add('hidden');
+                }
+            }
+        });
+}
+
+function formatCurrency(amount) {
+    return 'R ' + parseFloat(amount).toLocaleString('en-ZA', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function submitQuote() {
+    const leadId = document.getElementById('quote-lead-id').value;
+    const qualificationId = document.getElementById('quote-qualification').value;
+    const paymentOptionId = document.getElementById('quote-payment-option').value;
+    const sendWhatsapp = document.getElementById('quote-send-whatsapp').checked;
+    const sendEmail = document.getElementById('quote-send-email').checked;
+    const notes = document.getElementById('quote-notes').value;
+    
+    if (!qualificationId) {
+        showToast('Please select a qualification', 'error');
+        return;
+    }
+    
+    if (!sendWhatsapp && !sendEmail) {
+        // Confirm if user wants to create without sending
+        if (!confirm('No send method selected. Create quote without sending?')) {
+            return;
+        }
+    }
+    
+    // Disable submit button
+    const submitBtn = document.getElementById('quote-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span> Creating...';
+    
+    fetch(`/crm/api/leads/${leadId}/quick-quote-create/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            qualification_id: qualificationId,
+            payment_option_id: paymentOptionId || null,
+            send_whatsapp: sendWhatsapp,
+            send_email: sendEmail,
+            notes: notes,
+            enrollment_year: 'CURRENT'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success step
+            showQuoteSuccess(data);
+        } else {
+            showToast(data.error || 'Failed to create quote', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Create & Send Quote';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Failed to create quote', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Create & Send Quote';
+    });
+}
+
+function showQuoteSuccess(data) {
+    const step1 = document.getElementById('quote-step-1');
+    const step2 = document.getElementById('quote-step-2');
+    const actionButtons = document.getElementById('quote-action-buttons');
+    const doneButton = document.getElementById('quote-done-button');
+    
+    // Hide step 1, show step 2
+    step1.classList.add('hidden');
+    step2.classList.remove('hidden');
+    actionButtons.classList.add('hidden');
+    doneButton.classList.remove('hidden');
+    
+    // Populate success data
+    document.getElementById('quote-success-title').textContent = 'Quote Created!';
+    document.getElementById('quote-success-message').textContent = data.message;
+    document.getElementById('quote-result-number').textContent = data.quote.quote_number;
+    document.getElementById('quote-result-amount').textContent = formatCurrency(data.quote.total_amount);
+    document.getElementById('quote-result-valid').textContent = data.quote.valid_until || 'N/A';
+    
+    // Set preview links
+    document.getElementById('quote-preview-link').href = data.quote.public_url;
+    document.getElementById('quote-pdf-link').href = data.quote.pdf_url;
+    
+    // Show send results
+    const sendResults = document.getElementById('quote-send-results');
+    if (data.send_results && data.send_results.length > 0) {
+        sendResults.innerHTML = '✓ Sent via: ' + data.send_results.join(', ');
+        sendResults.classList.remove('hidden');
+    } else {
+        sendResults.classList.add('hidden');
+    }
+    
+    showToast(data.message, 'success');
+}
+
+function closeQuoteModal() {
+    document.getElementById('quote-modal').classList.add('hidden');
+    quoteModalData = null;
+    
+    // Reset form
+    document.getElementById('quote-qualification').value = '';
+    document.getElementById('quote-payment-option').value = '';
+    document.getElementById('quote-notes').value = '';
+    document.getElementById('quote-pricing-section').classList.add('hidden');
+    document.getElementById('quote-pricing-warning').classList.add('hidden');
+    
+    // Reset submit button
+    const submitBtn = document.getElementById('quote-submit-btn');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Create & Send Quote';
+}
+
+function closeQuoteModalAndRefresh() {
+    closeQuoteModal();
+    location.reload();
+}
+</script>
+{% endblock %}

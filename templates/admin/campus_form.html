@@ -1,0 +1,305 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+{% load admin_tags %}
+
+{% block page_title %}{{ action }} Campus{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="flex items-center text-sm text-gray-500 mb-2">
+                <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <a href="{% url 'admin:campus_list' %}" class="hover:text-primary-600">Campuses</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="text-gray-700">{{ action }}</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">{{ action }} Campus</h1>
+        </div>
+    </div>
+    
+    <!-- Form -->
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Basic Information</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Brand -->
+                    <div>
+                        <label for="id_brand" class="block text-sm font-medium text-gray-700 mb-1">
+                            Brand <span class="text-red-500">*</span>
+                        </label>
+                        <select name="brand" id="id_brand" required
+                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Select Brand</option>
+                            {% for brand in brands %}
+                            <option value="{{ brand.id }}" {% if form.brand.value == brand.id or object.brand_id == brand.id %}selected{% endif %}>
+                                {{ brand.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.brand.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.brand.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Code -->
+                    <div>
+                        <label for="id_code" class="block text-sm font-medium text-gray-700 mb-1">
+                            Campus Code <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="code" id="id_code" required maxlength="20"
+                               value="{{ form.code.value|default:object.code|default:'' }}"
+                               placeholder="e.g., JHB-MAIN"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                        <p class="mt-1 text-xs text-gray-500">Unique identifier for this campus</p>
+                        {% if form.code.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.code.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Name -->
+                    <div>
+                        <label for="id_name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Campus Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="name" id="id_name" required maxlength="100"
+                               value="{{ form.name.value|default:object.name|default:'' }}"
+                               placeholder="e.g., Johannesburg Main Campus"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                        {% if form.name.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Campus Type -->
+                    <div>
+                        <label for="id_campus_type" class="block text-sm font-medium text-gray-700 mb-1">
+                            Campus Type <span class="text-red-500">*</span>
+                        </label>
+                        <select name="campus_type" id="id_campus_type" required
+                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            {% for value, display in campus_types %}
+                            <option value="{{ value }}" {% if form.campus_type.value == value or object.campus_type == value %}selected{% endif %}>
+                                {{ display }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.campus_type.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.campus_type.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Region -->
+                    <div>
+                        <label for="id_region" class="block text-sm font-medium text-gray-700 mb-1">
+                            Region
+                        </label>
+                        <input type="text" name="region" id="id_region" maxlength="50"
+                               value="{{ form.region.value|default:object.region|default:'' }}"
+                               placeholder="e.g., Gauteng, Western Cape"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                        <p class="mt-1 text-xs text-gray-500">For regional grouping and filtering</p>
+                    </div>
+                    
+                    <!-- Is Active -->
+                    <div class="flex items-center">
+                        <input type="checkbox" name="is_active" id="id_is_active" value="true"
+                               {% if form.is_active.value or object.is_active or action == 'Create' %}checked{% endif %}
+                               class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                        <label for="id_is_active" class="ml-2 block text-sm text-gray-700">
+                            Active Campus
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Address Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Address</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Address Line 1 -->
+                    <div class="md:col-span-2">
+                        <label for="id_address_line1" class="block text-sm font-medium text-gray-700 mb-1">
+                            Address Line 1
+                        </label>
+                        <input type="text" name="address_line1" id="id_address_line1" maxlength="200"
+                               value="{{ form.address_line1.value|default:object.address_line1|default:'' }}"
+                               placeholder="Street address"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    
+                    <!-- Address Line 2 -->
+                    <div class="md:col-span-2">
+                        <label for="id_address_line2" class="block text-sm font-medium text-gray-700 mb-1">
+                            Address Line 2
+                        </label>
+                        <input type="text" name="address_line2" id="id_address_line2" maxlength="200"
+                               value="{{ form.address_line2.value|default:object.address_line2|default:'' }}"
+                               placeholder="Building, suite, unit, etc."
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    
+                    <!-- Suburb -->
+                    <div>
+                        <label for="id_suburb" class="block text-sm font-medium text-gray-700 mb-1">
+                            Suburb
+                        </label>
+                        <input type="text" name="suburb" id="id_suburb" maxlength="100"
+                               value="{{ form.suburb.value|default:object.suburb|default:'' }}"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    
+                    <!-- City -->
+                    <div>
+                        <label for="id_city" class="block text-sm font-medium text-gray-700 mb-1">
+                            City
+                        </label>
+                        <input type="text" name="city" id="id_city" maxlength="100"
+                               value="{{ form.city.value|default:object.city|default:'' }}"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    
+                    <!-- Province -->
+                    <div>
+                        <label for="id_province" class="block text-sm font-medium text-gray-700 mb-1">
+                            Province
+                        </label>
+                        <select name="province" id="id_province"
+                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Select Province</option>
+                            <option value="Eastern Cape" {% if form.province.value == 'Eastern Cape' or object.province == 'Eastern Cape' %}selected{% endif %}>Eastern Cape</option>
+                            <option value="Free State" {% if form.province.value == 'Free State' or object.province == 'Free State' %}selected{% endif %}>Free State</option>
+                            <option value="Gauteng" {% if form.province.value == 'Gauteng' or object.province == 'Gauteng' %}selected{% endif %}>Gauteng</option>
+                            <option value="KwaZulu-Natal" {% if form.province.value == 'KwaZulu-Natal' or object.province == 'KwaZulu-Natal' %}selected{% endif %}>KwaZulu-Natal</option>
+                            <option value="Limpopo" {% if form.province.value == 'Limpopo' or object.province == 'Limpopo' %}selected{% endif %}>Limpopo</option>
+                            <option value="Mpumalanga" {% if form.province.value == 'Mpumalanga' or object.province == 'Mpumalanga' %}selected{% endif %}>Mpumalanga</option>
+                            <option value="Northern Cape" {% if form.province.value == 'Northern Cape' or object.province == 'Northern Cape' %}selected{% endif %}>Northern Cape</option>
+                            <option value="North West" {% if form.province.value == 'North West' or object.province == 'North West' %}selected{% endif %}>North West</option>
+                            <option value="Western Cape" {% if form.province.value == 'Western Cape' or object.province == 'Western Cape' %}selected{% endif %}>Western Cape</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Postal Code -->
+                    <div>
+                        <label for="id_postal_code" class="block text-sm font-medium text-gray-700 mb-1">
+                            Postal Code
+                        </label>
+                        <input type="text" name="postal_code" id="id_postal_code" maxlength="10"
+                               value="{{ form.postal_code.value|default:object.postal_code|default:'' }}"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    
+                    <!-- Country -->
+                    <div>
+                        <label for="id_country" class="block text-sm font-medium text-gray-700 mb-1">
+                            Country
+                        </label>
+                        <input type="text" name="country" id="id_country" maxlength="50"
+                               value="{{ form.country.value|default:object.country|default:'South Africa' }}"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Contact Information</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Email -->
+                    <div>
+                        <label for="id_email" class="block text-sm font-medium text-gray-700 mb-1">
+                            Email
+                        </label>
+                        <input type="email" name="email" id="id_email"
+                               value="{{ form.email.value|default:object.email|default:'' }}"
+                               placeholder="campus@example.com"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    
+                    <!-- Phone -->
+                    <div>
+                        <label for="id_phone" class="block text-sm font-medium text-gray-700 mb-1">
+                            Phone
+                        </label>
+                        <input type="tel" name="phone" id="id_phone" maxlength="20"
+                               value="{{ form.phone.value|default:object.phone|default:'' }}"
+                               placeholder="+27 11 123 4567"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- GPS Coordinates -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">GPS Coordinates</h2>
+                <p class="text-sm text-gray-500 mt-1">Optional - for mapping purposes</p>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Latitude -->
+                    <div>
+                        <label for="id_latitude" class="block text-sm font-medium text-gray-700 mb-1">
+                            Latitude
+                        </label>
+                        <input type="number" name="latitude" id="id_latitude" step="0.000001"
+                               value="{{ form.latitude.value|default:object.latitude|default:'' }}"
+                               placeholder="-26.1952"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    
+                    <!-- Longitude -->
+                    <div>
+                        <label for="id_longitude" class="block text-sm font-medium text-gray-700 mb-1">
+                            Longitude
+                        </label>
+                        <input type="number" name="longitude" id="id_longitude" step="0.000001"
+                               value="{{ form.longitude.value|default:object.longitude|default:'' }}"
+                               placeholder="28.0346"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="flex items-center justify-between pt-4">
+            <a href="{% url 'admin:campus_list' %}" 
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Cancel
+            </a>
+            <button type="submit" 
+                    class="inline-flex items-center px-6 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition shadow-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                {% if action == 'Create' %}Create Campus{% else %}Save Changes{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

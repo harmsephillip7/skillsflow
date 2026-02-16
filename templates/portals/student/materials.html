@@ -1,0 +1,235 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Learning Materials - Learner Portal{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                <li><a href="{% url 'student_dashboard' %}" class="hover:text-primary-600">Dashboard</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li class="text-gray-900">Learning Materials</li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">Learning Materials</h1>
+        <p class="mt-1 text-sm text-gray-500">Access your course resources and study materials</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Search and Filter -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex flex-col sm:flex-row gap-4">
+            <div class="flex-1 relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" 
+                       id="materialSearch"
+                       placeholder="Search materials..." 
+                       class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            <div class="flex gap-2">
+                <select id="courseFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Courses</option>
+                    {% for enrollment in enrollments %}
+                    <option value="{{ enrollment.id }}">{{ enrollment.cohort.qualification.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Materials by Course -->
+    {% for enrollment in enrollments %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 course-materials" data-course-id="{{ enrollment.id }}" x-data="{ open: true }">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between cursor-pointer" @click="open = !open">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-book text-purple-600"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900">{{ enrollment.cohort.qualification.title }}</h3>
+                    <p class="text-sm text-gray-500">{{ enrollment.cohort.name }}</p>
+                </div>
+            </div>
+            <button class="p-2 text-gray-400 hover:text-gray-600">
+                <i class="fas fa-chevron-down transition-transform" :class="{ 'rotate-180': !open }"></i>
+            </button>
+        </div>
+        
+        <div x-show="open" x-collapse>
+            {% for module in enrollment.cohort.qualification.modules.all %}
+            <div class="border-b border-gray-100 last:border-0 material-module">
+                <div class="px-6 py-4">
+                    <h4 class="font-medium text-gray-900 flex items-center">
+                        <i class="fas fa-layer-group text-gray-400 mr-2"></i>
+                        {{ module.title }}
+                    </h4>
+                    <p class="text-sm text-gray-500 mt-1">{{ module.code }}</p>
+                </div>
+                
+                <!-- Module Materials -->
+                <div class="px-6 pb-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <!-- Learner Guide -->
+                        <a href="#" class="material-card flex items-center p-3 bg-gray-50 rounded-lg hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition group">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-blue-200 transition">
+                                <i class="fas fa-book-reader text-blue-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-gray-900 text-sm truncate">Learner Guide</p>
+                                <p class="text-xs text-gray-500">Study material</p>
+                            </div>
+                            <i class="fas fa-download text-gray-400 group-hover:text-blue-600"></i>
+                        </a>
+                        
+                        <!-- Assessment Guide -->
+                        <a href="#" class="material-card flex items-center p-3 bg-gray-50 rounded-lg hover:bg-green-50 border border-gray-200 hover:border-green-300 transition group">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-green-200 transition">
+                                <i class="fas fa-clipboard-check text-green-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-gray-900 text-sm truncate">Assessment Guide</p>
+                                <p class="text-xs text-gray-500">Assessment info</p>
+                            </div>
+                            <i class="fas fa-download text-gray-400 group-hover:text-green-600"></i>
+                        </a>
+                        
+                        <!-- Facilitator Guide (if available) -->
+                        <a href="#" class="material-card flex items-center p-3 bg-gray-50 rounded-lg hover:bg-purple-50 border border-gray-200 hover:border-purple-300 transition group">
+                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-purple-200 transition">
+                                <i class="fas fa-chalkboard-teacher text-purple-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-gray-900 text-sm truncate">Presentation</p>
+                                <p class="text-xs text-gray-500">Slides & notes</p>
+                            </div>
+                            <i class="fas fa-download text-gray-400 group-hover:text-purple-600"></i>
+                        </a>
+                        
+                        <!-- Videos -->
+                        <a href="#" class="material-card flex items-center p-3 bg-gray-50 rounded-lg hover:bg-red-50 border border-gray-200 hover:border-red-300 transition group">
+                            <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-red-200 transition">
+                                <i class="fas fa-video text-red-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-gray-900 text-sm truncate">Video Lessons</p>
+                                <p class="text-xs text-gray-500">Watch & learn</p>
+                            </div>
+                            <i class="fas fa-play text-gray-400 group-hover:text-red-600"></i>
+                        </a>
+                        
+                        <!-- Workbook -->
+                        <a href="#" class="material-card flex items-center p-3 bg-gray-50 rounded-lg hover:bg-amber-50 border border-gray-200 hover:border-amber-300 transition group">
+                            <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-amber-200 transition">
+                                <i class="fas fa-edit text-amber-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-gray-900 text-sm truncate">Workbook</p>
+                                <p class="text-xs text-gray-500">Activities</p>
+                            </div>
+                            <i class="fas fa-download text-gray-400 group-hover:text-amber-600"></i>
+                        </a>
+                        
+                        <!-- Additional Resources -->
+                        <a href="#" class="material-card flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 border border-gray-200 transition group">
+                            <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3 group-hover:bg-gray-300 transition">
+                                <i class="fas fa-folder-open text-gray-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-gray-900 text-sm truncate">Resources</p>
+                                <p class="text-xs text-gray-500">Additional files</p>
+                            </div>
+                            <i class="fas fa-external-link-alt text-gray-400 group-hover:text-gray-600"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="px-6 py-8 text-center text-gray-500">
+                <i class="fas fa-folder-open text-3xl text-gray-300 mb-2"></i>
+                <p>No modules found for this course.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-folder-open text-4xl text-gray-400"></i>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No Materials Available</h3>
+        <p class="text-gray-500">You don't have any learning materials yet.</p>
+        <a href="{% url 'portals:student_enrollments' %}" class="inline-flex items-center mt-4 text-primary-600 hover:text-primary-700 font-medium">
+            <i class="fas fa-graduation-cap mr-2"></i>View My Courses
+        </a>
+    </div>
+    {% endfor %}
+
+    <!-- Help Box -->
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+        <div class="flex items-start">
+            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-question-circle text-blue-600"></i>
+            </div>
+            <div class="ml-4">
+                <h4 class="font-medium text-blue-900">Need Help?</h4>
+                <p class="text-sm text-blue-700 mt-1">
+                    If you can't find a specific material or need additional resources, please contact your facilitator or the student support desk.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('materialSearch');
+    const courseFilter = document.getElementById('courseFilter');
+    
+    function filterMaterials() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedCourse = courseFilter.value;
+        
+        document.querySelectorAll('.course-materials').forEach(courseSection => {
+            const courseId = courseSection.dataset.courseId;
+            const matchesCourse = !selectedCourse || selectedCourse === courseId;
+            
+            if (!matchesCourse) {
+                courseSection.style.display = 'none';
+                return;
+            }
+            
+            courseSection.style.display = 'block';
+            
+            if (searchTerm) {
+                let hasVisibleModule = false;
+                courseSection.querySelectorAll('.material-module').forEach(module => {
+                    const moduleText = module.textContent.toLowerCase();
+                    if (moduleText.includes(searchTerm)) {
+                        module.style.display = 'block';
+                        hasVisibleModule = true;
+                    } else {
+                        module.style.display = 'none';
+                    }
+                });
+                
+                if (!hasVisibleModule) {
+                    courseSection.style.display = 'none';
+                }
+            } else {
+                courseSection.querySelectorAll('.material-module').forEach(module => {
+                    module.style.display = 'block';
+                });
+            }
+        });
+    }
+    
+    searchInput.addEventListener('input', filterMaterials);
+    courseFilter.addEventListener('change', filterMaterials);
+});
+</script>
+{% endblock %}

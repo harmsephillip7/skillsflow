@@ -1,0 +1,1308 @@
+{% extends 'crm/crm_base.html' %}
+{% load static %}
+
+{% block title %}{{ lead.get_full_name }} - CRM - SkillsFlow{% endblock %}
+
+{% block page_title %}{{ lead.get_full_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:dashboard' %}" class="text-gray-500 hover:text-gray-700">CRM</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:lead_list' %}" class="text-gray-500 hover:text-gray-700">Leads</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ lead.get_full_name }}</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'crm:quote_create_for_lead' lead.pk %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Create Quote
+    </a>
+    <a href="{% url 'crm:lead_update' lead.pk %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        Edit Lead
+    </a>
+</div>
+{% endblock %}
+
+{% block crm_content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <!-- Main Content - Left Column -->
+    <div class="lg:col-span-2 space-y-6">
+        
+        <!-- Lead Info Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-16 w-16">
+                            <div class="h-16 w-16 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-xl font-semibold">
+                                {{ lead.first_name|slice:":1" }}{{ lead.last_name|slice:":1" }}
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h2 class="text-xl font-bold text-gray-900">{{ lead.get_full_name }}</h2>
+                            <div class="flex items-center mt-1 space-x-2">
+                                <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    {% if lead.lead_type == 'SCHOOL_LEAVER' %}bg-blue-100 text-blue-800
+                                    {% elif lead.lead_type == 'ADULT' %}bg-green-100 text-green-800
+                                    {% elif lead.lead_type == 'CORPORATE' %}bg-purple-100 text-purple-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ lead.get_lead_type_display }}
+                                </span>
+                                <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    {% if lead.priority == 'URGENT' %}bg-red-100 text-red-800
+                                    {% elif lead.priority == 'HIGH' %}bg-orange-100 text-orange-800
+                                    {% elif lead.priority == 'MEDIUM' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ lead.get_priority_display }} Priority
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Status Badge -->
+                    <span class="px-3 py-1.5 inline-flex text-sm leading-5 font-semibold rounded-lg 
+                        {% if lead.status == 'NEW' %}bg-blue-100 text-blue-800
+                        {% elif lead.status == 'CONTACTED' %}bg-cyan-100 text-cyan-800
+                        {% elif lead.status == 'QUALIFIED' %}bg-teal-100 text-teal-800
+                        {% elif lead.status == 'PROPOSAL' %}bg-indigo-100 text-indigo-800
+                        {% elif lead.status == 'NEGOTIATION' %}bg-purple-100 text-purple-800
+                        {% elif lead.status == 'REGISTERED' %}bg-yellow-100 text-yellow-800
+                        {% elif lead.status == 'ENROLLED' %}bg-green-100 text-green-800
+                        {% elif lead.status == 'LOST' %}bg-red-100 text-red-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ lead.get_status_display }}
+                    </span>
+                </div>
+                
+                <!-- Contact Info -->
+                <div class="mt-6 grid grid-cols-1 gap-3">
+                    <!-- Phone (SMS) -->
+                    <div class="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-gray-50">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                            </svg>
+                            <a href="tel:{{ lead.phone }}" class="text-gray-900 hover:text-primary-600">{{ lead.phone }}</a>
+                        </div>
+                        <button type="button" 
+                                onclick="openDocumentRequestModalForContact('learner', 'whatsapp', '{{ lead.whatsapp_number|default:lead.phone }}')"
+                                class="ml-2 px-2 py-1 text-xs font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-md flex items-center"
+                                title="Send document upload link via WhatsApp">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            📄
+                        </button>
+                    </div>
+                    
+                    <!-- Email -->
+                    {% if lead.email %}
+                    <div class="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-gray-50">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                            <a href="mailto:{{ lead.email }}" class="text-gray-900 hover:text-primary-600">{{ lead.email }}</a>
+                        </div>
+                        <button type="button" 
+                                onclick="openDocumentRequestModalForContact('learner', 'email', '{{ lead.email }}')"
+                                class="ml-2 px-2 py-1 text-xs font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-md flex items-center"
+                                title="Send document upload link via Email">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            📄
+                        </button>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- WhatsApp -->
+                    {% if lead.whatsapp_number %}
+                    <div class="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-gray-50">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                            </svg>
+                            <a href="https://wa.me/{{ lead.whatsapp_number }}" target="_blank" class="text-gray-900 hover:text-green-600">{{ lead.whatsapp_number }}</a>
+                            {% if lead.prefers_whatsapp %}
+                            <span class="ml-2 text-xs text-green-600">(Preferred)</span>
+                            {% endif %}
+                        </div>
+                        <button type="button" 
+                                onclick="openDocumentRequestModalForContact('learner', 'whatsapp', '{{ lead.whatsapp_number }}')"
+                                class="ml-2 px-2 py-1 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-md flex items-center"
+                                title="Send document upload link via WhatsApp">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            📄
+                        </button>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Source info -->
+                    <div class="flex items-center text-sm p-2">
+                        <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span class="text-gray-600">Source: {{ lead.source.name }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- School Leaver Info (if applicable) -->
+        {% if lead.lead_type == 'SCHOOL_LEAVER' %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                </svg>
+                School Leaver Details
+            </h3>
+            
+            <div class="grid grid-cols-2 gap-4">
+                {% if lead.date_of_birth %}
+                <div>
+                    <p class="text-sm text-gray-500">Date of Birth</p>
+                    <p class="text-sm font-medium text-gray-900">{{ lead.date_of_birth|date:"d F Y" }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Age</p>
+                    <p class="text-sm font-medium text-gray-900">
+                        {{ age }} years old
+                        {% if is_minor %}
+                        <span class="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Minor</span>
+                        {% else %}
+                        <span class="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">Adult</span>
+                        {% endif %}
+                    </p>
+                </div>
+                {% endif %}
+                
+                {% if is_minor and turns_18 %}
+                <div class="col-span-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p class="text-sm text-yellow-800">
+                        <span class="font-semibold">🎂 Turns 18:</span> {{ turns_18|date:"d F Y" }} 
+                        <span class="text-yellow-600">({{ days_until_18 }} days away)</span>
+                    </p>
+                </div>
+                {% endif %}
+                
+                {% if lead.school_name %}
+                <div>
+                    <p class="text-sm text-gray-500">School</p>
+                    <p class="text-sm font-medium text-gray-900">{{ lead.school_name }}</p>
+                </div>
+                {% endif %}
+                
+                {% if lead.grade %}
+                <div>
+                    <p class="text-sm text-gray-500">Grade</p>
+                    <p class="text-sm font-medium text-gray-900">{{ lead.grade }}</p>
+                </div>
+                {% endif %}
+                
+                {% if lead.expected_matric_year %}
+                <div>
+                    <p class="text-sm text-gray-500">Expected Matric Year</p>
+                    <p class="text-sm font-medium text-gray-900">{{ lead.expected_matric_year }}</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Parent/Guardian Info -->
+            {% if lead.parent_name %}
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <h4 class="text-sm font-semibold text-gray-700 mb-3">Parent/Guardian</h4>
+                <div class="space-y-2">
+                    <div>
+                        <p class="text-sm text-gray-500">Name</p>
+                        <p class="text-sm font-medium text-gray-900">{{ lead.parent_name }} {% if lead.parent_relationship %}({{ lead.parent_relationship }}){% endif %}</p>
+                    </div>
+                    {% if lead.parent_phone %}
+                    <div class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
+                        <div>
+                            <p class="text-xs text-gray-500">Phone</p>
+                            <a href="tel:{{ lead.parent_phone }}" class="text-sm font-medium text-primary-600 hover:text-primary-800">{{ lead.parent_phone }}</a>
+                        </div>
+                        <button type="button" 
+                                onclick="openDocumentRequestModalForContact('parent', 'whatsapp', '{{ lead.parent_phone }}')"
+                                class="ml-2 px-2 py-1 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-md flex items-center"
+                                title="Send document upload link to parent via WhatsApp">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            📄
+                        </button>
+                    </div>
+                    {% endif %}
+                    {% if lead.parent_email %}
+                    <div class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
+                        <div>
+                            <p class="text-xs text-gray-500">Email</p>
+                            <a href="mailto:{{ lead.parent_email }}" class="text-sm font-medium text-primary-600 hover:text-primary-800">{{ lead.parent_email }}</a>
+                        </div>
+                        <button type="button" 
+                                onclick="openDocumentRequestModalForContact('parent', 'email', '{{ lead.parent_email }}')"
+                                class="ml-2 px-2 py-1 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-md flex items-center"
+                                title="Send document upload link to parent via Email">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            📄
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Activity Timeline -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Activity Timeline</h3>
+            
+            <!-- Add Activity Form -->
+            <form id="add-activity-form" class="mb-6 p-4 bg-gray-50 rounded-lg">
+                <div class="flex items-start space-x-3">
+                    <select name="activity_type" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                        <option value="NOTE">Note</option>
+                        <option value="CALL">Call</option>
+                        <option value="EMAIL">Email</option>
+                        <option value="WHATSAPP">WhatsApp</option>
+                        <option value="MEETING">Meeting</option>
+                    </select>
+                    <input type="text" name="description" placeholder="Add a note or log an activity..." 
+                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors">
+                        Add
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Timeline -->
+            <div class="space-y-4" id="activity-timeline">
+                {% for activity in activities %}
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0">
+                        {% if activity.activity_type == 'CALL' %}
+                        <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                            </svg>
+                        </div>
+                        {% elif activity.activity_type == 'EMAIL' %}
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        {% elif activity.activity_type == 'WHATSAPP' %}
+                        <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                            </svg>
+                        </div>
+                        {% elif activity.activity_type == 'STATUS_CHANGE' %}
+                        <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                            </svg>
+                        </div>
+                        {% elif activity.activity_type == 'MEETING' %}
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                        {% else %}
+                        <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm font-medium text-gray-900">{{ activity.get_activity_type_display }}</p>
+                            <span class="text-xs text-gray-500">{{ activity.created_at|date:"d M Y H:i" }}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">{{ activity.description }}</p>
+                        {% if activity.created_by %}
+                        <p class="text-xs text-gray-400 mt-1">by {{ activity.created_by.get_full_name|default:activity.created_by.email }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500 text-center py-4">No activities yet. Add one above!</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Sidebar - Right Column -->
+    <div class="space-y-6">
+        
+        <!-- Quick Status Update -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Update Status</h3>
+            <div class="grid grid-cols-2 gap-2">
+                {% for value, label in statuses %}
+                <button onclick="updateStatus('{{ value }}')" 
+                        class="px-3 py-2 text-xs font-medium rounded-lg border transition-colors
+                        {% if lead.status == value %}
+                        bg-primary-100 border-primary-300 text-primary-700
+                        {% else %}
+                        bg-white border-gray-200 text-gray-600 hover:bg-gray-50
+                        {% endif %}">
+                    {{ label }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Assignment -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Assignment</h3>
+            <div class="flex items-center">
+                {% if lead.assigned_to %}
+                <div class="flex-shrink-0 h-10 w-10">
+                    <div class="h-10 w-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center text-white font-semibold">
+                        {{ lead.assigned_to.first_name|slice:":1" }}{{ lead.assigned_to.last_name|slice:":1" }}
+                    </div>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-900">{{ lead.assigned_to.get_full_name|default:lead.assigned_to.username }}</p>
+                    <p class="text-xs text-gray-500">{{ lead.assigned_to.email }}</p>
+                </div>
+                {% else %}
+                <p class="text-sm text-orange-600">Unassigned</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Follow-up -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Next Follow-up</h3>
+            {% if lead.next_follow_up %}
+            <div class="p-3 rounded-lg {% if lead.next_follow_up.date < today %}bg-red-50{% elif lead.next_follow_up.date == today %}bg-yellow-50{% else %}bg-gray-50{% endif %}">
+                <p class="text-sm font-medium {% if lead.next_follow_up.date < today %}text-red-700{% elif lead.next_follow_up.date == today %}text-yellow-700{% else %}text-gray-700{% endif %}">
+                    {{ lead.next_follow_up|date:"d M Y H:i" }}
+                </p>
+                {% if lead.follow_up_notes %}
+                <p class="text-xs text-gray-600 mt-1">{{ lead.follow_up_notes }}</p>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="text-sm text-gray-500">No follow-up scheduled</p>
+            {% endif %}
+            <a href="{% url 'crm:lead_update' lead.pk %}" class="mt-3 inline-flex items-center text-sm text-primary-600 hover:text-primary-700">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                Schedule Follow-up
+            </a>
+        </div>
+        
+        <!-- Messaging Consent -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Messaging Consent</h3>
+            {% if lead.consent_bulk_messaging and not lead.unsubscribed %}
+            <div class="flex items-center text-green-600">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="text-sm font-medium">Consented to bulk messaging</span>
+            </div>
+            {% if lead.consent_date %}
+            <p class="text-xs text-gray-500 mt-1">Since {{ lead.consent_date|date:"d M Y" }}</p>
+            {% endif %}
+            {% elif lead.unsubscribed %}
+            <div class="flex items-center text-red-600">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                </svg>
+                <span class="text-sm font-medium">Unsubscribed</span>
+            </div>
+            {% if lead.unsubscribed_date %}
+            <p class="text-xs text-gray-500 mt-1">On {{ lead.unsubscribed_date|date:"d M Y" }}</p>
+            {% endif %}
+            {% else %}
+            <div class="flex items-center text-gray-500">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="text-sm font-medium">No consent given</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Document Upload Links -->
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-200 p-6">
+            <h3 class="text-sm font-semibold text-blue-800 uppercase tracking-wider mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Document Upload Links
+            </h3>
+            
+            <!-- Create New Request Button -->
+            <button type="button" onclick="openDocumentRequestModal()"
+                    class="w-full mb-4 py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Request Documents
+            </button>
+            
+            <!-- Existing Document Requests -->
+            {% if document_requests %}
+            <div class="space-y-3">
+                {% for request in document_requests %}
+                <div class="p-3 bg-white rounded-lg border {% if request.status == 'COMPLETED' %}border-green-200{% elif request.status == 'EXPIRED' %}border-red-200{% elif request.status == 'REVOKED' %}border-gray-200{% else %}border-blue-200{% endif %}">
+                    <!-- Status Badge -->
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="px-2 py-0.5 text-xs font-semibold rounded-full 
+                            {% if request.status == 'ACTIVE' %}bg-blue-100 text-blue-800
+                            {% elif request.status == 'COMPLETED' %}bg-green-100 text-green-800
+                            {% elif request.status == 'EXPIRED' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ request.get_status_display }}
+                        </span>
+                        <span class="text-xs text-gray-500">{{ request.created_at|date:"d M Y" }}</span>
+                    </div>
+                    
+                    <!-- Progress -->
+                    {% if request.status == 'ACTIVE' %}
+                    <div class="mb-2">
+                        <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+                            <span>Upload Progress</span>
+                            <span>{{ request.upload_progress }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5">
+                            <div class="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style="width: {{ request.upload_progress }}%"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Unique Portal Link -->
+                    {% if request.status == 'ACTIVE' %}
+                    <div class="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
+                        <p class="text-xs text-gray-500 mb-1">Unique Portal Link:</p>
+                        <div class="flex items-center space-x-2">
+                            <input type="text" 
+                                   value="{{ request.get_full_portal_url }}" 
+                                   id="portal-link-{{ request.id }}"
+                                   class="flex-1 text-xs bg-white border border-gray-200 rounded px-2 py-1 text-gray-600"
+                                   readonly>
+                            <button type="button" 
+                                    onclick="copyPortalLink('{{ request.id }}', '{{ request.get_full_portal_url }}')"
+                                    class="px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded flex items-center"
+                                    title="Copy link">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Send Buttons -->
+                    <div class="mt-2 flex space-x-2">
+                        {% if lead.whatsapp_number %}
+                        <button type="button" 
+                                onclick="resendDocumentLink('{{ request.id }}', 'whatsapp')"
+                                class="flex-1 px-2 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded flex items-center justify-center"
+                                title="Resend via WhatsApp">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                            </svg>
+                            WhatsApp
+                        </button>
+                        {% endif %}
+                        {% if lead.email %}
+                        <button type="button" 
+                                onclick="resendDocumentLink('{{ request.id }}', 'email')"
+                                class="flex-1 px-2 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded flex items-center justify-center"
+                                title="Resend via Email">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                            Email
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Tracking Info -->
+                    <div class="mt-2 text-xs text-gray-500 space-y-0.5">
+                        {% if request.view_count > 0 %}
+                        <p>👁 Viewed {{ request.view_count }} time{{ request.view_count|pluralize }} {% if request.last_viewed_at %}(last: {{ request.last_viewed_at|date:"d M Y H:i" }}){% endif %}</p>
+                        {% endif %}
+                        {% if request.sent_at %}
+                        <p>📤 Sent via {{ request.get_sent_via_display }} on {{ request.sent_at|date:"d M Y H:i" }}</p>
+                        {% endif %}
+                        {% if request.valid_until %}
+                        <p>⏰ Expires: {{ request.valid_until|date:"d M Y" }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <svg class="mx-auto h-10 w-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <p class="text-sm text-blue-700 mt-2">No document requests yet</p>
+                <p class="text-xs text-blue-600 mt-1">Click above to send a document upload link</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Quick Quote Section -->
+        <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl shadow-sm border border-amber-200 p-6">
+            <h3 class="text-sm font-semibold text-amber-800 uppercase tracking-wider mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Create Quote
+            </h3>
+            
+            {% if lead.qualification_interest %}
+            <div class="mb-4 p-3 bg-white rounded-lg border border-amber-200">
+                <p class="text-sm font-medium text-gray-900">{{ lead.qualification_interest.title }}</p>
+                <p class="text-xs text-gray-500 mt-1">{{ lead.qualification_interest.saqa_id }}</p>
+                {% if lead.qualification_interest.fee_full %}
+                <p class="text-lg font-bold text-amber-700 mt-2">R{{ lead.qualification_interest.fee_full|floatformat:0 }}</p>
+                {% endif %}
+            </div>
+            
+            <button type="button" onclick="openQuickQuoteModal()"
+                    class="w-full py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Generate & Send Quote
+            </button>
+            {% else %}
+            <div class="text-center py-4">
+                <svg class="mx-auto h-10 w-10 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <p class="text-sm text-amber-700 mt-2">No qualification selected</p>
+                <p class="text-xs text-amber-600 mt-1">Select a qualification to create a quote</p>
+            </div>
+            
+            <button type="button" onclick="openQuickQuoteModal()"
+                    class="w-full mt-3 py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Select & Quote
+            </button>
+            {% endif %}
+            
+            <a href="{% url 'crm:quote_create_for_lead' lead.pk %}" 
+               class="mt-3 w-full inline-flex items-center justify-center text-sm text-amber-700 hover:text-amber-800">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+                Advanced Quote Form
+            </a>
+        </div>
+        
+        <!-- Interest -->
+        {% if lead.qualification_interest %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Interest</h3>
+            <p class="text-sm font-medium text-gray-900">{{ lead.qualification_interest.title }}</p>
+            <p class="text-xs text-gray-500">{{ lead.qualification_interest.saqa_id }}</p>
+        </div>
+        {% endif %}
+        
+        <!-- Notes -->
+        {% if lead.notes %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Notes</h3>
+            <p class="text-sm text-gray-600 whitespace-pre-wrap">{{ lead.notes }}</p>
+        </div>
+        {% endif %}
+        
+        <!-- Meta -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Details</h3>
+            <dl class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Created</dt>
+                    <dd class="text-gray-900">{{ lead.created_at|date:"d M Y H:i" }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Updated</dt>
+                    <dd class="text-gray-900">{{ lead.updated_at|date:"d M Y H:i" }}</dd>
+                </div>
+                {% if lead.brand %}
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Brand</dt>
+                    <dd class="text-gray-900">{{ lead.brand.name }}</dd>
+                </div>
+                {% endif %}
+                {% if lead.campus %}
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Campus</dt>
+                    <dd class="text-gray-900">{{ lead.campus.name }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+        
+    </div>
+</div>
+
+<script>
+function updateStatus(status) {
+    fetch('{% url "crm:lead_quick_status" lead.pk %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'status=' + status
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+document.getElementById('add-activity-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    fetch('{% url "crm:lead_add_activity" lead.pk %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: new URLSearchParams(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+});
+
+// Quick Quote Modal Functions
+function openQuickQuoteModal() {
+    document.getElementById('quick-quote-modal').classList.remove('hidden');
+    document.getElementById('quote-modal-content').innerHTML = `
+        <div class="animate-pulse flex flex-col space-y-4">
+            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div class="h-10 bg-gray-200 rounded"></div>
+            <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+        </div>
+    `;
+    
+    // Load quote data
+    fetch('/crm/api/leads/{{ lead.pk }}/quick-quote-data/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('quote-modal-content').innerHTML = `
+                    <div class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <p class="mt-2 text-red-600">${data.error}</p>
+                    </div>
+                `;
+                return;
+            }
+            renderQuoteForm(data);
+        })
+        .catch(error => {
+            document.getElementById('quote-modal-content').innerHTML = `
+                <div class="text-center py-8">
+                    <p class="text-red-600">Failed to load quote data. Please try again.</p>
+                </div>
+            `;
+        });
+}
+
+function closeQuoteModal() {
+    document.getElementById('quick-quote-modal').classList.add('hidden');
+}
+
+let quoteData = null;
+
+function renderQuoteForm(data) {
+    quoteData = data;
+    
+    let qualOptions = data.qualifications.map(q => 
+        `<option value="${q.id}" data-price="${q.price}" ${q.id === data.lead.qualification_interest_id ? 'selected' : ''}>
+            ${q.name} - R${q.price.toLocaleString()}
+        </option>`
+    ).join('');
+    
+    let paymentOptions = data.payment_options.map(p =>
+        `<option value="${p.id}" data-months="${p.monthly_term}" data-deposit="${p.deposit_percent}">
+            ${p.name} (${p.monthly_term} months)
+        </option>`
+    ).join('');
+    
+    const currentPrice = data.lead.qualification_interest_price || (data.qualifications[0]?.price || 0);
+    
+    document.getElementById('quote-modal-content').innerHTML = `
+        <div class="space-y-4">
+            <!-- Lead Info -->
+            <div class="bg-gray-50 rounded-lg p-3">
+                <p class="font-medium text-gray-900">${data.lead.full_name}</p>
+                <p class="text-sm text-gray-500">${data.lead.email || ''} ${data.lead.phone ? '• ' + data.lead.phone : ''}</p>
+            </div>
+            
+            <!-- Qualification Selection -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Qualification</label>
+                <select id="quote-qualification" class="w-full rounded-lg border-gray-300 focus:ring-amber-500 focus:border-amber-500" onchange="updateQuotePricing()">
+                    ${qualOptions || '<option disabled>No qualifications available</option>'}
+                </select>
+            </div>
+            
+            <!-- Payment Plan -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Payment Plan</label>
+                <select id="quote-payment" class="w-full rounded-lg border-gray-300 focus:ring-amber-500 focus:border-amber-500" onchange="updateQuotePricing()">
+                    ${paymentOptions || '<option value="">Full Payment</option>'}
+                </select>
+            </div>
+            
+            <!-- Pricing Summary -->
+            <div id="quote-pricing" class="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-gray-600">Total Fee:</span>
+                    <span id="quote-total" class="font-bold text-gray-900">R${currentPrice.toLocaleString()}</span>
+                </div>
+                <div id="quote-deposit-row" class="flex justify-between text-sm mb-2 hidden">
+                    <span class="text-gray-600">Deposit:</span>
+                    <span id="quote-deposit" class="font-medium text-gray-700">R0</span>
+                </div>
+                <div id="quote-monthly-row" class="flex justify-between text-sm hidden">
+                    <span class="text-gray-600">Monthly Payment:</span>
+                    <span id="quote-monthly" class="font-medium text-gray-700">R0</span>
+                </div>
+            </div>
+            
+            <!-- Send Options -->
+            <div class="border-t border-gray-200 pt-4">
+                <p class="text-sm font-medium text-gray-700 mb-3">Send Quote Via:</p>
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="quote-whatsapp" ${data.lead.has_whatsapp ? 'checked' : ''} class="rounded text-amber-600 focus:ring-amber-500">
+                        <span class="ml-2 text-sm text-gray-700 flex items-center">
+                            <svg class="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                            </svg>
+                            WhatsApp ${data.lead.whatsapp_number || data.lead.phone || ''}
+                        </span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="quote-email" ${data.lead.has_email ? '' : 'disabled'} class="rounded text-amber-600 focus:ring-amber-500">
+                        <span class="ml-2 text-sm ${data.lead.has_email ? 'text-gray-700' : 'text-gray-400'}">
+                            📧 Email ${data.lead.email || '(no email)'}
+                        </span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex space-x-3 pt-2">
+                <button type="button" onclick="closeQuoteModal()" 
+                        class="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button type="button" onclick="submitQuote()" id="submit-quote-btn"
+                        class="flex-1 py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                    Send Quote
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Trigger initial pricing calculation
+    updateQuotePricing();
+}
+
+function updateQuotePricing() {
+    if (!quoteData) return;
+    
+    const qualSelect = document.getElementById('quote-qualification');
+    const paymentSelect = document.getElementById('quote-payment');
+    
+    if (!qualSelect) return;
+    
+    const selectedOption = qualSelect.options[qualSelect.selectedIndex];
+    const price = parseFloat(selectedOption?.dataset?.price || 0);
+    
+    document.getElementById('quote-total').textContent = 'R' + price.toLocaleString();
+    
+    // Calculate payment plan if selected
+    if (paymentSelect && paymentSelect.value) {
+        const paymentOption = paymentSelect.options[paymentSelect.selectedIndex];
+        const depositPercent = parseFloat(paymentOption?.dataset?.deposit || 0);
+        const months = parseInt(paymentOption?.dataset?.months || 1);
+        
+        if (depositPercent > 0 || months > 1) {
+            const deposit = price * (depositPercent / 100);
+            const remaining = price - deposit;
+            const monthly = remaining / months;
+            
+            document.getElementById('quote-deposit').textContent = 'R' + deposit.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('quote-monthly').textContent = 'R' + monthly.toLocaleString(undefined, {maximumFractionDigits: 0}) + '/month';
+            
+            document.getElementById('quote-deposit-row').classList.remove('hidden');
+            document.getElementById('quote-monthly-row').classList.remove('hidden');
+        } else {
+            document.getElementById('quote-deposit-row').classList.add('hidden');
+            document.getElementById('quote-monthly-row').classList.add('hidden');
+        }
+    } else {
+        document.getElementById('quote-deposit-row')?.classList.add('hidden');
+        document.getElementById('quote-monthly-row')?.classList.add('hidden');
+    }
+}
+
+function submitQuote() {
+    const qualId = document.getElementById('quote-qualification').value;
+    const paymentId = document.getElementById('quote-payment')?.value || '';
+    const sendWhatsApp = document.getElementById('quote-whatsapp')?.checked || false;
+    const sendEmail = document.getElementById('quote-email')?.checked || false;
+    
+    if (!qualId) {
+        alert('Please select a qualification');
+        return;
+    }
+    
+    if (!sendWhatsApp && !sendEmail) {
+        alert('Please select at least one delivery method (WhatsApp or Email)');
+        return;
+    }
+    
+    const submitBtn = document.getElementById('submit-quote-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+        <svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Creating Quote...
+    `;
+    
+    fetch('/crm/api/leads/{{ lead.pk }}/quick-quote-create/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            qualification_id: qualId,
+            payment_option_id: paymentId,
+            send_whatsapp: sendWhatsApp,
+            send_email: sendEmail
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            document.getElementById('quote-modal-content').innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-16 w-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h3 class="mt-4 text-lg font-semibold text-gray-900">Quote Sent Successfully!</h3>
+                    <p class="mt-2 text-sm text-gray-600">Quote #${data.quote_number} has been created and sent.</p>
+                    <div class="mt-4 space-y-2">
+                        ${data.whatsapp_sent ? '<p class="text-sm text-green-600">✓ Sent via WhatsApp</p>' : ''}
+                        ${data.email_sent ? '<p class="text-sm text-green-600">✓ Sent via Email</p>' : ''}
+                    </div>
+                    <div class="mt-6 flex space-x-3 justify-center">
+                        <a href="/crm/quotes/${data.quote_id}/" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors">
+                            View Quote
+                        </a>
+                        <button type="button" onclick="closeQuoteModal(); location.reload();" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            alert(data.error || 'Failed to create quote. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+                Send Quote
+            `;
+        }
+    })
+    .catch(error => {
+        alert('An error occurred. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+            Send Quote
+        `;
+    });
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeQuoteModal();
+    }
+});
+</script>
+
+<!-- Quick Quote Modal -->
+<div id="quick-quote-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Quick Quote
+                </h3>
+                <button onclick="closeQuoteModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div id="quote-modal-content">
+                <div class="animate-pulse flex flex-col space-y-4">
+                    <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div class="h-10 bg-gray-200 rounded"></div>
+                    <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Request Modal -->
+<div id="document-request-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Request Documents
+                </h3>
+                <button onclick="closeDocumentRequestModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div id="document-request-modal-content">
+                <!-- Recipient -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Send To</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                            <input type="radio" name="doc_recipient" value="learner" class="mr-2" checked>
+                            <div>
+                                <span class="text-sm font-medium text-gray-900">Learner</span>
+                                <span class="block text-xs text-gray-500" id="learner-contact-display">{{ lead.phone }}</span>
+                            </div>
+                        </label>
+                        {% if lead.parent_phone or lead.parent_email %}
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                            <input type="radio" name="doc_recipient" value="parent" class="mr-2">
+                            <div>
+                                <span class="text-sm font-medium text-gray-900">Parent</span>
+                                <span class="block text-xs text-gray-500">{{ lead.parent_name }}</span>
+                            </div>
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Send Via -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Send Via</label>
+                    <div class="flex space-x-2">
+                        {% if lead.whatsapp_number or lead.phone %}
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-green-50 transition-colors flex-1">
+                            <input type="radio" name="doc_send_via" value="whatsapp" class="mr-2" checked>
+                            <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                            </svg>
+                            <span class="text-sm font-medium">WhatsApp</span>
+                        </label>
+                        {% endif %}
+                        {% if lead.email %}
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-blue-50 transition-colors flex-1">
+                            <input type="radio" name="doc_send_via" value="email" class="mr-2" {% if not lead.whatsapp_number and not lead.phone %}checked{% endif %}>
+                            <svg class="w-4 h-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                            <span class="text-sm font-medium">Email</span>
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Document Types -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Documents Requested</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        {% for type_code, type_name in document_types %}
+                        <label class="flex items-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                            <input type="checkbox" name="doc_types" value="{{ type_code }}" class="mr-2 doc-type-checkbox" checked>
+                            <span class="text-sm text-gray-700">{{ type_name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Custom Message -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Custom Message (Optional)</label>
+                    <textarea id="doc-custom-message" rows="3" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Add a personal message..."></textarea>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="flex space-x-3">
+                    <button type="button" onclick="closeDocumentRequestModal()"
+                            class="flex-1 py-2 px-4 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="button" id="submit-document-request-btn" onclick="submitDocumentRequest()"
+                            class="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                        Send Request
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Document Request Modal Functions
+let preselectedSendVia = null;
+let preselectedRecipient = null;
+
+function openDocumentRequestModal() {
+    document.getElementById('document-request-modal').classList.remove('hidden');
+    preselectedSendVia = null;
+    preselectedRecipient = null;
+}
+
+function openDocumentRequestModalForContact(recipient, sendVia, contactValue) {
+    // Open modal with pre-selected options
+    document.getElementById('document-request-modal').classList.remove('hidden');
+    
+    // Pre-select recipient
+    const recipientRadio = document.querySelector(`input[name="doc_recipient"][value="${recipient}"]`);
+    if (recipientRadio) {
+        recipientRadio.checked = true;
+    }
+    
+    // Pre-select send via
+    const sendViaRadio = document.querySelector(`input[name="doc_send_via"][value="${sendVia}"]`);
+    if (sendViaRadio) {
+        sendViaRadio.checked = true;
+    }
+}
+
+function closeDocumentRequestModal() {
+    document.getElementById('document-request-modal').classList.add('hidden');
+}
+
+function submitDocumentRequest() {
+    const recipient = document.querySelector('input[name="doc_recipient"]:checked')?.value || 'learner';
+    const sendVia = document.querySelector('input[name="doc_send_via"]:checked')?.value || 'whatsapp';
+    const docTypes = Array.from(document.querySelectorAll('.doc-type-checkbox:checked')).map(cb => cb.value);
+    const customMessage = document.getElementById('doc-custom-message').value;
+    
+    if (docTypes.length === 0) {
+        alert('Please select at least one document type');
+        return;
+    }
+    
+    const submitBtn = document.getElementById('submit-document-request-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+        <svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Sending...
+    `;
+    
+    fetch('/crm/leads/{{ lead.pk }}/send-document-link/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            send_via: sendVia,
+            recipient: recipient,
+            document_types: docTypes,
+            message: customMessage
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('document-request-modal-content').innerHTML = `
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-16 w-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h3 class="mt-4 text-lg font-semibold text-gray-900">Request Sent Successfully!</h3>
+                    <p class="mt-2 text-sm text-gray-600">Document upload link has been sent.</p>
+                    ${data.portal_url ? `
+                    <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                        <p class="text-xs text-gray-500 mb-1">Portal Link:</p>
+                        <input type="text" value="${data.portal_url}" class="w-full text-xs bg-white border border-gray-200 rounded px-2 py-1 text-gray-600" readonly>
+                    </div>
+                    ` : ''}
+                    <div class="mt-6">
+                        <button type="button" onclick="closeDocumentRequestModal(); location.reload();" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+                            Done
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            alert(data.error || 'Failed to send request. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+                Send Request
+            `;
+        }
+    })
+    .catch(error => {
+        alert('An error occurred. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+            Send Request
+        `;
+    });
+}
+
+function copyPortalLink(requestId, url) {
+    navigator.clipboard.writeText(url).then(() => {
+        // Show brief success feedback
+        const btn = document.querySelector(`button[onclick*="copyPortalLink('${requestId}'"]`);
+        if (btn) {
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `<svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+            }, 1500);
+        }
+    }).catch(err => {
+        // Fallback - select the input
+        const input = document.getElementById(`portal-link-${requestId}`);
+        if (input) {
+            input.select();
+            document.execCommand('copy');
+        }
+    });
+}
+
+function resendDocumentLink(requestId, sendVia) {
+    if (!confirm(`Resend document upload link via ${sendVia === 'whatsapp' ? 'WhatsApp' : 'Email'}?`)) {
+        return;
+    }
+    
+    fetch('/crm/leads/{{ lead.pk }}/send-document-link/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            send_via: sendVia,
+            resend_request_id: requestId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Link resent successfully!');
+        } else {
+            alert(data.error || 'Failed to resend. Please try again.');
+        }
+    })
+    .catch(error => {
+        alert('An error occurred. Please try again.');
+    });
+}
+
+// Update existing keydown listener to also close document modal
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeQuoteModal();
+        closeDocumentRequestModal();
+    }
+});
+</script>
+{% endblock %}

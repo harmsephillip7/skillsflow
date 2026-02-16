@@ -1,0 +1,258 @@
+{% extends 'portals/student/base.html' %}
+{% load humanize %}
+
+{% block title %}My Calendar - SkillsFlow{% endblock %}
+
+{% block extra_head %}
+<!-- FullCalendar CSS -->
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+<style>
+    .fc-event {
+        cursor: pointer;
+    }
+    .sync-status {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 1000;
+    }
+    #calendar {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex mb-4" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'portals:student_dashboard' %}" class="text-gray-700 hover:text-primary-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">Calendar</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Header with Sync Status -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">My Calendar</h1>
+            <p class="text-gray-600">Attendance, stipends, logbooks, and assessments</p>
+        </div>
+        
+        <div id="syncStatus" class="hidden px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm">
+            <svg class="inline w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span id="syncText">Syncing...</span>
+        </div>
+    </div>
+    
+    <!-- Calendar Legend -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <h3 class="font-semibold text-gray-900 mb-3">Legend</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 rounded" style="background-color: #10b981;"></div>
+                <span class="text-sm text-gray-700">Present</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 rounded" style="background-color: #ef4444;"></div>
+                <span class="text-sm text-gray-700">Absent</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 rounded" style="background-color: #f59e0b;"></div>
+                <span class="text-sm text-gray-700">Sick Leave</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 rounded" style="background-color: #3b82f6;"></div>
+                <span class="text-sm text-gray-700">Annual Leave</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 rounded" style="background-color: #22c55e;"></div>
+                <span class="text-sm text-gray-700">Stipend Payment</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 rounded" style="background-color: #8b5cf6;"></div>
+                <span class="text-sm text-gray-700">Assessment Due</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Calendar -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div id='calendar'></div>
+    </div>
+    
+    <!-- Quick Actions -->
+    {% if placement %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="{% url 'portals:student_attendance_submit' %}" class="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition">
+                <svg class="w-6 h-6 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                </svg>
+                <div>
+                    <div class="font-medium text-gray-900">Submit Attendance</div>
+                    <div class="text-sm text-gray-600">Mark today's attendance</div>
+                </div>
+            </a>
+            
+            <a href="{% url 'portals:student_stipend_dashboard' %}" class="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
+                <svg class="w-6 h-6 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <div class="font-medium text-gray-900">View Stipend</div>
+                    <div class="text-sm text-gray-600">Check payment details</div>
+                </div>
+            </a>
+            
+            <a href="{% url 'portals:student_logbook' %}" class="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition">
+                <svg class="w-6 h-6 text-purple-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                <div>
+                    <div class="font-medium text-gray-900">Logbook</div>
+                    <div class="text-sm text-gray-600">Update your logbook</div>
+                </div>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    
+</div>
+
+<!-- Event Detail Modal -->
+<div id="eventModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+        <div class="p-6 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900" id="eventModalTitle">Event Details</h3>
+        </div>
+        <div class="p-6" id="eventModalContent">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+        <div class="p-4 bg-gray-50 rounded-b-xl flex justify-end">
+            <button onclick="closeEventModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Close</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- FullCalendar JS -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: {
+            url: '{% url "portals:calendar_events_api" %}',
+            failure: function() {
+                alert('There was an error loading calendar events!');
+            }
+        },
+        eventClick: function(info) {
+            showEventDetails(info.event);
+        },
+        loading: function(isLoading) {
+            const syncStatus = document.getElementById('syncStatus');
+            if (isLoading) {
+                syncStatus.classList.remove('hidden');
+            } else {
+                syncStatus.classList.add('hidden');
+            }
+        },
+        height: 'auto',
+        eventTimeFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        }
+    });
+    
+    calendar.render();
+    
+    // Auto-refresh every 5 minutes
+    setInterval(function() {
+        calendar.refetchEvents();
+    }, 300000);
+});
+
+function showEventDetails(event) {
+    const modal = document.getElementById('eventModal');
+    const title = document.getElementById('eventModalTitle');
+    const content = document.getElementById('eventModalContent');
+    
+    title.textContent = event.title;
+    
+    let html = `<div class="space-y-3">`;
+    html += `<p class="text-sm text-gray-600"><strong>Date:</strong> ${event.start.toLocaleDateString()}</p>`;
+    
+    const props = event.extendedProps;
+    
+    if (props.type === 'attendance') {
+        html += `<p class="text-sm text-gray-600"><strong>Type:</strong> Attendance</p>`;
+        html += `<p class="text-sm text-gray-600"><strong>Status:</strong> ${props.attendance_type}</p>`;
+        html += `<p class="text-sm text-gray-600"><strong>Verified:</strong> ${props.verified ? 'Yes ✓' : 'Pending'}</p>`;
+        if (props.time_in) {
+            html += `<p class="text-sm text-gray-600"><strong>Time In:</strong> ${props.time_in}</p>`;
+        }
+        if (props.time_out) {
+            html += `<p class="text-sm text-gray-600"><strong>Time Out:</strong> ${props.time_out}</p>`;
+        }
+    } else if (props.type === 'stipend') {
+        html += `<p class="text-sm text-gray-600"><strong>Type:</strong> Stipend Payment</p>`;
+        html += `<p class="text-sm text-gray-600"><strong>Amount:</strong> R${props.amount}</p>`;
+        html += `<p class="text-sm text-gray-600"><strong>Status:</strong> ${props.status}</p>`;
+        html += `<p class="text-sm text-gray-600"><strong>Period:</strong> ${props.month}/${props.year}</p>`;
+    } else if (props.type === 'logbook') {
+        html += `<p class="text-sm text-gray-600"><strong>Type:</strong> Logbook</p>`;
+        html += `<p class="text-sm text-gray-600"><strong>Status:</strong> ${props.signed ? 'Signed ✓' : 'Pending Signature'}</p>`;
+    } else if (props.type === 'assessment') {
+        html += `<p class="text-sm text-gray-600"><strong>Type:</strong> Assessment</p>`;
+        html += `<p class="text-sm text-gray-600"><strong>Module:</strong> ${props.module}</p>`;
+        html += `<p class="text-sm text-gray-600"><strong>Assessment Type:</strong> ${props.assessment_type}</p>`;
+        html += `<p class="text-sm text-gray-600"><strong>Status:</strong> ${props.completed ? 'Completed ✓' : 'Pending'}</p>`;
+    }
+    
+    html += `</div>`;
+    
+    content.innerHTML = html;
+    modal.classList.remove('hidden');
+}
+
+function closeEventModal() {
+    document.getElementById('eventModal').classList.add('hidden');
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEventModal();
+    }
+});
+
+// Close modal on backdrop click
+document.getElementById('eventModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeEventModal();
+    }
+});
+</script>
+{% endblock %}

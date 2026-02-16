@@ -1,0 +1,559 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}New Enrollment - SkillsFlow{% endblock %}
+
+{% block page_title %}New Enrollment{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'admin:dashboard' %}" class="text-primary-600 hover:text-primary-800">Admin</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'admin:enrollment_list' %}" class="text-primary-600 hover:text-primary-800">Enrollments</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">New Enrollment</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div x-data="enrollmentWizard()" class="max-w-4xl mx-auto">
+    
+    <!-- Progress Steps -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            {% for step_num, step_name in steps %}
+            <div class="flex items-center {% if not forloop.last %}flex-1{% endif %}">
+                <div class="flex items-center justify-center w-10 h-10 rounded-full 
+                    {% if current_step > step_num %}bg-green-500 text-white
+                    {% elif current_step == step_num %}bg-primary-600 text-white
+                    {% else %}bg-gray-200 text-gray-500{% endif %}
+                    font-semibold text-sm">
+                    {% if current_step > step_num %}
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    {% else %}
+                    {{ step_num }}
+                    {% endif %}
+                </div>
+                <span class="ml-3 text-sm font-medium {% if current_step >= step_num %}text-gray-900{% else %}text-gray-400{% endif %} hidden sm:block">
+                    {{ step_name }}
+                </span>
+                {% if not forloop.last %}
+                <div class="flex-1 mx-4 h-0.5 {% if current_step > step_num %}bg-green-500{% else %}bg-gray-200{% endif %}"></div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Form Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <form method="post" class="divide-y divide-gray-100">
+            {% csrf_token %}
+            <input type="hidden" name="step" value="{{ current_step }}">
+            
+            <!-- Step Content -->
+            <div class="p-6">
+                {% if current_step == 1 %}
+                <!-- STEP 1: Learner Selection -->
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">Step 1: Learner Information</h2>
+                    <p class="text-gray-500 mb-6">Search for an existing learner by SA ID or create a new one.</p>
+                    
+                    <!-- SA ID Lookup -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">SA ID Number <span class="text-red-500">*</span></label>
+                        <div class="flex gap-3">
+                            <input type="text" 
+                                   x-model="saIdNumber"
+                                   @input="checkSaId()"
+                                   maxlength="13"
+                                   placeholder="Enter 13-digit SA ID"
+                                   class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-lg tracking-wider">
+                            <button type="button" 
+                                    @click="checkSaId()"
+                                    class="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition">
+                                <svg x-show="!checking" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                                <svg x-show="checking" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="mt-2 text-sm text-gray-500" x-show="saIdNumber.length > 0 && saIdNumber.length < 13">
+                            <span x-text="13 - saIdNumber.length"></span> more digits needed
+                        </p>
+                    </div>
+                    
+                    <!-- Existing Learner Found -->
+                    <div x-show="learnerFound" x-cloak class="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <h3 class="text-sm font-semibold text-green-800">Existing Learner Found</h3>
+                                <div class="mt-2 text-sm text-green-700">
+                                    <p><strong x-text="existingLearner.full_name"></strong> (<span x-text="existingLearner.learner_number"></span>)</p>
+                                    <p class="mt-1">Email: <span x-text="existingLearner.email"></span></p>
+                                    <p>Phone: <span x-text="existingLearner.phone_mobile"></span></p>
+                                    <p class="mt-1 text-xs">Current enrollments: <span x-text="existingLearner.enrollments_count"></span></p>
+                                </div>
+                                <input type="hidden" name="learner_mode" value="existing">
+                                <input type="hidden" name="learner_id" :value="existingLearner.id">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- New Learner Form -->
+                    <div x-show="!learnerFound && saIdNumber.length === 13" x-cloak>
+                        <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="text-sm text-blue-800">No learner found. Please enter new learner details below.</span>
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" name="learner_mode" value="new">
+                        <input type="hidden" name="sa_id_number" :value="saIdNumber">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">First Name <span class="text-red-500">*</span></label>
+                                <input type="text" name="first_name" required
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Last Name <span class="text-red-500">*</span></label>
+                                <input type="text" name="last_name" required
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth <span class="text-red-500">*</span></label>
+                                <input type="date" name="date_of_birth" required
+                                       :value="extractedDob"
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Gender <span class="text-red-500">*</span></label>
+                                <select name="gender" required
+                                        class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                                    <option value="">Select Gender</option>
+                                    {% for code, label in gender_choices %}
+                                    <option value="{{ code }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Population Group</label>
+                                <select name="population_group"
+                                        class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                                    <option value="">Select Population Group</option>
+                                    {% for code, label in population_group_choices %}
+                                    <option value="{{ code }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Citizenship</label>
+                                <select name="citizenship"
+                                        class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                                    {% for code, label in citizenship_choices %}
+                                    <option value="{{ code }}" {% if code == 'SA' %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
+                                <input type="email" name="email" required
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mobile Phone <span class="text-red-500">*</span></label>
+                                <input type="tel" name="phone_mobile" required
+                                       placeholder="0821234567"
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Waiting for SA ID -->
+                    <div x-show="saIdNumber.length < 13 && !learnerFound" class="text-center py-8 text-gray-500">
+                        <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                        </svg>
+                        <p>Enter a complete 13-digit SA ID number to continue</p>
+                    </div>
+                </div>
+                
+                {% elif current_step == 2 %}
+                <!-- STEP 2: Qualification & Cohort -->
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">Step 2: Qualification & Cohort</h2>
+                    <p class="text-gray-500 mb-6">Select the qualification and optionally assign to a cohort.</p>
+                    
+                    {% if selected_learner %}
+                    <div class="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                                <span class="text-primary-700 font-semibold">{{ selected_learner.first_name|slice:":1" }}{{ selected_learner.last_name|slice:":1" }}</span>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">{{ selected_learner.get_full_name }}</p>
+                                <p class="text-xs text-gray-500">{{ selected_learner.sa_id_number }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% elif wizard_data.new_learner %}
+                    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <span class="text-blue-700 font-semibold">{{ wizard_data.new_learner.first_name|slice:":1" }}{{ wizard_data.new_learner.last_name|slice:":1" }}</span>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">{{ wizard_data.new_learner.first_name }} {{ wizard_data.new_learner.last_name }}</p>
+                                <p class="text-xs text-gray-500">{{ wizard_data.new_learner.sa_id_number }} <span class="text-blue-600">(New Learner)</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Qualification <span class="text-red-500">*</span></label>
+                            <select name="qualification" required
+                                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                                <option value="">Select Qualification</option>
+                                {% for qual in qualifications %}
+                                <option value="{{ qual.id }}" {% if wizard_data.qualification_id == qual.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ qual.saqa_id }} - {{ qual.short_title }} (NQF {{ qual.nqf_level }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Cohort (Optional)</label>
+                            <select name="cohort"
+                                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                                <option value="">No Cohort - Individual Enrollment</option>
+                                {% for cohort in cohorts %}
+                                <option value="{{ cohort.id }}" {% if wizard_data.cohort_id == cohort.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ cohort.code }} - {{ cohort.name }} ({{ cohort.qualification.short_title }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <p class="mt-1.5 text-xs text-gray-500">Assign to a cohort for group training delivery.</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Campus</label>
+                            <select name="campus"
+                                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                                <option value="">Select Campus</option>
+                                {% for campus in campuses %}
+                                <option value="{{ campus.id }}" {% if wizard_data.campus_id == campus.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ campus.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                {% elif current_step == 3 %}
+                <!-- STEP 3: Funding & Dates -->
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">Step 3: Funding & Dates</h2>
+                    <p class="text-gray-500 mb-6">Set funding type and enrollment dates.</p>
+                    
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Funding Type <span class="text-red-500">*</span></label>
+                                <select name="funding_type" required
+                                        class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                                    {% for code, label in funding_types %}
+                                    <option value="{{ code }}" {% if wizard_data.funding_type == code %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Funding Source/Reference</label>
+                                <input type="text" name="funding_source"
+                                       value="{{ wizard_data.funding_source|default:'' }}"
+                                       placeholder="e.g. Project number, bursary reference"
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Application Date <span class="text-red-500">*</span></label>
+                                <input type="date" name="application_date" required
+                                       value="{{ wizard_data.application_date|default:today }}"
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                                <input type="date" name="start_date"
+                                       value="{{ wizard_data.start_date|default:'' }}"
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <p class="mt-1.5 text-xs text-gray-500">When training begins.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Expected Completion <span class="text-red-500">*</span></label>
+                                <input type="date" name="expected_completion" required
+                                       value="{{ wizard_data.expected_completion|default:'' }}"
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% elif current_step == 4 %}
+                <!-- STEP 4: Review & Confirm -->
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">Step 4: Review & Confirm</h2>
+                    <p class="text-gray-500 mb-6">Review the enrollment details before creating.</p>
+                    
+                    <div class="space-y-6">
+                        <!-- Learner Summary -->
+                        <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Learner</h3>
+                            {% if selected_learner %}
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-gray-500">Name:</span>
+                                    <span class="ml-2 font-medium">{{ selected_learner.get_full_name }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">SA ID:</span>
+                                    <span class="ml-2 font-mono">{{ selected_learner.sa_id_number }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Email:</span>
+                                    <span class="ml-2">{{ selected_learner.email }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Phone:</span>
+                                    <span class="ml-2">{{ selected_learner.phone_mobile }}</span>
+                                </div>
+                            </div>
+                            {% elif wizard_data.new_learner %}
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-gray-500">Name:</span>
+                                    <span class="ml-2 font-medium">{{ wizard_data.new_learner.first_name }} {{ wizard_data.new_learner.last_name }}</span>
+                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">New</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">SA ID:</span>
+                                    <span class="ml-2 font-mono">{{ wizard_data.new_learner.sa_id_number }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Email:</span>
+                                    <span class="ml-2">{{ wizard_data.new_learner.email }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Phone:</span>
+                                    <span class="ml-2">{{ wizard_data.new_learner.phone_mobile }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Qualification Summary -->
+                        <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Qualification & Cohort</h3>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div class="col-span-2">
+                                    <span class="text-gray-500">Qualification:</span>
+                                    {% for qual in qualifications %}
+                                        {% if qual.id|stringformat:"s" == wizard_data.qualification_id %}
+                                        <span class="ml-2 font-medium">{{ qual.saqa_id }} - {{ qual.short_title }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Cohort:</span>
+                                    {% if wizard_data.cohort_id %}
+                                        {% for cohort in cohorts %}
+                                            {% if cohort.id|stringformat:"s" == wizard_data.cohort_id %}
+                                            <span class="ml-2">{{ cohort.code }} - {{ cohort.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                    <span class="ml-2 text-gray-400">Individual (No cohort)</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Campus:</span>
+                                    {% if wizard_data.campus_id %}
+                                        {% for campus in campuses %}
+                                            {% if campus.id|stringformat:"s" == wizard_data.campus_id %}
+                                            <span class="ml-2">{{ campus.name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                    <span class="ml-2 text-gray-400">Not specified</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Funding & Dates Summary -->
+                        <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Funding & Dates</h3>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-gray-500">Funding Type:</span>
+                                    {% for code, label in funding_types %}
+                                        {% if code == wizard_data.funding_type %}
+                                        <span class="ml-2 font-medium">{{ label }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Funding Source:</span>
+                                    <span class="ml-2">{{ wizard_data.funding_source|default:"—" }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Application Date:</span>
+                                    <span class="ml-2">{{ wizard_data.application_date }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Start Date:</span>
+                                    <span class="ml-2">{{ wizard_data.start_date|default:"—" }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Expected Completion:</span>
+                                    <span class="ml-2">{{ wizard_data.expected_completion }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Confirmation -->
+                        <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                            <div class="flex items-center">
+                                <input type="checkbox" id="confirm" name="confirm" required
+                                       class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                                <label for="confirm" class="ml-3 text-sm text-amber-800">
+                                    I confirm the above details are correct and want to create this enrollment.
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="px-6 py-4 bg-gray-50 flex items-center justify-between">
+                <div>
+                    {% if current_step > 1 %}
+                    <button type="submit" name="action" value="back"
+                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                        Back
+                    </button>
+                    {% else %}
+                    <button type="submit" name="action" value="cancel"
+                            class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition">
+                        Cancel
+                    </button>
+                    {% endif %}
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    {% if current_step < 4 %}
+                    <button type="submit" name="action" value="next"
+                            class="inline-flex items-center px-6 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition shadow-sm">
+                        Next Step
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    {% else %}
+                    <button type="submit" name="action" value="create"
+                            class="inline-flex items-center px-6 py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 transition shadow-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Create Enrollment
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function enrollmentWizard() {
+    return {
+        saIdNumber: '{{ wizard_data.new_learner.sa_id_number|default:"" }}',
+        checking: false,
+        learnerFound: {% if selected_learner %}true{% else %}false{% endif %},
+        existingLearner: {% if selected_learner %}{
+            id: {{ selected_learner.id }},
+            learner_number: '{{ selected_learner.learner_number }}',
+            full_name: '{{ selected_learner.get_full_name }}',
+            email: '{{ selected_learner.email }}',
+            phone_mobile: '{{ selected_learner.phone_mobile|default:"" }}',
+            enrollments_count: {{ selected_learner.enrollments.count }}
+        }{% else %}null{% endif %},
+        extractedDob: '',
+        
+        async checkSaId() {
+            if (this.saIdNumber.length !== 13) return;
+            
+            this.checking = true;
+            try {
+                const response = await fetch(`{% url 'admin:check_sa_id' %}?sa_id=${this.saIdNumber}`);
+                const data = await response.json();
+                
+                if (data.status === 'found') {
+                    this.learnerFound = true;
+                    this.existingLearner = data.learner;
+                } else {
+                    this.learnerFound = false;
+                    this.existingLearner = null;
+                    if (data.extracted_dob) {
+                        this.extractedDob = data.extracted_dob;
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking SA ID:', error);
+            } finally {
+                this.checking = false;
+            }
+        }
+    }
+}
+</script>
+
+<style>
+[x-cloak] { display: none !important; }
+</style>
+{% endblock %}

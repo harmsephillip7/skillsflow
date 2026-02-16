@@ -1,0 +1,223 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{{ assessment.title }} - Learner Portal{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                <li><a href="{% url 'portals:student_dashboard' %}" class="hover:text-primary-600">Dashboard</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li><a href="{% url 'portals:student_enrollments' %}" class="hover:text-primary-600">Courses</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li class="text-gray-900 truncate max-w-[200px]">{{ assessment.title }}</li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">{{ assessment.title }}</h1>
+        <p class="mt-1 text-sm text-gray-500">{{ assessment.module.title }}</p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+        {% if assessment.activity_type == 'TEST' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+            <i class="fas fa-file-alt mr-2"></i>Test
+        </span>
+        {% elif assessment.activity_type == 'ASSIGNMENT' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+            <i class="fas fa-tasks mr-2"></i>Assignment
+        </span>
+        {% elif assessment.activity_type == 'PRACTICAL' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+            <i class="fas fa-tools mr-2"></i>Practical
+        </span>
+        {% else %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+            <i class="fas fa-clipboard mr-2"></i>{{ assessment.get_activity_type_display }}
+        </span>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Assessment Details -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Info Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-info-circle text-primary-600 mr-2"></i>Assessment Details
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 uppercase tracking-wide">Weight</p>
+                        <p class="text-xl font-bold text-gray-900 mt-1">{{ assessment.weight }}%</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 uppercase tracking-wide">Max Attempts</p>
+                        <p class="text-xl font-bold text-gray-900 mt-1">{{ assessment.max_attempts|default:"Unlimited" }}</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 uppercase tracking-wide">Your Attempts</p>
+                        <p class="text-xl font-bold text-gray-900 mt-1">{{ attempts_count }}</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 uppercase tracking-wide">External</p>
+                        <p class="text-xl font-bold text-gray-900 mt-1">
+                            {% if assessment.is_external %}
+                            <i class="fas fa-check text-green-600"></i> Yes
+                            {% else %}
+                            <i class="fas fa-times text-gray-400"></i> No
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attempt History -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">
+                        <i class="fas fa-history text-primary-600 mr-2"></i>Your Attempts
+                    </h3>
+                </div>
+                {% if results %}
+                <div class="divide-y divide-gray-100">
+                    {% for result in results %}
+                    <div class="p-5 flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-4">
+                                <span class="font-medium text-gray-600">{{ result.attempt_number }}</span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">Attempt {{ result.attempt_number }}</p>
+                                <p class="text-sm text-gray-500">{{ result.assessment_date|date:"d M Y, H:i" }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            {% if result.percentage_score is not None %}
+                            <div class="text-right">
+                                <p class="text-2xl font-bold {% if result.percentage_score >= 70 %}text-green-600{% elif result.percentage_score >= 50 %}text-amber-600{% else %}text-red-600{% endif %}">
+                                    {{ result.percentage_score|floatformat:0 }}%
+                                </p>
+                            </div>
+                            {% endif %}
+                            <div>
+                                {% if result.result == 'C' %}
+                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-2"></i>Competent
+                                </span>
+                                {% elif result.result == 'NYC' %}
+                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-red-100 text-red-800">
+                                    <i class="fas fa-times mr-2"></i>Not Yet Competent
+                                </span>
+                                {% elif result.result == 'ABS' %}
+                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-gray-100 text-gray-800">
+                                    <i class="fas fa-user-slash mr-2"></i>Absent
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-amber-100 text-amber-800">
+                                    <i class="fas fa-clock mr-2"></i>{{ result.get_result_display|default:"Pending" }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="p-8 text-center text-gray-500">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-clipboard-list text-3xl text-gray-400"></i>
+                    </div>
+                    <h4 class="font-medium text-gray-900 mb-1">No Attempts Yet</h4>
+                    <p class="text-sm">You haven't attempted this assessment yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Current Status Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Your Status</h3>
+                {% if latest_result %}
+                <div class="text-center">
+                    {% if latest_result.result == 'C' %}
+                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-trophy text-4xl text-green-600"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-green-600">Competent!</h4>
+                    <p class="text-sm text-gray-500 mt-1">You passed this assessment</p>
+                    {% if latest_result.percentage_score %}
+                    <p class="text-3xl font-bold text-gray-900 mt-4">{{ latest_result.percentage_score|floatformat:0 }}%</p>
+                    {% endif %}
+                    {% elif latest_result.result == 'NYC' %}
+                    <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-redo text-4xl text-amber-600"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-amber-600">Not Yet Competent</h4>
+                    <p class="text-sm text-gray-500 mt-1">Don't give up! Try again.</p>
+                    {% if latest_result.percentage_score %}
+                    <p class="text-3xl font-bold text-gray-900 mt-4">{{ latest_result.percentage_score|floatformat:0 }}%</p>
+                    {% endif %}
+                    {% else %}
+                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-clock text-4xl text-blue-600"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-blue-600">Awaiting Result</h4>
+                    <p class="text-sm text-gray-500 mt-1">Your assessment is being marked</p>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-hourglass-start text-4xl text-gray-400"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-gray-600">Not Started</h4>
+                    <p class="text-sm text-gray-500 mt-1">You haven't attempted this assessment yet</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Assessor Info -->
+            {% if latest_result.assessor %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Assessed By</h3>
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-primary-600"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="font-medium text-gray-900">{{ latest_result.assessor.get_full_name }}</p>
+                        <p class="text-sm text-gray-500">{{ latest_result.assessment_date|date:"d M Y" }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Links -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Quick Links</h3>
+                <div class="space-y-2">
+                    <a href="{% url 'student_marks' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition text-gray-700">
+                        <i class="fas fa-chart-line text-primary-600 w-5"></i>
+                        <span class="ml-3">View All Marks</span>
+                    </a>
+                    <a href="{% url 'portals:student_materials' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition text-gray-700">
+                        <i class="fas fa-folder-open text-primary-600 w-5"></i>
+                        <span class="ml-3">Learning Materials</span>
+                    </a>
+                    <a href="{% url 'portals:student_enrollments' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition text-gray-700">
+                        <i class="fas fa-graduation-cap text-primary-600 w-5"></i>
+                        <span class="ml-3">My Courses</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

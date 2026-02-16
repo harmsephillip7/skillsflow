@@ -1,0 +1,226 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Resource Planning - SkillsFlow{% endblock %}
+
+{% block page_title %}Resource Planning{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'core:organization_dashboard' %}" class="text-gray-500 hover:text-gray-700">Dashboard</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Resource Planning</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <button class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Export Forecast
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Forecast Period Selector -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Forecast Period</h3>
+        <div class="flex flex-wrap gap-4">
+            {% for period in forecast_periods %}
+            <button class="px-4 py-2 rounded-lg border {% if forloop.first %}bg-primary-50 border-primary-500 text-primary-700{% else %}border-gray-200 text-gray-600 hover:bg-gray-50{% endif %} transition-colors">
+                {{ period.label }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Upcoming Cohorts -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">Upcoming Cohorts & Material Requirements</h3>
+            <a href="{% url 'admin:cohort_create' %}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                + Add Cohort
+            </a>
+        </div>
+        
+        {% if upcoming_cohorts %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider py-3 px-4">Cohort</th>
+                        <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider py-3 px-4">Qualification</th>
+                        <th class="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider py-3 px-4">Start Date</th>
+                        <th class="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider py-3 px-4">Learners</th>
+                        <th class="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider py-3 px-4">Materials Status</th>
+                        <th class="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider py-3 px-4">Days Until Start</th>
+                        <th class="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider py-3 px-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for cohort in upcoming_cohorts %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="py-4 px-4">
+                            <div class="font-medium text-gray-900">{{ cohort.name|default:cohort }}</div>
+                            <div class="text-xs text-gray-500">{{ cohort.code|default:"" }}</div>
+                        </td>
+                        <td class="py-4 px-4">
+                            <span class="text-sm text-gray-700">{{ cohort.qualification.short_title|default:"N/A" }}</span>
+                        </td>
+                        <td class="py-4 px-4 text-center">
+                            <span class="text-sm text-gray-700">{{ cohort.start_date|date:"d M Y" }}</span>
+                        </td>
+                        <td class="py-4 px-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {{ cohort.learner_count|default:0 }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Pending
+                            </span>
+                        </td>
+                        <td class="py-4 px-4 text-center">
+                            {% with days_until=cohort.start_date|timesince %}
+                            <span class="{% if 'day' in days_until and '1' in days_until or '2' in days_until %}text-red-600 font-semibold{% else %}text-gray-600{% endif %}">
+                                {{ cohort.start_date|timeuntil }}
+                            </span>
+                            {% endwith %}
+                        </td>
+                        <td class="py-4 px-4 text-right">
+                            <button class="text-primary-600 hover:text-primary-800 text-sm font-medium">
+                                Order Materials
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <svg class="w-16 h-16 text-gray-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+            </svg>
+            <p class="mt-4 text-lg font-medium text-gray-900">No Upcoming Cohorts</p>
+            <p class="mt-1 text-sm text-gray-500">Create a new cohort to start resource planning.</p>
+            <a href="{% url 'admin:cohort_create' %}" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                Create Cohort
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Material Forecast Summary -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Learners</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900">
+                        {% if upcoming_cohorts %}
+                        {{ upcoming_cohorts.count }}
+                        {% else %}
+                        0
+                        {% endif %}
+                    </p>
+                    <p class="mt-1 text-sm text-gray-600">Upcoming Cohorts</p>
+                </div>
+                <div class="p-4 bg-primary-100 rounded-full">
+                    <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Materials Needed</p>
+                    <p class="mt-2 text-3xl font-bold text-yellow-600">0</p>
+                    <p class="mt-1 text-sm text-gray-600">Orders Pending</p>
+                </div>
+                <div class="p-4 bg-yellow-100 rounded-full">
+                    <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Facilitators</p>
+                    <p class="mt-2 text-3xl font-bold text-green-600">0</p>
+                    <p class="mt-1 text-sm text-gray-600">Assigned</p>
+                </div>
+                <div class="p-4 bg-green-100 rounded-full">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recommendations -->
+    <div class="bg-gradient-to-r from-primary-600 to-primary-800 rounded-xl shadow-lg p-6 text-white">
+        <h3 class="text-lg font-semibold mb-4">Planning Recommendations</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="bg-white/10 rounded-lg p-4">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-medium">Order Materials 4 Weeks Ahead</p>
+                        <p class="text-sm text-white/80 mt-1">Ensure materials arrive before cohort starts.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/10 rounded-lg p-4">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-green-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-medium">Assign Facilitators Early</p>
+                        <p class="text-sm text-white/80 mt-1">Confirm facilitator availability 2 weeks ahead.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/10 rounded-lg p-4">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-blue-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-medium">Check Venue Capacity</p>
+                        <p class="text-sm text-white/80 mt-1">Verify venue can accommodate learner count.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

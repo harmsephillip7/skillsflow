@@ -1,0 +1,188 @@
+{% extends 'crm/crm_fullscreen_base.html' %}
+{% load static %}
+
+{% block title %}{% if is_create %}Add{% else %}Edit{% endif %} Web Form Source - CRM{% endblock %}
+
+{% block crm_content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <nav class="flex mb-4" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-2 text-sm">
+                <li>
+                    <a href="{% url 'crm:webform_sources' %}" class="text-gray-500 hover:text-primary-600 transition-colors">Web Form Sources</a>
+                </li>
+                <li class="flex items-center">
+                    <svg class="w-4 h-4 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="text-gray-900 font-medium">{% if is_create %}Add{% else %}Edit{% endif %}</span>
+                </li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">{% if is_create %}Add Website{% else %}Edit {{ object.name }}{% endif %}</h1>
+        <p class="mt-1 text-sm text-gray-500">{% if is_create %}Connect a new website to receive leads{% else %}Update website configuration{% endif %}</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Form -->
+        <div class="lg:col-span-2">
+            <form method="post" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                {% csrf_token %}
+                
+                <div class="p-6 space-y-6">
+                    <!-- Name -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="name" 
+                               class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors" 
+                               value="{{ form.name.value|default:'' }}" 
+                               placeholder="e.g., Main College Website" required>
+                        <p class="mt-1.5 text-sm text-gray-500">A friendly name to identify this website</p>
+                    </div>
+                    
+                    <!-- Domain -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Domain <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                                </svg>
+                            </div>
+                            <input type="text" name="domain" 
+                                   class="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors" 
+                                   value="{{ form.domain.value|default:'' }}" 
+                                   placeholder="collegename.co.za" required>
+                        </div>
+                        <p class="mt-1.5 text-sm text-gray-500">The website domain (without https://)</p>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" rows="2" 
+                                  class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors" 
+                                  placeholder="Optional description or notes">{{ form.description.value|default:'' }}</textarea>
+                    </div>
+                    
+                    <hr class="border-gray-200">
+                    
+                    <!-- Brand -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Brand <span class="text-red-500">*</span>
+                        </label>
+                        <select name="brand" 
+                                class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white" required>
+                            <option value="">Select Brand...</option>
+                            {% for brand in brands %}
+                            <option value="{{ brand.id }}" {% if form.brand.value == brand.id|stringformat:"s" or object.brand_id == brand.id %}selected{% endif %}>
+                                {{ brand.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Default Campus -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Default Campus</label>
+                        <select name="default_campus" 
+                                class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white">
+                            <option value="">Select Default Campus...</option>
+                            {% for campus in campuses %}
+                            <option value="{{ campus.id }}" {% if form.default_campus.value == campus.id|stringformat:"s" or object.default_campus_id == campus.id %}selected{% endif %}>
+                                {{ campus.brand.code }} - {{ campus.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <p class="mt-1.5 text-sm text-gray-500">Used when a form doesn't specify a campus</p>
+                    </div>
+                    
+                    <!-- Default Lead Source -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Default Lead Source</label>
+                        <select name="default_lead_source" 
+                                class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white">
+                            <option value="">Use "Web Form" source</option>
+                            {% for source in lead_sources %}
+                            <option value="{{ source.id }}" {% if form.default_lead_source.value == source.id|stringformat:"s" or object.default_lead_source_id == source.id %}selected{% endif %}>
+                                {{ source.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Active Toggle -->
+                    <div class="flex items-start">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" name="is_active" id="is_active"
+                                   class="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 transition-colors"
+                                   {% if is_create or object.is_active %}checked{% endif %}>
+                        </div>
+                        <div class="ml-3">
+                            <label for="is_active" class="text-sm font-medium text-gray-700">Active</label>
+                            <p class="text-sm text-gray-500">Inactive sources will reject incoming webhooks</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Form Footer -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end space-x-3">
+                    <a href="{% url 'crm:webform_sources' %}" 
+                       class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+                        <svg class="w-4 h-4 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {% if is_create %}Create Source{% else %}Save Changes{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Help Sidebar -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden sticky top-24">
+                <div class="px-5 py-4 border-b border-gray-100 bg-gray-50">
+                    <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Quick Help
+                    </h3>
+                </div>
+                <div class="p-5 space-y-4">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-900 mb-1">What is a Web Form Source?</h4>
+                        <p class="text-sm text-gray-500">
+                            A source represents a website that sends lead data via webhooks, like Gravity Forms or Contact Form 7.
+                        </p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-900 mb-1">Next Steps</h4>
+                        <p class="text-sm text-gray-500">
+                            After creating a source, you'll get a unique webhook URL and secret to configure in your form builder.
+                        </p>
+                    </div>
+                    <div class="pt-4 border-t border-gray-200">
+                        <div class="flex items-center text-sm text-gray-500">
+                            <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                            Secure webhook authentication
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

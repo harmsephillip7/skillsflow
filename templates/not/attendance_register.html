@@ -1,0 +1,349 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Attendance Register - {{ notification.reference_number }}{% endblock %}
+
+{% block page_title %}Monthly Attendance Register{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'not_dashboard' %}" class="text-primary-600 hover:text-primary-800">NOT</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'not_detail' notification.pk %}" class="text-primary-600 hover:text-primary-800">{{ notification.reference_number }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Attendance Register</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <!-- Month Navigation -->
+    {% if prev_month %}
+    <a href="{% url 'not_attendance_register' notification.pk prev_month.year prev_month.month %}" 
+       class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        {{ prev_month.month_name }}
+    </a>
+    {% endif %}
+    
+    {% if next_month %}
+    <a href="{% url 'not_attendance_register' notification.pk next_month.year next_month.month %}" 
+       class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+        {{ next_month.month_name }}
+        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+    </a>
+    {% endif %}
+
+    <div class="border-l border-gray-300 h-6 mx-2"></div>
+
+    <!-- Export Buttons -->
+    <a href="{% url 'not_attendance_register_export' notification.pk year month 'pdf' %}" 
+       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+        <svg class="w-4 h-4 mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+        </svg>
+        Export PDF
+    </a>
+    
+    <a href="{% url 'not_attendance_register_export' notification.pk year month 'excel' %}" 
+       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+        <svg class="w-4 h-4 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd"/>
+        </svg>
+        Export Excel
+    </a>
+
+    <div class="border-l border-gray-300 h-6 mx-2"></div>
+
+    <!-- Generate Deliverable -->
+    <form method="post" action="{% url 'not_generate_attendance_deliverable' notification.pk year month %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" 
+                class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 transition-all">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Generate Deliverable
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header Card -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">{{ register.period.month_name }} {{ register.period.year }}</h2>
+                <p class="text-sm text-gray-500 mt-1">{{ notification.title }} - {{ notification.reference_number }}</p>
+            </div>
+            <div class="text-right">
+                <div class="text-sm text-gray-500">Generated</div>
+                <div class="font-medium">{% now "d M Y H:i" %}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div class="text-sm text-gray-500">Total Learners</div>
+            <div class="text-2xl font-bold text-gray-900">{{ register.summary.total_learners }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div class="text-sm text-gray-500">Working Days</div>
+            <div class="text-2xl font-bold text-gray-900">{{ register.summary.working_days }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-green-200 p-4 bg-green-50">
+            <div class="text-sm text-green-600">Days Present</div>
+            <div class="text-2xl font-bold text-green-700">{{ register.summary.total_present }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-red-200 p-4 bg-red-50">
+            <div class="text-sm text-red-600">Days Absent</div>
+            <div class="text-2xl font-bold text-red-700">{{ register.summary.total_absent }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-yellow-200 p-4 bg-yellow-50">
+            <div class="text-sm text-yellow-600">Unverified</div>
+            <div class="text-2xl font-bold text-yellow-700">{{ register.summary.unverified_count }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-blue-200 p-4 bg-blue-50">
+            <div class="text-sm text-blue-600">Avg Attendance</div>
+            <div class="text-2xl font-bold text-blue-700">{{ register.summary.average_attendance|floatformat:1 }}%</div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <h3 class="text-sm font-medium text-gray-700 mb-3">Attendance Codes</h3>
+        <div class="flex flex-wrap gap-4">
+            <div class="flex items-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-green-100 text-green-800 font-medium text-sm mr-2">P</span>
+                <span class="text-sm text-gray-600">Present</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-blue-100 text-blue-800 font-medium text-sm mr-2">AL</span>
+                <span class="text-sm text-gray-600">Annual Leave</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-yellow-100 text-yellow-800 font-medium text-sm mr-2">SL</span>
+                <span class="text-sm text-gray-600">Sick Leave</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-purple-100 text-purple-800 font-medium text-sm mr-2">FL</span>
+                <span class="text-sm text-gray-600">Family Leave</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-orange-100 text-orange-800 font-medium text-sm mr-2">UL</span>
+                <span class="text-sm text-gray-600">Unpaid Leave</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-cyan-100 text-cyan-800 font-medium text-sm mr-2">PH</span>
+                <span class="text-sm text-gray-600">Public Holiday</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-100 text-red-800 font-medium text-sm mr-2">A</span>
+                <span class="text-sm text-gray-600">Absent</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-teal-100 text-teal-800 font-medium text-sm mr-2">S</span>
+                <span class="text-sm text-gray-600">Study Leave</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-gray-100 text-gray-500 font-medium text-sm mr-2">-</span>
+                <span class="text-sm text-gray-600">No Record</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-6 mt-4 pt-4 border-t border-gray-200">
+            <div class="flex items-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-green-100 text-green-800 font-medium text-sm mr-2 ring-2 ring-green-500">✓</span>
+                <span class="text-sm text-gray-600">Verified by Facilitator/Mentor</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-green-100 text-green-800 font-medium text-sm mr-2 ring-2 ring-yellow-400">!</span>
+                <span class="text-sm text-gray-600">Not Verified</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="sticky left-0 bg-gray-50 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap z-10">
+                            Learner
+                        </th>
+                        <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            ID Number
+                        </th>
+                        {% for day in register.period.days %}
+                        <th scope="col" class="px-1 py-3 text-center text-xs font-medium {% if day.is_weekend %}text-gray-400 bg-gray-100{% else %}text-gray-500{% endif %} uppercase tracking-wider whitespace-nowrap" style="min-width: 32px;">
+                            <div>{{ day.day }}</div>
+                            <div class="text-[10px] font-normal">{{ day.weekday_short }}</div>
+                        </th>
+                        {% endfor %}
+                        <th scope="col" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-blue-50">
+                            Days<br>Present
+                        </th>
+                        <th scope="col" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-green-50">
+                            Verified<br>%
+                        </th>
+                        <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-purple-50">
+                            Stipend<br>Amount
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for learner in register.learners %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="sticky left-0 bg-white px-4 py-3 whitespace-nowrap z-10">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+                                    <span class="text-sm font-medium text-primary-700">{{ learner.name|slice:":1" }}</span>
+                                </div>
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium text-gray-900">{{ learner.name }}</div>
+                                    <div class="text-xs text-gray-500">{{ learner.employer|default:"No Employer" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                            {{ learner.id_number|default:"-" }}
+                        </td>
+                        {% for att in learner.attendance %}
+                        <td class="px-1 py-2 text-center">
+                            {% if att.is_weekend %}
+                            <span class="inline-flex items-center justify-center w-7 h-7 rounded bg-gray-100 text-gray-400 text-xs">
+                                -
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center justify-center w-7 h-7 rounded text-xs font-medium
+                                {% if att.code == 'P' %}bg-green-100 text-green-800{% elif att.code == 'AL' %}bg-blue-100 text-blue-800{% elif att.code == 'SL' %}bg-yellow-100 text-yellow-800{% elif att.code == 'FL' %}bg-purple-100 text-purple-800{% elif att.code == 'UL' %}bg-orange-100 text-orange-800{% elif att.code == 'PH' %}bg-cyan-100 text-cyan-800{% elif att.code == 'A' %}bg-red-100 text-red-800{% elif att.code == 'S' %}bg-teal-100 text-teal-800{% else %}bg-gray-100 text-gray-500{% endif %}
+                                {% if att.verified %}ring-2 ring-green-500{% elif att.code != '-' %}ring-2 ring-yellow-400{% endif %}"
+                                title="{{ att.description }}{% if att.verified %} (Verified){% elif att.code != '-' %} (Not Verified){% endif %}">
+                                {{ att.code }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td class="px-3 py-3 text-center whitespace-nowrap bg-blue-50">
+                            <span class="text-sm font-semibold text-blue-700">{{ learner.summary.days_present }}</span>
+                            <span class="text-xs text-gray-500">/{{ learner.summary.working_days }}</span>
+                        </td>
+                        <td class="px-3 py-3 text-center whitespace-nowrap bg-green-50">
+                            <span class="text-sm font-semibold {% if learner.summary.verified_percentage >= 80 %}text-green-700{% elif learner.summary.verified_percentage >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                                {{ learner.summary.verified_percentage|floatformat:0 }}%
+                            </span>
+                        </td>
+                        <td class="px-3 py-3 text-right whitespace-nowrap bg-purple-50">
+                            {% if learner.stipend %}
+                            <div class="text-sm font-semibold text-purple-700">R{{ learner.stipend.amount|floatformat:2 }}</div>
+                            <div class="text-xs text-gray-500">{{ learner.stipend.status }}</div>
+                            {% else %}
+                            <span class="text-sm text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% widthratio register.period.days|length 1 1 %}" class="px-6 py-12 text-center text-gray-500">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            <p class="mt-4 text-sm">No learners found for this project</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if register.learners %}
+                <tfoot class="bg-gray-50">
+                    <tr>
+                        <td colspan="2" class="sticky left-0 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700 z-10">
+                            Totals ({{ register.summary.total_learners }} Learners)
+                        </td>
+                        {% for day in register.period.days %}
+                        <td class="px-1 py-3 text-center text-xs text-gray-500 {% if day.is_weekend %}bg-gray-100{% endif %}">
+                            -
+                        </td>
+                        {% endfor %}
+                        <td class="px-3 py-3 text-center whitespace-nowrap bg-blue-100">
+                            <span class="text-sm font-bold text-blue-800">{{ register.summary.total_present }}</span>
+                        </td>
+                        <td class="px-3 py-3 text-center whitespace-nowrap bg-green-100">
+                            <span class="text-sm font-bold {% if register.summary.verification_rate >= 80 %}text-green-800{% elif register.summary.verification_rate >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">
+                                {{ register.summary.verification_rate|floatformat:0 }}%
+                            </span>
+                        </td>
+                        <td class="px-3 py-3 text-right whitespace-nowrap bg-purple-100">
+                            <span class="text-sm font-bold text-purple-800">R{{ register.summary.total_stipend|floatformat:2 }}</span>
+                        </td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+
+    <!-- Stipend Summary -->
+    {% if register.summary.total_stipend > 0 %}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Stipend Summary</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <div class="text-sm text-gray-500">Total Stipend for {{ register.period.month_name }}</div>
+                <div class="text-3xl font-bold text-purple-600">R{{ register.summary.total_stipend|floatformat:2 }}</div>
+            </div>
+            <div>
+                <div class="text-sm text-gray-500">Learners with Stipend</div>
+                <div class="text-3xl font-bold text-gray-900">{{ register.summary.learners_with_stipend }}</div>
+            </div>
+            <div>
+                <div class="text-sm text-gray-500">Average per Learner</div>
+                <div class="text-3xl font-bold text-gray-700">
+                    {% if register.summary.learners_with_stipend > 0 %}
+                    R{% widthratio register.summary.total_stipend register.summary.learners_with_stipend 1 %}
+                    {% else %}
+                    R0
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Notes Section -->
+    <div class="bg-yellow-50 rounded-lg border border-yellow-200 p-4">
+        <div class="flex">
+            <svg class="w-5 h-5 text-yellow-600 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            <div>
+                <h4 class="text-sm font-medium text-yellow-800">Important Notes</h4>
+                <ul class="mt-2 text-sm text-yellow-700 list-disc list-inside space-y-1">
+                    <li>Entries with a <span class="font-semibold">green ring</span> have been verified by a facilitator or mentor</li>
+                    <li>Entries with a <span class="font-semibold">yellow ring</span> are pending verification</li>
+                    <li>Stipend calculations are based on verified attendance records</li>
+                    <li>Weekends are shown in gray and excluded from working day counts</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

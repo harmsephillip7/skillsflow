@@ -1,0 +1,107 @@
+<div class="space-y-6">
+    <!-- Service Cards -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {% for sub in subscriptions %}
+        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div class="p-5 border-b border-gray-200 flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center
+                        {% if 'WSP' in sub.service.name %}bg-blue-100 text-blue-600
+                        {% elif 'EE' in sub.service.name or 'Employment' in sub.service.name %}bg-purple-100 text-purple-600
+                        {% elif 'B-BBEE' in sub.service.name %}bg-orange-100 text-orange-600
+                        {% elif 'Learner' in sub.service.name %}bg-green-100 text-green-600
+                        {% else %}bg-gray-100 text-gray-600{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="font-medium text-gray-900">{{ sub.service.name }}</h3>
+                        <p class="text-sm text-gray-500">Since {{ sub.start_date|date:"M Y" }}</p>
+                    </div>
+                </div>
+                <span class="px-3 py-1 text-sm rounded-full 
+                    {% if sub.status == 'ACTIVE' %}bg-green-100 text-green-700
+                    {% elif sub.status == 'PENDING' %}bg-yellow-100 text-yellow-700
+                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                    {{ sub.get_status_display }}
+                </span>
+            </div>
+            
+            <!-- Service Onboarding Progress -->
+            {% if sub.service_onboarding and sub.service_onboarding.status != 'COMPLETED' %}
+            <div class="px-5 py-4 bg-blue-50 border-b border-blue-100">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-blue-700">Setup Progress</span>
+                    <span class="text-sm text-blue-600">{{ sub.service_onboarding.progress_percentage }}%</span>
+                </div>
+                <div class="w-full bg-blue-200 rounded-full h-2 mb-3">
+                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ sub.service_onboarding.progress_percentage }}%"></div>
+                </div>
+                <a href="{% url 'corporate:service_onboarding' client.pk sub.pk %}" 
+                   class="text-sm text-blue-700 hover:text-blue-800 font-medium">
+                    Continue Setup →
+                </a>
+            </div>
+            {% endif %}
+            
+            <div class="p-5">
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-500">Contract Period</span>
+                        <p class="font-medium text-gray-900">{{ sub.start_date|date:"d M Y" }} - {{ sub.end_date|date:"d M Y" }}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Monthly Fee</span>
+                        <p class="font-medium text-gray-900">R {{ sub.monthly_fee|floatformat:2 }}</p>
+                    </div>
+                </div>
+                
+                <!-- Service Quick Links -->
+                <div class="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
+                    {% if 'WSP' in sub.service.name %}
+                        <a href="{% url 'core:wsp_list' %}" class="text-sm text-primary-600 hover:text-primary-700">WSP Reports</a>
+                        <span class="text-gray-300">|</span>
+                        <a href="#" class="text-sm text-primary-600 hover:text-primary-700">ATR Reports</a>
+                    {% elif 'EE' in sub.service.name %}
+                        <a href="{% url 'hr:ee_plan_list' client.pk %}" class="text-sm text-primary-600 hover:text-primary-700">EE Plans</a>
+                        <span class="text-gray-300">|</span>
+                        <a href="#" class="text-sm text-primary-600 hover:text-primary-700">Reports</a>
+                    {% elif 'B-BBEE' in sub.service.name %}
+                        <a href="#" class="text-sm text-primary-600 hover:text-primary-700">Scorecard</a>
+                        <span class="text-gray-300">|</span>
+                        <a href="#" class="text-sm text-primary-600 hover:text-primary-700">Certificates</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-2 text-center py-12 bg-white rounded-lg border border-gray-200">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No Services</h3>
+            <p class="mt-1 text-sm text-gray-500">This client has no active service subscriptions.</p>
+            <div class="mt-6">
+                <a href="{% url 'corporate:subscription_create' client.pk %}" 
+                   class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                    Add Service
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Add Service Button -->
+    {% if subscriptions %}
+    <div class="flex justify-end">
+        <a href="{% url 'corporate:subscription_create' client.pk %}" 
+           class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Add Service
+        </a>
+    </div>
+    {% endif %}
+</div>

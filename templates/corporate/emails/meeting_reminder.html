@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Reminder</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #f59e0b;
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            background-color: #f8fafc;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+        .meeting-details {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .meeting-details h2 {
+            margin-top: 0;
+            color: #92400e;
+            font-size: 18px;
+            border-bottom: 2px solid #fef3c7;
+            padding-bottom: 10px;
+        }
+        .detail-row {
+            display: flex;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #64748b;
+            width: 120px;
+            flex-shrink: 0;
+        }
+        .detail-value {
+            color: #334155;
+        }
+        .join-button {
+            display: inline-block;
+            background-color: #f59e0b;
+            color: white !important;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .reminder-badge {
+            display: inline-block;
+            background-color: #fef3c7;
+            color: #92400e;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .footer {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⏰ Meeting Reminder</h1>
+    </div>
+    
+    <div class="content">
+        <p>Dear {{ member.display_name }},</p>
+        
+        <p>This is a reminder for the upcoming <strong>Training Committee Meeting</strong> for {{ client.company_name }}.</p>
+        
+        <div class="meeting-details">
+            <h2>Meeting Details <span class="reminder-badge">Reminder</span></h2>
+            
+            <div class="detail-row">
+                <span class="detail-label">Meeting:</span>
+                <span class="detail-value">{{ meeting.title }}</span>
+            </div>
+            
+            <div class="detail-row">
+                <span class="detail-label">Date:</span>
+                <span class="detail-value"><strong>{{ meeting.scheduled_date|date:"l, d F Y" }}</strong></span>
+            </div>
+            
+            <div class="detail-row">
+                <span class="detail-label">Time:</span>
+                <span class="detail-value"><strong>{{ meeting.scheduled_time|time:"H:i" }}</strong></span>
+            </div>
+            
+            <div class="detail-row">
+                <span class="detail-label">Duration:</span>
+                <span class="detail-value">{{ meeting.duration_minutes }} minutes</span>
+            </div>
+            
+            {% if meeting.location %}
+            <div class="detail-row">
+                <span class="detail-label">Location:</span>
+                <span class="detail-value">{{ meeting.location }}</span>
+            </div>
+            {% endif %}
+            
+            {% if meeting.meeting_link %}
+            <div style="margin-top: 15px; text-align: center;">
+                <a href="{{ meeting.meeting_link }}" class="join-button">Join Meeting</a>
+            </div>
+            
+            {% if meeting.meeting_id %}
+            <div class="detail-row" style="margin-top: 10px;">
+                <span class="detail-label">Meeting ID:</span>
+                <span class="detail-value">{{ meeting.meeting_id }}</span>
+            </div>
+            {% endif %}
+            
+            {% if meeting.meeting_password %}
+            <div class="detail-row">
+                <span class="detail-label">Password:</span>
+                <span class="detail-value">{{ meeting.meeting_password }}</span>
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+        
+        <p>Please ensure you have all necessary documents ready for the meeting.</p>
+        
+        <p>Kind regards,<br>
+        <strong>SkillsFlow Corporate Services</strong></p>
+        
+        <div class="footer">
+            <p>This is an automated reminder from SkillsFlow.</p>
+        </div>
+    </div>
+</body>
+</html>

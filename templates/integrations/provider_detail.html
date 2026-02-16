@@ -1,0 +1,412 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title|default:provider.name }} - SkillsFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'integrations:marketplace' %}" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </a>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                            {% if provider.icon %}
+                                <img src="{{ provider.icon.url }}" alt="{{ provider.name }}" class="w-8 h-8">
+                            {% else %}
+                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-900">{{ provider.name }}</h1>
+                            <p class="text-sm text-gray-500">{{ provider.get_category_display }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% if connection %}
+                    <div class="flex items-center space-x-3">
+                        {% if connection.health_status == 'HEALTHY' %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                <span class="w-2 h-2 mr-2 rounded-full bg-green-500"></span>
+                                Connected
+                            </span>
+                        {% elif connection.health_status == 'DEGRADED' %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                                <span class="w-2 h-2 mr-2 rounded-full bg-yellow-500"></span>
+                                Degraded
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                <span class="w-2 h-2 mr-2 rounded-full bg-red-500"></span>
+                                Unhealthy
+                            </span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Content -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Description -->
+                {% if provider.description %}
+                <div class="bg-white rounded-xl border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-3">About {{ provider.name }}</h2>
+                    <p class="text-gray-600">{{ provider.description }}</p>
+                </div>
+                {% endif %}
+
+                {% if connection %}
+                    <!-- Connection Status -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Connection Status</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-500">Status</p>
+                                <p class="font-medium text-gray-900">{{ connection.health_status }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Last Sync</p>
+                                <p class="font-medium text-gray-900">
+                                    {% if connection.last_sync_at %}
+                                        {{ connection.last_sync_at|timesince }} ago
+                                    {% else %}
+                                        Never
+                                    {% endif %}
+                                </p>
+                            </div>
+                            {% if connection.rate_limit_remaining is not None %}
+                            <div>
+                                <p class="text-sm text-gray-500">Rate Limit Remaining</p>
+                                <p class="font-medium text-gray-900">{{ connection.rate_limit_remaining }}</p>
+                            </div>
+                            {% endif %}
+                            {% if connection.token_expires_at %}
+                            <div>
+                                <p class="text-sm text-gray-500">Token Expires</p>
+                                <p class="font-medium text-gray-900">
+                                    {% if connection.is_token_valid %}
+                                        {{ connection.token_expires_at|timesince }}
+                                    {% else %}
+                                        <span class="text-red-600">Expired</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% if connection.status_message %}
+                        <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600">{{ connection.status_message }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Actions</h2>
+                        <div class="flex flex-wrap gap-3">
+                            <form method="post" action="{% url 'integrations:connection_sync' connection.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                    Sync Now
+                                </button>
+                            </form>
+                            <button onclick="testConnection({{ connection.id }})" class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Test Connection
+                            </button>
+                            <a href="{% url 'integrations:connection_detail' connection.id %}" class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                Settings
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Recent Sync Logs -->
+                    {% if sync_logs %}
+                    <div class="bg-white rounded-xl border border-gray-200">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h2 class="text-lg font-semibold text-gray-900">Recent Syncs</h2>
+                        </div>
+                        <div class="divide-y divide-gray-100">
+                            {% for log in sync_logs %}
+                            <div class="px-6 py-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-medium text-gray-900">{{ log.entity_type }}</p>
+                                        <p class="text-sm text-gray-500">{{ log.started_at|date:"M d, Y H:i" }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        {% if log.status == 'SUCCESS' %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Success</span>
+                                        {% elif log.status == 'PARTIAL' %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Partial</span>
+                                        {% else %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>
+                                        {% endif %}
+                                        <p class="text-xs text-gray-500 mt-1">{{ log.records_processed }} / {{ log.records_total }} records</p>
+                                    </div>
+                                </div>
+                                {% if log.error_message %}
+                                <p class="mt-2 text-sm text-red-600">{{ log.error_message }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                {% else %}
+                    <!-- Connect Form -->
+                    <div class="bg-white rounded-xl border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Connect {{ provider.name }}</h2>
+                        
+                        <form method="post" action="{% url 'integrations:connect_provider' provider.slug %}" class="space-y-4">
+                            {% csrf_token %}
+                            
+                            {% if provider.auth_type == 'OAUTH2' %}
+                                <div class="p-4 bg-blue-50 rounded-lg">
+                                    <div class="flex">
+                                        <svg class="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <div class="ml-3">
+                                            <p class="text-sm text-blue-700">
+                                                This integration uses OAuth for secure authentication. You'll be redirected to {{ provider.name }} to authorize access.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
+                                    <input type="text" name="client_id" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="Enter your Client ID">
+                                    <p class="mt-1 text-xs text-gray-500">From your {{ provider.name }} app registration</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Client Secret</label>
+                                    <input type="password" name="client_secret" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="Enter your Client Secret">
+                                </div>
+                                
+                                {% elif provider.auth_type == 'API_KEY' %}
+
+                                {# WhatsApp Cloud API needs ACCESS TOKEN + Phone Number ID (+ optional App Secret + WABA ID) #}
+                                {% if provider.slug == 'whatsapp' %}
+                                    <div class="p-4 bg-blue-50 rounded-lg">
+                                        <div class="flex">
+                                            <svg class="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            <div class="ml-3">
+                                                <p class="text-sm text-blue-700">
+                                                    WhatsApp Cloud API uses an <strong>Access Token</strong> (not an API key). Add your token and Phone Number ID.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                            
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Access Token</label>
+                                        <input type="password" name="access_token" required
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                               placeholder="Paste your WhatsApp Cloud API access token (EAAX...)">
+                                        <p class="mt-1 text-xs text-gray-500">From Meta Developer / WhatsApp Cloud API credentials.</p>
+                                    </div>
+                            
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number ID</label>
+                                        <input type="text" name="phone_number_id" required
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                               placeholder="e.g. 993865757137788">
+                                        <p class="mt-1 text-xs text-gray-500">This is the WhatsApp “Phone Number ID” (not your actual phone number).</p>
+                                    </div>
+                            
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp Business Account ID (WABA ID) (optional)</label>
+                                        <input type="text" name="waba_id"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                               placeholder="e.g. 909335694916426">
+                                    </div>
+                            
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">App Secret (optional - for webhook signature verification)</label>
+                                        <input type="password" name="api_secret"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                               placeholder="Meta App Secret">
+                                    </div>
+                            
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">API Base URL (optional)</label>
+                                        <input type="url" name="base_url"
+                                               value="https://graph.facebook.com/v18.0"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                               placeholder="https://graph.facebook.com/v18.0">
+                                        <p class="mt-1 text-xs text-gray-500">Default is correct for WhatsApp Cloud API.</p>
+                                    </div>
+                            
+                                {% else %}
+                                    {# Generic API Key provider #}
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                                        <input type="password" name="api_key" required
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                               placeholder="Enter your API key">
+                                    </div>
+                            
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">API URL (optional)</label>
+                                        <input type="url" name="base_url"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                               placeholder="https://api.example.com">
+                                    </div>
+                                {% endif %}
+                                
+                            {% elif provider.auth_type == 'BASIC' %}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                                    <input type="text" name="username" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="Enter username">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                    <input type="password" name="password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="Enter password">
+                                </div>
+                                
+                                {% if provider.base_url %}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">API URL (optional)</label>
+                                    <input type="url" name="base_url" value="{{ provider.base_url }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                </div>
+                                {% endif %}
+                            {% endif %}
+                            
+                            <button type="submit" class="w-full px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors">
+                                {% if provider.auth_type == 'OAUTH2' %}
+                                    Connect with {{ provider.name }}
+                                {% else %}
+                                    Connect
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Features -->
+                <div class="bg-white rounded-xl border border-gray-200 p-6">
+                    <h3 class="font-semibold text-gray-900 mb-4">Features</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-sm text-gray-600">{{ provider.get_auth_type_display }} Authentication</span>
+                        </li>
+                        {% if provider.supports_webhooks %}
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-sm text-gray-600">Webhook Support</span>
+                        </li>
+                        {% endif %}
+                        {% if provider.supports_realtime %}
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-sm text-gray-600">Real-time Sync</span>
+                        </li>
+                        {% endif %}
+                        {% if provider.rate_limit_requests %}
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="text-sm text-gray-600">{{ provider.rate_limit_requests }} requests/{{ provider.rate_limit_window }}s</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- Documentation -->
+                {% if provider.documentation_url %}
+                <div class="bg-white rounded-xl border border-gray-200 p-6">
+                    <h3 class="font-semibold text-gray-900 mb-4">Documentation</h3>
+                    <a href="{{ provider.documentation_url }}" target="_blank" rel="noopener" class="inline-flex items-center text-primary-600 hover:text-primary-700 text-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                        </svg>
+                        View API Documentation
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- Disconnect -->
+                {% if connection %}
+                <div class="bg-white rounded-xl border border-red-200 p-6">
+                    <h3 class="font-semibold text-red-600 mb-2">Danger Zone</h3>
+                    <p class="text-sm text-gray-600 mb-4">Disconnecting will revoke access and remove all configuration.</p>
+                    <form method="post" action="{% url 'integrations:disconnect_provider' provider.slug %}" onsubmit="return confirm('Are you sure you want to disconnect this integration?');">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-lg transition-colors border border-red-200">
+                            Disconnect
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function testConnection(connectionId) {
+    try {
+        const response = await fetch(`/integrations/connection/${connectionId}/test/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Connection successful: ' + data.message);
+        } else {
+            alert('Connection test failed: ' + data.message);
+        }
+        
+        // Reload to show updated status
+        window.location.reload();
+    } catch (error) {
+        alert('Test failed: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

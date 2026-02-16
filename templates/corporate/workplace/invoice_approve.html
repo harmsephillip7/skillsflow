@@ -1,0 +1,132 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Approve Invoice {{ invoice.invoice_number }} - SkillsFlow{% endblock %}
+
+{% block page_title %}Approve Invoice{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:dashboard' %}" class="text-gray-500 hover:text-gray-700">Corporate</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:invoice_list' host.pk %}" class="text-gray-500 hover:text-gray-700">Invoices</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Approve {{ invoice.invoice_number }}</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6">
+        <!-- Invoice Summary -->
+        <div class="mb-6 pb-6 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Invoice Summary</h3>
+            <dl class="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                    <dt class="text-sm text-gray-500">Invoice Number</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ invoice.invoice_number }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Amount</dt>
+                    <dd class="text-lg font-bold text-gray-900">R {{ invoice.amount|floatformat:2 }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Learner</dt>
+                    <dd class="text-sm text-gray-900">{{ invoice.placement.learner.full_name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Invoice Date</dt>
+                    <dd class="text-sm text-gray-900">{{ invoice.invoice_date|date:"d M Y" }}</dd>
+                </div>
+            </dl>
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-3">Approval Method</label>
+                <div class="space-y-3">
+                    <label class="flex items-start p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                        <input type="radio" name="approval_method" value="CLIENT" checked class="mt-1 h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500">
+                        <div class="ml-3">
+                            <span class="block text-sm font-medium text-gray-900">Client Approved Directly</span>
+                            <span class="block text-sm text-gray-500">The client has reviewed and approved this invoice directly in the portal.</span>
+                        </div>
+                    </label>
+                    
+                    <label class="flex items-start p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                        <input type="radio" name="approval_method" value="ADMIN_ON_BEHALF" id="admin_method" class="mt-1 h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500">
+                        <div class="ml-3">
+                            <span class="block text-sm font-medium text-gray-900">Admin Approving on Behalf of Client</span>
+                            <span class="block text-sm text-gray-500">You are approving this invoice based on email/written approval from the client.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="screenshot_section" class="hidden">
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h4 class="text-sm font-medium text-amber-800">Screenshot Required</h4>
+                            <p class="mt-1 text-sm text-amber-700">
+                                When approving on behalf of a client, you must upload a screenshot of the email or message where the client approved this invoice.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <label for="approval_screenshot" class="block text-sm font-medium text-gray-700">Approval Evidence <span class="text-red-500">*</span></label>
+                <input type="file" name="approval_screenshot" id="approval_screenshot" accept="image/*,.pdf" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                <p class="mt-1 text-xs text-gray-500">Upload a screenshot of the email approval. Accepted formats: PNG, JPG, PDF.</p>
+            </div>
+            
+            <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-100">
+                <a href="{% url 'corporate:invoice_detail' host.pk invoice.pk %}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Cancel
+                </a>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    Approve Invoice
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const adminMethod = document.getElementById('admin_method');
+    const screenshotSection = document.getElementById('screenshot_section');
+    const screenshotInput = document.getElementById('approval_screenshot');
+    
+    document.querySelectorAll('input[name="approval_method"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            if (adminMethod.checked) {
+                screenshotSection.classList.remove('hidden');
+                screenshotInput.required = true;
+            } else {
+                screenshotSection.classList.add('hidden');
+                screenshotInput.required = false;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

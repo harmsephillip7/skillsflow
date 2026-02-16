@@ -1,0 +1,324 @@
+{% extends "base/app_layout.html" %}
+{% load static %}
+
+{% block title %}Moodle Setup Wizard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-graduation-cap me-2"></i>
+                        Moodle LMS Integration Setup
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Progress Steps -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <ul class="list-unstyled multi-steps">
+                                <li class="{% if step == 1 %}is-active{% elif step > 1 %}is-complete{% endif %}">
+                                    Brand Selection
+                                </li>
+                                <li class="{% if step == 2 %}is-active{% elif step > 2 %}is-complete{% endif %}">
+                                    Moodle Connection
+                                </li>
+                                <li class="{% if step == 3 %}is-active{% elif step > 3 %}is-complete{% endif %}">
+                                    Test Connection
+                                </li>
+                                <li class="{% if step == 4 %}is-active{% elif step > 4 %}is-complete{% endif %}">
+                                    Sync Settings
+                                </li>
+                                <li class="{% if step == 5 %}is-active{% elif step > 5 %}is-complete{% endif %}">
+                                    Complete
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <form method="post" id="wizardForm">
+                        {% csrf_token %}
+                        
+                        <!-- Step 1: Brand Selection -->
+                        {% if step == 1 %}
+                        <div class="wizard-step">
+                            <h5 class="mb-3">Step 1: Select Brand</h5>
+                            <p class="text-muted">Each brand can have its own Moodle instance.</p>
+                            
+                            <div class="form-group mb-3">
+                                <label for="brand">Brand <span class="text-danger">*</span></label>
+                                <select name="brand" id="brand" class="form-select" required>
+                                    <option value="">-- Select a Brand --</option>
+                                    {% for brand in available_brands %}
+                                    <option value="{{ brand.id }}" {% if selected_brand and selected_brand.id == brand.id %}selected{% endif %}>
+                                        {{ brand.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Multi-tenant Support:</strong> You can configure different Moodle instances for each brand in your organization.
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Step 2: Moodle Connection Details -->
+                        {% if step == 2 %}
+                        <div class="wizard-step">
+                            <h5 class="mb-3">Step 2: Moodle Connection Details</h5>
+                            
+                            <div class="form-group">
+                                <label for="name">Instance Name <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                                <small class="form-text text-muted">Friendly name for this Moodle instance</small>
+                                {% if form.name.errors %}
+                                <div class="text-danger small">{{ form.name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="base_url">Moodle URL <span class="text-danger">*</span></label>
+                                {{ form.base_url }}
+                                <small class="form-text text-muted">E.g., https://moodle.yourcompany.com</small>
+                                {% if form.base_url.errors %}
+                                <div class="text-danger small">{{ form.base_url.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="ws_token">Web Services Token <span class="text-danger">*</span></label>
+                                {{ form.ws_token }}
+                                <small class="form-text text-muted">
+                                    Don't have a token? 
+                                    <a href="{% url 'lms_sync:moodle_tutorial' %}" target="_blank">
+                                        View tutorial <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </small>
+                                {% if form.ws_token.errors %}
+                                <div class="text-danger small">{{ form.ws_token.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="alert alert-warning mt-3">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                <strong>Security Note:</strong> The token will be encrypted and stored securely. Only users with admin permissions can view it.
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Step 3: Test Connection -->
+                        {% if step == 3 %}
+                        <div class="wizard-step">
+                            <h5 class="mb-3">Step 3: Test Connection</h5>
+                            
+                            {% if connection_test %}
+                                {% if connection_test.success %}
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    <strong>Connection Successful!</strong><br>
+                                    {{ connection_test.message }}
+                                </div>
+                                
+                                {% if connection_test.site_info %}
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6>Site Information:</h6>
+                                        <ul class="mb-0">
+                                            <li><strong>Site Name:</strong> {{ connection_test.site_info.sitename }}</li>
+                                            <li><strong>Moodle Version:</strong> {{ connection_test.site_info.release }}</li>
+                                            <li><strong>Available Functions:</strong> {{ connection_test.site_info.functions|length }}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% else %}
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-times-circle me-2"></i>
+                                    <strong>Connection Failed</strong><br>
+                                    {{ connection_test.message }}
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <button type="submit" name="action" value="retry" class="btn btn-warning">
+                                        <i class="fas fa-redo me-2"></i>Retry Connection
+                                    </button>
+                                    <button type="submit" name="action" value="back" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                                    </button>
+                                </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary mb-3" role="status">
+                                        <span class="sr-only">Testing connection...</span>
+                                    </div>
+                                    <p>Testing connection to Moodle...</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Step 4: Sync Settings -->
+                        {% if step == 4 %}
+                        <div class="wizard-step">
+                            <h5 class="mb-3">Step 4: Synchronization Settings</h5>
+                            
+                            <div class="form-group">
+                                <label>Automatic Sync</label>
+                                <div class="form-check">
+                                    {{ form.auto_sync_enabled }}
+                                    <label class="form-check-label" for="id_auto_sync_enabled">
+                                        Enable automatic nightly synchronization (2:00 AM)
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">
+                                    When enabled, grades will be synced automatically every night
+                                </small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Grade Threshold</label>
+                                <div class="input-group">
+                                    {{ form.pass_percentage }}
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Minimum percentage to pass (overrides global default: {{ global_threshold }}%)
+                                </small>
+                            </div>
+                            
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-clock me-2"></i>
+                                <strong>Sync Schedule:</strong> Automatic sync runs daily at 2:00 AM. You can also trigger manual syncs from the dashboard.
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Step 5: Complete -->
+                        {% if step == 5 %}
+                        <div class="wizard-step text-center">
+                            <div class="mb-4">
+                                <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                            </div>
+                            <h4 class="text-success mb-3">Setup Complete!</h4>
+                            <p class="lead">Your Moodle instance has been configured successfully.</p>
+                            
+                            <div class="card bg-light mt-4 text-left">
+                                <div class="card-body">
+                                    <h6 class="mb-3">Next Steps:</h6>
+                                    <ol class="mb-0">
+                                        <li>Browse and map courses from the LMS Dashboard</li>
+                                        <li>Use AI to map Moodle activities to QCTO criteria</li>
+                                        <li>Review and approve AI-suggested mappings</li>
+                                        <li>Monitor grade synchronization</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <a href="{% url 'lms_sync:dashboard' %}" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Go to LMS Dashboard
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Navigation Buttons -->
+                        <div class="mt-4 d-flex justify-content-between">
+                            {% if step > 1 and step < 5 %}
+                            <button type="submit" name="action" value="back" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back
+                            </button>
+                            {% else %}
+                            <div></div>
+                            {% endif %}
+                            
+                            {% if step < 5 %}
+                            <button type="submit" name="action" value="next" class="btn btn-primary">
+                                Next <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.multi-steps {
+    display: flex;
+    justify-content: space-between;
+    padding: 0;
+    margin: 0 0 2rem;
+}
+
+.multi-steps > li {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    padding-top: 40px;
+}
+
+.multi-steps > li:before {
+    content: counter(step);
+    counter-increment: step;
+    width: 30px;
+    height: 30px;
+    border: 2px solid #ddd;
+    display: block;
+    margin: 0 auto 10px auto;
+    border-radius: 50%;
+    line-height: 27px;
+    background: white;
+    color: #999;
+    text-align: center;
+    font-weight: bold;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.multi-steps > li:after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: #ddd;
+    top: 15px;
+    left: 50%;
+    z-index: -1;
+}
+
+.multi-steps > li:last-child:after {
+    display: none;
+}
+
+.multi-steps > li.is-active:before {
+    border-color: #007bff;
+    background: #007bff;
+    color: white;
+}
+
+.multi-steps > li.is-complete:before {
+    border-color: #28a745;
+    background: #28a745;
+    color: white;
+    content: '✓';
+}
+
+.multi-steps > li.is-complete:after {
+    background: #28a745;
+}
+</style>
+{% endblock %}

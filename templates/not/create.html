@@ -1,0 +1,500 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Create Notification of Training{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 text-sm text-gray-500">
+                <li><a href="{% url 'not_dashboard' %}" class="hover:text-blue-600">NOT Dashboard</a></li>
+                <li class="flex items-center"><svg class="w-4 h-4 mx-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg></li>
+                <li class="text-gray-700 font-medium">Create New</li>
+            </ol>
+        </nav>
+        <div class="flex items-center gap-3">
+            <div class="p-3 bg-blue-100 rounded-xl">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Create Notification of Training</h1>
+                <p class="text-gray-500 text-sm">Start a new training project notification to coordinate planning meetings and stakeholder assignments.</p>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Content -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Basic Information -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Basic Information
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Project Title <span class="text-red-500">*</span></label>
+                                <input type="text" name="title" required
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                       placeholder="e.g., SETA Funded NQF Level 4 Business Administration Programme">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Project Type <span class="text-red-500">*</span></label>
+                                <select name="project_type" required
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select project type...</option>
+                                    <option value="OC_APPRENTICESHIP">OC Apprenticeship</option>
+                                    <option value="OC_LEARNERSHIP">OC Learnership</option>
+                                    <option value="SKILLS_PROGRAMME">Skills Programme</option>
+                                    <option value="SHORT_COURSE">Short Course</option>
+                                    <option value="LEGACY_APPRENTICESHIP">Legacy Apprenticeship</option>
+                                    <option value="LEGACY_LEARNERSHIP">Legacy Learnership</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Funder <span class="text-red-500">*</span></label>
+                                <select name="funder" required
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select funder...</option>
+                                    <option value="PRIVATE">Private</option>
+                                    <option value="CORPORATE_DG">Corporate DG</option>
+                                    <option value="CORPORATE">Corporate</option>
+                                    <option value="MUNICIPALITY">Municipality</option>
+                                    <option value="GOVERNMENT">Government</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Priority <span class="text-red-500">*</span></label>
+                                <select name="priority" required
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="MEDIUM" selected>Medium</option>
+                                    <option value="LOW">Low</option>
+                                    <option value="HIGH">High</option>
+                                    <option value="CRITICAL">Critical</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <textarea name="description" rows="3"
+                                          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                          placeholder="Provide an overview of the training project..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Client Information -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                            Client Information
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
+                                {% if corporate_clients %}
+                                <select name="corporate_client" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select existing client or enter new...</option>
+                                    {% for client in corporate_clients %}
+                                    <option value="{{ client.id }}">{{ client.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="text" name="client_name" 
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors mt-2"
+                                       placeholder="Or enter new client name...">
+                                {% else %}
+                                <input type="text" name="client_name" 
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                       placeholder="e.g., ABC Corporation or Services SETA">
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tender/Contract Reference</label>
+                                <input type="text" name="tender_reference" 
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                       placeholder="e.g., SETA/2024/001">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Contract Value (ZAR)</label>
+                                <div class="flex">
+                                    <span class="inline-flex items-center px-3 bg-gray-100 text-gray-600 border border-r-0 border-gray-300 rounded-l-lg text-sm font-medium">R</span>
+                                    <input type="number" name="contract_value" step="0.01" 
+                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                           placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Link to Contract</label>
+                                {% if contracts %}
+                                <select name="contract" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">No contract link (standalone NOT)</option>
+                                    {% for contract in contracts %}
+                                    <option value="{{ contract.id }}">{{ contract.contract_number }} - {{ contract.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">Optionally link this NOT to an existing contract for grouped tracking and dropout monitoring.</p>
+                                {% else %}
+                                <select name="contract" disabled class="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-100 text-gray-500">
+                                    <option value="">No contracts available</option>
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">Create a contract first to link multiple NOTs together.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Programme Details -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                                <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"></path>
+                            </svg>
+                            Programme Details
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Qualification / Programme</label>
+                                {% if qualifications %}
+                                <select name="qualification" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select qualification...</option>
+                                    {% for qual in qualifications %}
+                                    <option value="{{ qual.id }}">{{ qual.saqa_id }} - {{ qual.title }} (NQF {{ qual.nqf_level }})</option>
+                                    {% endfor %}
+                                </select>
+                                {% endif %}
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Programme Description</label>
+                                <textarea name="program_description" rows="3"
+                                          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                          placeholder="Describe the training programme, modules, outcomes..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Expected Number of Learners</label>
+                                <input type="number" name="expected_learner_count" 
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                       placeholder="e.g., 30">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Learner Source</label>
+                                <input type="text" name="learner_source" 
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                       placeholder="e.g., Client provided, Recruitment needed">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Duration (Months)</label>
+                                <input type="number" name="duration_months" 
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                       placeholder="e.g., 12">
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Recruitment Notes</label>
+                                <textarea name="recruitment_notes" rows="2"
+                                          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                          placeholder="Any special requirements for learner recruitment..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline & Delivery -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            Timeline & Delivery
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Planned Start Date</label>
+                                <input type="date" name="planned_start_date" 
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Planned End Date</label>
+                                <input type="date" name="planned_end_date" 
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Mode</label>
+                                <select name="delivery_mode" 
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select delivery mode...</option>
+                                    <option value="CONTACT">Contact (In-Person)</option>
+                                    <option value="ONLINE">Online</option>
+                                    <option value="BLENDED">Blended</option>
+                                    <option value="WORKPLACE">Workplace</option>
+                                    <option value="DISTANCE">Distance</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Campus</label>
+                                {% if campuses %}
+                                <select name="delivery_campus" id="delivery_campus" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select campus...</option>
+                                    {% for campus in campuses %}
+                                    <option value="{{ campus.id }}">{{ campus.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% endif %}
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Address / Notes</label>
+                                <textarea name="delivery_address" rows="2"
+                                          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                          placeholder="Where will training be conducted?"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Delivery Team -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            Delivery Team
+                        </h2>
+                        <p class="text-sm text-gray-500 mt-1">Assign primary delivery staff. List is filtered by selected campus.</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Facilitator</label>
+                                <select name="facilitator" id="facilitator" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select facilitator...</option>
+                                    {% for user in facilitators %}
+                                    <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assessor</label>
+                                <select name="assessor" id="assessor" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select assessor...</option>
+                                    {% for user in assessors %}
+                                    <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Moderator</label>
+                                <select name="moderator" id="moderator" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select moderator...</option>
+                                    {% for user in moderators %}
+                                    <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <p class="mt-3 text-xs text-gray-500" id="campus-filter-note">
+                            <svg class="w-4 h-4 inline mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Select a campus above to filter available staff by campus assignment.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Helpful Tips -->
+                <div class="bg-amber-50 rounded-xl shadow-sm border border-amber-200 overflow-hidden">
+                    <div class="p-6">
+                        <h3 class="text-sm font-semibold text-amber-800 flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                            </svg>
+                            Getting Started
+                        </h3>
+                        <ol class="text-sm text-amber-700 space-y-2 list-decimal list-inside">
+                            <li>Fill in the basic project information</li>
+                            <li>Once created, schedule a planning meeting</li>
+                            <li>Add stakeholders from relevant departments</li>
+                            <li>Define resource requirements</li>
+                            <li>After the meeting, submit for approval</li>
+                            <li>Notifications will be sent to all stakeholders</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Project Types Guide -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                            </svg>
+                            Project Types
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <dl class="text-sm space-y-3">
+                            <div>
+                                <dt class="font-medium text-gray-900">OC Apprenticeship</dt>
+                                <dd class="text-gray-500">Occupational Certificate apprenticeship</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-gray-900">OC Learnership</dt>
+                                <dd class="text-gray-500">Occupational Certificate learnership</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-gray-900">Skills Programme</dt>
+                                <dd class="text-gray-500">Short skills programme</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-gray-900">Short Course</dt>
+                                <dd class="text-gray-500">Non-accredited short course</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-gray-900">Legacy Apprenticeship</dt>
+                                <dd class="text-gray-500">Traditional apprenticeship programme</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-gray-900">Legacy Learnership</dt>
+                                <dd class="text-gray-500">Traditional learnership programme</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 space-y-3">
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Create Notification
+                        </button>
+                        <a href="{% url 'not_dashboard' %}" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-700 font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const campusSelect = document.getElementById('delivery_campus');
+    const facilitatorSelect = document.getElementById('facilitator');
+    const assessorSelect = document.getElementById('assessor');
+    const moderatorSelect = document.getElementById('moderator');
+    const filterNote = document.getElementById('campus-filter-note');
+    
+    if (campusSelect) {
+        campusSelect.addEventListener('change', function() {
+            const campusId = this.value;
+            
+            // Show loading state
+            [facilitatorSelect, assessorSelect, moderatorSelect].forEach(select => {
+                select.disabled = true;
+                select.classList.add('opacity-50');
+            });
+            
+            // Fetch filtered users
+            const url = campusId 
+                ? `{% url 'not_users_by_campus' %}?campus_id=${campusId}`
+                : `{% url 'not_users_by_campus' %}`;
+                
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    // Update facilitators dropdown
+                    updateSelectOptions(facilitatorSelect, data.facilitators, 'Select facilitator...');
+                    
+                    // Update assessors dropdown
+                    updateSelectOptions(assessorSelect, data.assessors, 'Select assessor...');
+                    
+                    // Update moderators dropdown
+                    updateSelectOptions(moderatorSelect, data.moderators, 'Select moderator...');
+                    
+                    // Update filter note
+                    if (campusId) {
+                        const campusName = campusSelect.options[campusSelect.selectedIndex].text;
+                        filterNote.innerHTML = `
+                            <svg class="w-4 h-4 inline mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Showing staff assigned to <strong>${campusName}</strong> or available across all campuses.
+                        `;
+                    } else {
+                        filterNote.innerHTML = `
+                            <svg class="w-4 h-4 inline mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Select a campus above to filter available staff by campus assignment.
+                        `;
+                    }
+                    
+                    // Remove loading state
+                    [facilitatorSelect, assessorSelect, moderatorSelect].forEach(select => {
+                        select.disabled = false;
+                        select.classList.remove('opacity-50');
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching users:', error);
+                    // Remove loading state on error
+                    [facilitatorSelect, assessorSelect, moderatorSelect].forEach(select => {
+                        select.disabled = false;
+                        select.classList.remove('opacity-50');
+                    });
+                });
+        });
+    }
+    
+    function updateSelectOptions(selectElement, users, placeholder) {
+        const currentValue = selectElement.value;
+        selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+        
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.id;
+            option.textContent = user.name;
+            if (user.id == currentValue) {
+                option.selected = true;
+            }
+            selectElement.appendChild(option);
+        });
+    }
+});
+</script>
+{% endblock %}

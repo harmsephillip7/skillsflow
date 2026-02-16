@@ -1,0 +1,442 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}B-BBEE Scorecard - {{ client.company_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:bbbee_clients_dashboard' %}" class="text-gray-700 hover:text-blue-600">B-BBEE Clients</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:bbbee_service_management' client.pk %}" class="text-gray-700 hover:text-blue-600">{{ client.company_name }}</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">Scorecard</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex space-x-3">
+    <a href="{% url 'corporate:bbbee_service_management' client.pk %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Back to Management
+    </a>
+    <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+        </svg>
+        Print Scorecard
+    </button>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<!-- Header -->
+<div class="mb-8">
+    <div class="flex justify-between items-start">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ client.company_name }}</h1>
+            <p class="text-gray-500 mt-1">B-BBEE Scorecard Summary - FY{{ service_year.financial_year }}</p>
+        </div>
+        <div class="text-right">
+            <span class="px-3 py-1 text-sm rounded-full 
+                {% if service_year.enterprise_type == 'EME' %}bg-green-100 text-green-800
+                {% elif service_year.enterprise_type == 'QSE' %}bg-blue-100 text-blue-800
+                {% else %}bg-purple-100 text-purple-800{% endif %}">
+                {{ service_year.get_enterprise_type_display }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Level Summary Card -->
+<div class="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl shadow-lg p-6 mb-8 text-white">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="text-center md:text-left">
+            <p class="text-emerald-100 text-sm uppercase tracking-wide">B-BBEE Level</p>
+            <p class="text-5xl font-bold mt-1">{{ level_code }}</p>
+            <p class="text-emerald-100 mt-1">{{ level_display }}</p>
+        </div>
+        <div class="text-center md:text-left">
+            <p class="text-emerald-100 text-sm uppercase tracking-wide">Total Score</p>
+            <p class="text-4xl font-bold mt-1">{{ total_score|floatformat:2 }}</p>
+            <p class="text-emerald-100 mt-1">out of {{ weights.total }} points</p>
+        </div>
+        <div class="text-center md:text-left">
+            <p class="text-emerald-100 text-sm uppercase tracking-wide">Recognition</p>
+            <p class="text-4xl font-bold mt-1">{{ recognition_percentage }}%</p>
+            <p class="text-emerald-100 mt-1">procurement recognition</p>
+        </div>
+        <div class="text-center md:text-left">
+            <p class="text-emerald-100 text-sm uppercase tracking-wide">Enterprise Type</p>
+            <p class="text-2xl font-bold mt-1">{{ service_year.get_enterprise_type_display }}</p>
+            {% if service_year.annual_turnover %}
+            <p class="text-emerald-100 mt-1">R{{ service_year.annual_turnover|floatformat:0|intcomma }} turnover</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Scorecard Elements -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+        <h2 class="text-lg font-semibold text-gray-900">Scorecard Elements</h2>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Element</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Weighting</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Compliance</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                <!-- Ownership -->
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">Ownership</div>
+                                <div class="text-sm text-gray-500">Black ownership & economic interest</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">{{ weights.ownership }} pts</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.ownership %}
+                        <span class="text-lg font-semibold text-gray-900">{{ elements.ownership.total_score|floatformat:2 }}</span>
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.ownership %}
+                        {% widthratio elements.ownership.total_score weights.ownership 100 as compliance %}
+                        <div class="flex items-center justify-center">
+                            <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div class="bg-purple-600 h-2 rounded-full" style="width: {{ compliance }}%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600">{{ compliance }}%</span>
+                        </div>
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.ownership %}
+                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Captured</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Not Started</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                
+                <!-- Management Control -->
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">Management Control</div>
+                                <div class="text-sm text-gray-500">Board & executive management</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">{{ weights.management }} pts</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.management %}
+                        <span class="text-lg font-semibold text-gray-900">{{ elements.management.total_score|floatformat:2 }}</span>
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.management %}
+                        {% widthratio elements.management.total_score weights.management 100 as compliance %}
+                        <div class="flex items-center justify-center">
+                            <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: {{ compliance }}%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600">{{ compliance }}%</span>
+                        </div>
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.management %}
+                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Captured</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Not Started</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                
+                <!-- Skills Development -->
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">Skills Development</div>
+                                <div class="text-sm text-gray-500">Training & development spend</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">{{ weights.skills }} pts</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.skills %}
+                        <span class="text-lg font-semibold text-gray-900">{{ elements.skills.total_score|floatformat:2 }}</span>
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.skills %}
+                        {% widthratio elements.skills.total_score weights.skills 100 as compliance %}
+                        <div class="flex items-center justify-center">
+                            <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div class="bg-amber-600 h-2 rounded-full" style="width: {{ compliance }}%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600">{{ compliance }}%</span>
+                        </div>
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.skills %}
+                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Captured</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Not Started</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                
+                <!-- Enterprise & Supplier Development -->
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">Enterprise & Supplier Development</div>
+                                <div class="text-sm text-gray-500">Preferential procurement, ED & SD</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">{{ weights.esd }} pts</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.esd %}
+                        <span class="text-lg font-semibold text-gray-900">{{ elements.esd.total_score|floatformat:2 }}</span>
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.esd %}
+                        {% widthratio elements.esd.total_score weights.esd 100 as compliance %}
+                        <div class="flex items-center justify-center">
+                            <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div class="bg-emerald-600 h-2 rounded-full" style="width: {{ compliance }}%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600">{{ compliance }}%</span>
+                        </div>
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.esd %}
+                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Captured</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Not Started</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                
+                <!-- Socio-Economic Development -->
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 bg-rose-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">Socio-Economic Development</div>
+                                <div class="text-sm text-gray-500">CSI & community contributions</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">{{ weights.sed }} pts</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.sed %}
+                        <span class="text-lg font-semibold text-gray-900">{{ elements.sed.total_score|floatformat:2 }}</span>
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.sed %}
+                        {% widthratio elements.sed.total_score weights.sed 100 as compliance %}
+                        <div class="flex items-center justify-center">
+                            <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div class="bg-rose-600 h-2 rounded-full" style="width: {{ compliance }}%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600">{{ compliance }}%</span>
+                        </div>
+                        {% else %}
+                        <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if elements.sed %}
+                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Captured</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Not Started</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                
+                <!-- Total Row -->
+                <tr class="bg-gray-50 font-semibold">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-gray-900">Total Score</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-gray-900">{{ weights.total }} pts</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="text-xl text-emerald-600">{{ total_score|floatformat:2 }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% widthratio total_score weights.total 100 as total_compliance %}
+                        <div class="flex items-center justify-center">
+                            <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div class="bg-emerald-600 h-2 rounded-full" style="width: {{ total_compliance }}%"></div>
+                            </div>
+                            <span class="text-sm text-gray-900">{{ total_compliance }}%</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="px-3 py-1 text-sm rounded-full bg-emerald-100 text-emerald-800 font-bold">Level {{ level_code }}</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- B-BBEE Level Reference -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+        <h2 class="text-lg font-semibold text-gray-900">B-BBEE Level Reference</h2>
+    </div>
+    <div class="p-6">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Level</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Score Range</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Recognition</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <tr class="{% if level_code == '1' %}bg-emerald-50{% endif %}">
+                        <td class="px-4 py-2 font-medium {% if level_code == '1' %}text-emerald-700{% endif %}">Level 1</td>
+                        <td class="px-4 py-2 text-center text-sm">≥ 100</td>
+                        <td class="px-4 py-2 text-center"><span class="text-emerald-600 font-semibold">135%</span></td>
+                    </tr>
+                    <tr class="{% if level_code == '2' %}bg-emerald-50{% endif %}">
+                        <td class="px-4 py-2 font-medium {% if level_code == '2' %}text-emerald-700{% endif %}">Level 2</td>
+                        <td class="px-4 py-2 text-center text-sm">≥ 95</td>
+                        <td class="px-4 py-2 text-center"><span class="text-emerald-600 font-semibold">125%</span></td>
+                    </tr>
+                    <tr class="{% if level_code == '3' %}bg-emerald-50{% endif %}">
+                        <td class="px-4 py-2 font-medium {% if level_code == '3' %}text-emerald-700{% endif %}">Level 3</td>
+                        <td class="px-4 py-2 text-center text-sm">≥ 90</td>
+                        <td class="px-4 py-2 text-center"><span class="text-blue-600 font-semibold">110%</span></td>
+                    </tr>
+                    <tr class="{% if level_code == '4' %}bg-emerald-50{% endif %}">
+                        <td class="px-4 py-2 font-medium {% if level_code == '4' %}text-emerald-700{% endif %}">Level 4</td>
+                        <td class="px-4 py-2 text-center text-sm">≥ 80</td>
+                        <td class="px-4 py-2 text-center"><span class="text-blue-600 font-semibold">100%</span></td>
+                    </tr>
+                    <tr class="{% if level_code == '5' %}bg-amber-50{% endif %}">
+                        <td class="px-4 py-2 font-medium {% if level_code == '5' %}text-amber-700{% endif %}">Level 5</td>
+                        <td class="px-4 py-2 text-center text-sm">≥ 75</td>
+                        <td class="px-4 py-2 text-center"><span class="text-amber-600 font-semibold">80%</span></td>
+                    </tr>
+                    <tr class="{% if level_code == '6' %}bg-amber-50{% endif %}">
+                        <td class="px-4 py-2 font-medium {% if level_code == '6' %}text-amber-700{% endif %}">Level 6</td>
+                        <td class="px-4 py-2 text-center text-sm">≥ 70</td>
+                        <td class="px-4 py-2 text-center"><span class="text-amber-600 font-semibold">60%</span></td>
+                    </tr>
+                    <tr class="{% if level_code == '7' %}bg-orange-50{% endif %}">
+                        <td class="px-4 py-2 font-medium {% if level_code == '7' %}text-orange-700{% endif %}">Level 7</td>
+                        <td class="px-4 py-2 text-center text-sm">≥ 55</td>
+                        <td class="px-4 py-2 text-center"><span class="text-orange-600 font-semibold">50%</span></td>
+                    </tr>
+                    <tr class="{% if level_code == '8' %}bg-red-50{% endif %}">
+                        <td class="px-4 py-2 font-medium {% if level_code == '8' %}text-red-700{% endif %}">Level 8</td>
+                        <td class="px-4 py-2 text-center text-sm">≥ 40</td>
+                        <td class="px-4 py-2 text-center"><span class="text-red-600 font-semibold">10%</span></td>
+                    </tr>
+                    <tr class="{% if level_code == 'NC' %}bg-gray-100{% endif %}">
+                        <td class="px-4 py-2 font-medium {% if level_code == 'NC' %}text-gray-700{% endif %}">Non-Compliant</td>
+                        <td class="px-4 py-2 text-center text-sm">< 40</td>
+                        <td class="px-4 py-2 text-center"><span class="text-gray-600 font-semibold">0%</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if enterprise_info %}
+<!-- Enterprise Type Info -->
+<div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <div class="flex items-start">
+        <svg class="w-5 h-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div>
+            <p class="text-sm font-medium text-blue-800">{{ service_year.get_enterprise_type_display }} Verification Requirements</p>
+            <p class="text-sm text-blue-700 mt-1">{{ enterprise_info.description }}</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

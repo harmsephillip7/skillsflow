@@ -1,0 +1,400 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}Timeline - {{ notification.reference_number }}{% endblock %}
+
+{% block page_title %}Project Timeline{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'not_dashboard' %}" class="text-primary-600 hover:text-primary-800">NOT</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'not_detail' notification.pk %}" class="text-primary-600 hover:text-primary-800">{{ notification.reference_number }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Timeline</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'not_detail' notification.pk %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Back to Project
+    </a>
+    <a href="{% url 'tranches:tranche_create' notification.pk %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 transition-all">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add Tranche
+    </a>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    
+    <!-- Project Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-start justify-between">
+            <div>
+                <span class="font-mono text-sm text-primary-600">{{ notification.reference_number }}</span>
+                <h2 class="text-xl font-bold text-gray-900 mt-1">{{ notification.title }}</h2>
+                <p class="text-gray-500 mt-1">{{ notification.get_project_type_display }} • {{ notification.get_funder_display }}</p>
+            </div>
+            <div class="text-right">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                    {% if notification.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800
+                    {% elif notification.status == 'COMPLETED' %}bg-green-100 text-green-800
+                    {% elif notification.status == 'APPROVED' %}bg-emerald-100 text-emerald-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ notification.get_status_display }}
+                </span>
+                {% if project_start or project_end %}
+                <p class="text-sm text-gray-500 mt-2">
+                    {% if project_start %}{{ project_start|date:"d M Y" }}{% endif %}
+                    {% if project_start and project_end %} — {% endif %}
+                    {% if project_end %}{{ project_end|date:"d M Y" }}{% endif %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 text-center">
+            <p class="text-3xl font-bold text-gray-900">{{ total_tranches }}</p>
+            <p class="text-xs text-gray-500 mt-1">Total Tranches</p>
+        </div>
+        <div class="bg-green-50 rounded-lg shadow-sm border border-green-100 p-4 text-center">
+            <p class="text-3xl font-bold text-green-600">{{ completed_tranches }}</p>
+            <p class="text-xs text-gray-500 mt-1">Completed</p>
+        </div>
+        <div class="bg-blue-50 rounded-lg shadow-sm border border-blue-100 p-4 text-center">
+            <p class="text-3xl font-bold text-blue-600">{{ in_progress_tranches }}</p>
+            <p class="text-xs text-gray-500 mt-1">In Progress</p>
+        </div>
+        <div class="bg-red-50 rounded-lg shadow-sm border border-red-100 p-4 text-center">
+            <p class="text-3xl font-bold text-red-600">{{ overdue_tranches }}</p>
+            <p class="text-xs text-gray-500 mt-1">Overdue</p>
+        </div>
+        <div class="bg-purple-50 rounded-lg shadow-sm border border-purple-100 p-4 text-center">
+            <p class="text-2xl font-bold text-purple-600">R{{ paid_value|floatformat:0|intcomma }}</p>
+            <p class="text-xs text-gray-500 mt-1">Amount Received</p>
+        </div>
+        <div class="bg-amber-50 rounded-lg shadow-sm border border-amber-100 p-4 text-center">
+            <p class="text-2xl font-bold text-amber-600">R{{ pending_value|floatformat:0|intcomma }}</p>
+            <p class="text-xs text-gray-500 mt-1">Pending Value</p>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Timeline -->
+        <div class="lg:col-span-2 space-y-4">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-900">Tranche Timeline</h3>
+                    <p class="text-sm text-gray-500 mt-1">Milestone payments and evidence collection schedule</p>
+                </div>
+                
+                {% if timeline_items %}
+                <div class="relative">
+                    <!-- Timeline Line -->
+                    <div class="absolute left-8 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                    
+                    <div class="divide-y divide-gray-100">
+                        {% for item in timeline_items %}
+                        <div class="relative px-6 py-6 hover:bg-gray-50 transition-colors">
+                            <!-- Timeline Dot -->
+                            <div class="absolute left-6 top-8 w-5 h-5 rounded-full border-2 
+                                {% if item.timeline_status == 'completed' %}bg-green-500 border-green-500
+                                {% elif item.timeline_status == 'overdue' %}bg-red-500 border-red-500
+                                {% elif item.timeline_status == 'in_progress' %}bg-blue-500 border-blue-500 animate-pulse
+                                {% elif item.timeline_status == 'cancelled' %}bg-gray-400 border-gray-400
+                                {% else %}bg-white border-gray-300{% endif %}
+                                flex items-center justify-center">
+                                {% if item.timeline_status == 'completed' %}
+                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                {% elif item.timeline_status == 'overdue' %}
+                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Content -->
+                            <div class="ml-10">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-3">
+                                            <a href="{% url 'tranches:tranche_detail' item.tranche.pk %}" class="text-lg font-semibold text-gray-900 hover:text-primary-600">
+                                                {{ item.tranche.name }}
+                                            </a>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                                {% if item.tranche.status == 'PAID' %}bg-green-100 text-green-800
+                                                {% elif item.tranche.status == 'SUBMITTED' or item.tranche.status == 'APPROVED' %}bg-blue-100 text-blue-800
+                                                {% elif item.tranche.status == 'QC_PASSED' %}bg-purple-100 text-purple-800
+                                                {% elif item.tranche.status == 'EVIDENCE_COLLECTION' %}bg-yellow-100 text-yellow-800
+                                                {% elif item.tranche.status == 'QUERY' %}bg-orange-100 text-orange-800
+                                                {% elif item.tranche.status == 'CANCELLED' %}bg-red-100 text-red-800
+                                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                                {{ item.tranche.get_status_display }}
+                                            </span>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">{{ item.tranche.get_tranche_type_display }}</p>
+                                        <span class="font-mono text-xs text-gray-400">{{ item.tranche.reference_number }}</span>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-lg font-bold text-gray-900">R{{ item.tranche.amount|floatformat:0|intcomma }}</p>
+                                        {% if item.tranche.due_date %}
+                                        <p class="text-sm {% if item.timeline_status == 'overdue' %}text-red-600 font-medium{% else %}text-gray-500{% endif %}">
+                                            {{ item.tranche.due_date|date:"d M Y" }}
+                                        </p>
+                                        <p class="text-xs {% if item.timeline_status == 'overdue' %}text-red-500{% else %}text-gray-400{% endif %}">
+                                            {{ item.days_label }}
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Evidence Progress -->
+                                {% if item.requirements_total > 0 %}
+                                <div class="mt-4">
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="text-gray-500">Evidence Progress</span>
+                                        <span class="font-medium text-gray-700">{{ item.requirements_fulfilled }}/{{ item.requirements_total }}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="h-2 rounded-full transition-all duration-500
+                                            {% if item.requirements_percent == 100 %}bg-green-500
+                                            {% elif item.requirements_percent >= 50 %}bg-blue-500
+                                            {% elif item.requirements_percent > 0 %}bg-yellow-500
+                                            {% else %}bg-gray-400{% endif %}" 
+                                            style="width: {{ item.requirements_percent }}%"></div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Linked Tasks -->
+                                {% if item.linked_tasks %}
+                                <div class="mt-4 bg-gray-50 rounded-lg p-3">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h5 class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Linked Actions</h5>
+                                        {% if item.pending_tasks > 0 %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                            {{ item.pending_tasks }} pending
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="space-y-2">
+                                        {% for task in item.linked_tasks|slice:":3" %}
+                                        <div class="flex items-center justify-between text-sm">
+                                            <div class="flex items-center">
+                                                {% if task.status == 'completed' %}
+                                                <span class="w-4 h-4 mr-2 rounded-full bg-green-100 flex items-center justify-center">
+                                                    <svg class="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                </span>
+                                                {% elif task.status == 'in_progress' %}
+                                                <span class="w-4 h-4 mr-2 rounded-full bg-blue-100 flex items-center justify-center">
+                                                    <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                                </span>
+                                                {% else %}
+                                                <span class="w-4 h-4 mr-2 rounded-full bg-gray-200"></span>
+                                                {% endif %}
+                                                <a href="{% url 'core:task_detail' task.pk %}" class="text-gray-700 hover:text-primary-600 truncate max-w-xs">
+                                                    {{ task.title }}
+                                                </a>
+                                            </div>
+                                            {% if task.due_date %}
+                                            <span class="text-xs text-gray-400">{{ task.due_date|date:"d M" }}</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                        {% if item.linked_tasks.count > 3 %}
+                                        <p class="text-xs text-gray-400 mt-1">+ {{ item.linked_tasks.count|add:"-3" }} more tasks</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Quick Actions -->
+                                <div class="mt-4 flex items-center gap-2">
+                                    <a href="{% url 'tranches:tranche_detail' item.tranche.pk %}" class="text-xs text-primary-600 hover:text-primary-800 font-medium">
+                                        View Details →
+                                    </a>
+                                    {% if item.tranche.status == 'SCHEDULED' or item.tranche.status == 'EVIDENCE_COLLECTION' %}
+                                    <span class="text-gray-300">|</span>
+                                    <a href="{% url 'tranches:tranche_detail' item.tranche.pk %}" class="text-xs text-gray-600 hover:text-gray-800">
+                                        Upload Evidence
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-16">
+                    <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h3 class="mt-4 text-lg font-medium text-gray-900">No tranches scheduled</h3>
+                    <p class="mt-2 text-sm text-gray-500">Set up payment tranches to track milestones and evidence collection.</p>
+                    <div class="mt-6 space-x-3">
+                        <a href="{% url 'tranches:generate_tranches_from_template' notification.pk %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            Generate from Template
+                        </a>
+                        <a href="{% url 'tranches:tranche_create' notification.pk %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Add Manually
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- All Project Tasks -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-sm font-semibold text-gray-900">All Project Tasks</h3>
+                </div>
+                <div class="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                    {% if all_tasks %}
+                        {% for task in all_tasks %}
+                        <a href="{% url 'core:task_detail' task.pk %}" class="block px-6 py-3 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-start">
+                                {% if task.status == 'completed' %}
+                                <span class="w-5 h-5 mr-3 mt-0.5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </span>
+                                {% elif task.status == 'in_progress' %}
+                                <span class="w-5 h-5 mr-3 mt-0.5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                    <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                </span>
+                                {% elif task.is_overdue %}
+                                <span class="w-5 h-5 mr-3 mt-0.5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-3 h-3 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                </span>
+                                {% else %}
+                                <span class="w-5 h-5 mr-3 mt-0.5 rounded-full bg-gray-200 flex-shrink-0"></span>
+                                {% endif %}
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 truncate">{{ task.title }}</p>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="text-xs text-gray-400">{{ task.get_category_display }}</span>
+                                        {% if task.due_date %}
+                                        <span class="text-xs {% if task.is_overdue %}text-red-500{% else %}text-gray-400{% endif %}">
+                                            • {{ task.due_date|date:"d M" }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                    {% if task.priority == 'urgent' %}bg-red-100 text-red-800
+                                    {% elif task.priority == 'high' %}bg-orange-100 text-orange-800
+                                    {% elif task.priority == 'medium' %}bg-blue-100 text-blue-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ task.get_priority_display }}
+                                </span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                    <div class="px-6 py-8 text-center text-gray-500">
+                        <p class="text-sm">No tasks linked to this project</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Legend -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-sm font-semibold text-gray-900 mb-4">Timeline Legend</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center">
+                        <span class="w-4 h-4 rounded-full bg-green-500 mr-3"></span>
+                        <span class="text-sm text-gray-600">Completed / Paid</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="w-4 h-4 rounded-full bg-blue-500 mr-3 animate-pulse"></span>
+                        <span class="text-sm text-gray-600">In Progress</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="w-4 h-4 rounded-full bg-red-500 mr-3"></span>
+                        <span class="text-sm text-gray-600">Overdue</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="w-4 h-4 rounded-full border-2 border-gray-300 bg-white mr-3"></span>
+                        <span class="text-sm text-gray-600">Upcoming</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="w-4 h-4 rounded-full bg-gray-400 mr-3"></span>
+                        <span class="text-sm text-gray-600">Cancelled</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Links -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-sm font-semibold text-gray-900 mb-4">Quick Links</h3>
+                <div class="space-y-2">
+                    <a href="{% url 'tranches:tranche_dashboard' %}" class="flex items-center text-sm text-gray-600 hover:text-primary-600 py-1">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        Tranche Dashboard
+                    </a>
+                    <a href="{% url 'tranches:tranche_calendar' %}" class="flex items-center text-sm text-gray-600 hover:text-primary-600 py-1">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        Tranche Calendar
+                    </a>
+                    <a href="{% url 'not_detail' notification.pk %}" class="flex items-center text-sm text-gray-600 hover:text-primary-600 py-1">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Project Details
+                    </a>
+                    <a href="{% url 'core:task_hub' %}" class="flex items-center text-sm text-gray-600 hover:text-primary-600 py-1">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                        Task Hub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

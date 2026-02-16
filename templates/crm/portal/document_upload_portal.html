@@ -1,0 +1,417 @@
+{% extends "crm/portal/portal_base.html" %}
+
+{% block title %}Document Upload Portal{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Welcome Card -->
+    <div class="bg-white rounded-2xl card-shadow p-6 sm:p-8">
+        <div class="flex items-start space-x-4">
+            <div class="flex-shrink-0">
+                <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="flex-1">
+                <h2 class="text-2xl font-bold text-gray-900">
+                    Welcome, {{ lead.first_name }}! 👋
+                </h2>
+                <p class="mt-2 text-gray-600">
+                    {% if upload_request.message %}
+                    {{ upload_request.message }}
+                    {% else %}
+                    Please upload the requested documents below. This helps us process your application faster.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {% if not is_valid %}
+    <!-- Expired/Invalid Notice -->
+    <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+        <div class="flex items-center space-x-3">
+            <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <h3 class="font-semibold text-red-800">This link has expired</h3>
+                <p class="text-red-600 text-sm mt-1">
+                    Please contact your admissions consultant for a new document upload link.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% elif all_uploaded %}
+    <!-- All Documents Uploaded -->
+    <div class="bg-green-50 border border-green-200 rounded-xl p-6">
+        <div class="flex items-center space-x-3">
+            <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <h3 class="font-semibold text-green-800">All documents uploaded! ✅</h3>
+                <p class="text-green-600 text-sm mt-1">
+                    Thank you! We have received all your documents. Our team will review them shortly.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Progress Bar -->
+    <div class="bg-white rounded-xl card-shadow p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700">Upload Progress</span>
+            <span class="text-sm font-semibold text-blue-600">{{ upload_progress }}%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-3">
+            <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500" 
+                 style="width: {{ upload_progress }}%" id="progress-bar"></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Documents List -->
+    <div class="bg-white rounded-2xl card-shadow overflow-hidden">
+        <div class="p-6 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">Required Documents</h3>
+            <p class="text-sm text-gray-500 mt-1">Click on a document type to upload</p>
+        </div>
+        
+        <div class="divide-y divide-gray-100">
+            {% for doc_type in document_types %}
+            <div class="p-4 sm:p-6 flex items-center justify-between hover:bg-gray-50 transition-colors document-row" 
+                 data-doc-type="{{ doc_type.code }}" data-doc-name="{{ doc_type.name }}">
+                <div class="flex items-center space-x-4">
+                    <div class="flex-shrink-0">
+                        {% if doc_type.uploaded %}
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        {% else %}
+                        <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900">{{ doc_type.name }}</p>
+                        {% if doc_type.uploaded %}
+                        <p class="text-sm text-green-600">
+                            ✓ Uploaded: {{ doc_type.document.original_filename|truncatechars:30 }}
+                        </p>
+                        {% else %}
+                        <p class="text-sm text-gray-500">Click to upload</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div>
+                    {% if doc_type.uploaded %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        Uploaded
+                    </span>
+                    {% elif is_valid %}
+                    <button type="button" 
+                            class="upload-btn inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                            data-doc-type="{{ doc_type.code }}" 
+                            data-doc-name="{{ doc_type.name }}">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        Upload
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Help Card -->
+    <div class="bg-blue-50 rounded-xl p-6">
+        <div class="flex items-start space-x-3">
+            <svg class="w-6 h-6 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <h4 class="font-medium text-blue-900">Need help?</h4>
+                <p class="text-sm text-blue-700 mt-1">
+                    Accepted file formats: PDF, JPEG, PNG. Maximum file size: 10MB per document.
+                </p>
+                {% if lead.assigned_to %}
+                <p class="text-sm text-blue-700 mt-2">
+                    Contact your admissions consultant if you have any questions.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div id="upload-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 relative">
+        <button type="button" onclick="closeUploadModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+        
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Upload Document</h3>
+        <p class="text-gray-600 mb-4" id="modal-doc-name">Select a file to upload</p>
+        
+        <form id="upload-form" enctype="multipart/form-data">
+            <input type="hidden" name="document_type" id="modal-doc-type">
+            
+            <!-- Drop Zone -->
+            <div id="drop-zone" 
+                 class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                <input type="file" id="file-input" name="file" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
+                <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <p class="text-gray-600">
+                    <span class="text-blue-600 font-medium">Click to browse</span> or drag and drop
+                </p>
+                <p class="text-sm text-gray-500 mt-1">PDF, JPEG, PNG up to 10MB</p>
+            </div>
+            
+            <!-- File Preview -->
+            <div id="file-preview" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <div>
+                            <p class="font-medium text-gray-900" id="file-name">filename.pdf</p>
+                            <p class="text-sm text-gray-500" id="file-size">0 KB</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="clearFile()" class="text-red-500 hover:text-red-700">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Upload Progress -->
+            <div id="upload-progress" class="hidden mt-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">Uploading...</span>
+                    <span class="text-sm text-gray-500" id="upload-percent">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" id="upload-bar" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="upload-error" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p class="text-sm text-red-700" id="error-message"></p>
+            </div>
+            
+            <!-- Submit Button -->
+            <button type="submit" id="submit-btn" 
+                    class="mt-6 w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled>
+                Upload Document
+            </button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const uploadToken = '{{ upload_request.id }}';
+
+// Modal functions
+function openUploadModal(docType, docName) {
+    document.getElementById('modal-doc-type').value = docType;
+    document.getElementById('modal-doc-name').textContent = `Upload ${docName}`;
+    document.getElementById('upload-modal').classList.remove('hidden');
+    document.getElementById('upload-modal').classList.add('flex');
+    clearFile();
+    hideError();
+}
+
+function closeUploadModal() {
+    document.getElementById('upload-modal').classList.add('hidden');
+    document.getElementById('upload-modal').classList.remove('flex');
+}
+
+// File handling
+function handleFile(file) {
+    if (!file) return;
+    
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+    
+    if (!allowedTypes.includes(file.type)) {
+        showError('Please select a PDF, JPEG, or PNG file.');
+        return;
+    }
+    
+    if (file.size > maxSize) {
+        showError('File size must be under 10MB.');
+        return;
+    }
+    
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-size').textContent = formatFileSize(file.size);
+    document.getElementById('file-preview').classList.remove('hidden');
+    document.getElementById('drop-zone').classList.add('hidden');
+    document.getElementById('submit-btn').disabled = false;
+    hideError();
+}
+
+function clearFile() {
+    document.getElementById('file-input').value = '';
+    document.getElementById('file-preview').classList.add('hidden');
+    document.getElementById('drop-zone').classList.remove('hidden');
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('upload-progress').classList.add('hidden');
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function showError(message) {
+    document.getElementById('error-message').textContent = message;
+    document.getElementById('upload-error').classList.remove('hidden');
+}
+
+function hideError() {
+    document.getElementById('upload-error').classList.add('hidden');
+}
+
+// Event Listeners
+document.querySelectorAll('.upload-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const docType = this.dataset.docType;
+        const docName = this.dataset.docName;
+        openUploadModal(docType, docName);
+    });
+});
+
+// Drop zone
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-blue-400', 'bg-blue-50');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+    if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        handleFile(e.dataTransfer.files[0]);
+    }
+});
+
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length) {
+        handleFile(e.target.files[0]);
+    }
+});
+
+// Form submission
+document.getElementById('upload-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = document.getElementById('submit-btn');
+    const progressDiv = document.getElementById('upload-progress');
+    const progressBar = document.getElementById('upload-bar');
+    const progressPercent = document.getElementById('upload-percent');
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Uploading...';
+    progressDiv.classList.remove('hidden');
+    hideError();
+    
+    try {
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = percent + '%';
+                progressPercent.textContent = percent + '%';
+            }
+        });
+        
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success) {
+                    // Success - reload page to show updated state
+                    if (response.all_uploaded) {
+                        window.location.href = `/crm/portal/documents/${uploadToken}/success/`;
+                    } else {
+                        window.location.reload();
+                    }
+                } else {
+                    showError(response.error || 'Upload failed');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Upload Document';
+                }
+            } else {
+                showError('Upload failed. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Upload Document';
+            }
+        };
+        
+        xhr.onerror = function() {
+            showError('Network error. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Upload Document';
+        };
+        
+        xhr.open('POST', `/crm/portal/documents/${uploadToken}/upload/`);
+        xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
+        xhr.send(formData);
+        
+    } catch (error) {
+        showError('Upload failed. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Upload Document';
+    }
+});
+
+// Close modal on escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeUploadModal();
+});
+
+// Close modal on outside click
+document.getElementById('upload-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('upload-modal')) {
+        closeUploadModal();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,220 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Edit {{ object.company_name }}{% else %}New Corporate Client{% endif %} - SkillsFlow{% endblock %}
+
+{% block page_title %}{% if object %}Edit Client{% else %}New Corporate Client{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:dashboard' %}" class="text-primary-600 hover:text-primary-800">Corporate</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:client_list' %}" class="text-primary-600 hover:text-primary-800">Clients</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{% if object %}Edit{% else %}New{% endif %}</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto">
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Company Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Company Information</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label for="id_company_name" class="block text-sm font-medium text-gray-700">Company Name *</label>
+                    <input type="text" name="company_name" id="id_company_name" value="{{ form.company_name.value|default:'' }}" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                    {% if form.company_name.errors %}<p class="mt-1 text-sm text-red-600">{{ form.company_name.errors.0 }}</p>{% endif %}
+                </div>
+                
+                <div>
+                    <label for="id_trading_name" class="block text-sm font-medium text-gray-700">Trading Name</label>
+                    <input type="text" name="trading_name" id="id_trading_name" value="{{ form.trading_name.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div>
+                    <label for="id_registration_number" class="block text-sm font-medium text-gray-700">Registration Number</label>
+                    <input type="text" name="registration_number" id="id_registration_number" value="{{ form.registration_number.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div>
+                    <label for="id_vat_number" class="block text-sm font-medium text-gray-700">VAT Number</label>
+                    <input type="text" name="vat_number" id="id_vat_number" value="{{ form.vat_number.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div>
+                    <label for="id_seta_number" class="block text-sm font-medium text-gray-700">SDL Number</label>
+                    <input type="text" name="seta_number" id="id_seta_number" value="{{ form.seta_number.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div>
+                    <label for="id_industry" class="block text-sm font-medium text-gray-700">Industry</label>
+                    <input type="text" name="industry" id="id_industry" value="{{ form.industry.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label for="id_physical_address" class="block text-sm font-medium text-gray-700">Physical Address *</label>
+                    <textarea name="physical_address" id="id_physical_address" rows="2" required
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">{{ form.physical_address.value|default:'' }}</textarea>
+                    {% if form.physical_address.errors %}<p class="mt-1 text-sm text-red-600">{{ form.physical_address.errors.0 }}</p>{% endif %}
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label for="id_postal_address" class="block text-sm font-medium text-gray-700">Postal Address</label>
+                    <textarea name="postal_address" id="id_postal_address" rows="2"
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">{{ form.postal_address.value|default:'' }}</textarea>
+                </div>
+                
+                <div>
+                    <label for="id_phone" class="block text-sm font-medium text-gray-700">Phone *</label>
+                    <input type="tel" name="phone" id="id_phone" value="{{ form.phone.value|default:'' }}" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                    {% if form.phone.errors %}<p class="mt-1 text-sm text-red-600">{{ form.phone.errors.0 }}</p>{% endif %}
+                </div>
+                
+                <div>
+                    <label for="id_email" class="block text-sm font-medium text-gray-700">Email *</label>
+                    <input type="email" name="email" id="id_email" value="{{ form.email.value|default:'' }}" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                    {% if form.email.errors %}<p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>{% endif %}
+                </div>
+                
+                <div>
+                    <label for="id_website" class="block text-sm font-medium text-gray-700">Website</label>
+                    <input type="url" name="website" id="id_website" value="{{ form.website.value|default:'' }}"
+                           placeholder="https://"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status & Additional Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Status & Additional Information</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="id_status" class="block text-sm font-medium text-gray-700">Status</label>
+                    <select name="status" id="id_status"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        <option value="PROSPECT" {% if form.status.value == 'PROSPECT' %}selected{% endif %}>Prospect</option>
+                        <option value="ACTIVE" {% if form.status.value == 'ACTIVE' %}selected{% endif %}>Active</option>
+                        <option value="ON_HOLD" {% if form.status.value == 'ON_HOLD' %}selected{% endif %}>On Hold</option>
+                        <option value="INACTIVE" {% if form.status.value == 'INACTIVE' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="id_client_tier" class="block text-sm font-medium text-gray-700">Client Tier</label>
+                    <select name="client_tier" id="id_client_tier"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        <option value="EMERGING" {% if form.client_tier.value == 'EMERGING' %}selected{% endif %}>Emerging</option>
+                        <option value="STANDARD" {% if form.client_tier.value == 'STANDARD' or not form.client_tier.value %}selected{% endif %}>Standard</option>
+                        <option value="KEY" {% if form.client_tier.value == 'KEY' %}selected{% endif %}>Key Account</option>
+                        <option value="STRATEGIC" {% if form.client_tier.value == 'STRATEGIC' %}selected{% endif %}>Strategic</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="id_employee_count" class="block text-sm font-medium text-gray-700">Number of Employees</label>
+                    <input type="number" name="employee_count" id="id_employee_count" value="{{ form.employee_count.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div>
+                    <label for="id_annual_revenue" class="block text-sm font-medium text-gray-700">Annual Revenue (R)</label>
+                    <input type="number" name="annual_revenue" id="id_annual_revenue" step="0.01" value="{{ form.annual_revenue.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label for="id_notes" class="block text-sm font-medium text-gray-700">Notes</label>
+                    <textarea name="notes" id="id_notes" rows="4"
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">{{ form.notes.value|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        {% if not object and service_categories %}
+        <!-- Service Selection (Only for new clients) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Services</h3>
+            <p class="text-sm text-gray-500 mb-4">Select the services this client is signing up for (optional - you can add services later)</p>
+            
+            <div class="space-y-6">
+                {% for category in service_categories %}
+                {% if category.services.all %}
+                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                    <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                        <h4 class="text-sm font-semibold text-gray-700">{{ category.name }}</h4>
+                    </div>
+                    <div class="p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {% for service in category.services.all %}
+                            <label class="relative flex items-start p-3 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-primary-50 cursor-pointer transition-colors">
+                                <div class="flex items-center h-5">
+                                    <input type="checkbox" name="services" value="{{ service.pk }}"
+                                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                </div>
+                                <div class="ml-3 text-sm flex-1">
+                                    <span class="font-medium text-gray-900">{{ service.name }}</span>
+                                    {% if service.base_price %}
+                                    <span class="text-gray-500 ml-2">R{{ service.base_price|floatformat:0 }}</span>
+                                    {% endif %}
+                                    {% if service.description %}
+                                    <p class="text-gray-500 text-xs mt-0.5">{{ service.description|truncatewords:15 }}</p>
+                                    {% endif %}
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% empty %}
+                <p class="text-gray-500 text-sm">No services available. <a href="{% url 'corporate:service_list' %}" class="text-primary-600 hover:text-primary-800">Manage services</a></p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Form Actions -->
+        <div class="flex items-center justify-end space-x-4">
+            <a href="{% url 'corporate:client_list' %}" class="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 transition-all">
+                {% if object %}Update Client{% else %}Create Client{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

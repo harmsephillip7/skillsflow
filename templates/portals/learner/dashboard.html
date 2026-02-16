@@ -1,0 +1,314 @@
+{% extends "base/dashboard.html" %}
+
+{% block page_title %}My Learning Dashboard{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'portals:learner_dashboard' %}" class="bg-primary-50 text-primary-700 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+    <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+    </svg>
+    Dashboard
+</a>
+
+<a href="{% url 'portals:learner_enrollments' %}" class="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+    <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+    </svg>
+    My Programs
+</a>
+
+<a href="{% url 'portals:learner_documents' %}" class="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+    <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    </svg>
+    My Documents
+</a>
+
+<a href="#" class="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+    <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+    </svg>
+    Assessments
+</a>
+
+<a href="#" class="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+    <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+    </svg>
+    Schedule
+</a>
+
+<a href="#" class="text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md">
+    <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+    </svg>
+    My Journey
+</a>
+{% endblock %}
+
+{% block mobile_sidebar_nav %}
+{{ block.super }}
+{% endblock %}
+
+{% block main_content %}
+<!-- Welcome Banner -->
+<div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">
+                Welcome back{% if learner %}, {{ learner.first_name }}{% endif %}! 👋
+            </h2>
+            <p class="mt-1 text-gray-600">Here's what's happening with your learning journey.</p>
+        </div>
+        {% if journey %}
+        <div class="mt-4 sm:mt-0">
+            <div class="flex items-center space-x-2">
+                <span class="text-sm text-gray-500">Journey Progress:</span>
+                <span class="text-lg font-bold text-primary-600">{{ journey.overall_progress }}%</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+    <!-- Active Programs -->
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="h-12 w-12 rounded-lg bg-primary-100 flex items-center justify-center">
+                        <svg class="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Active Programs</dt>
+                        <dd class="text-3xl font-semibold text-gray-900">{{ quick_stats.active_programs|default:0 }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Assessments Passed -->
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
+                        <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Assessments Passed</dt>
+                        <dd class="text-3xl font-semibold text-gray-900">{{ quick_stats.assessments_passed|default:0 }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Certificates -->
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="h-12 w-12 rounded-lg bg-yellow-100 flex items-center justify-center">
+                        <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Certificates Earned</dt>
+                        <dd class="text-3xl font-semibold text-gray-900">{{ quick_stats.certificates_earned|default:0 }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Documents Status -->
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                        <svg class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Documents Verified</dt>
+                        <dd class="text-3xl font-semibold text-gray-900">{{ document_stats.verified|default:0 }}/{{ document_stats.total|default:0 }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Content Area (2 columns) -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Current Enrollments -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">My Programs</h3>
+            </div>
+            <div class="p-6">
+                {% if enrollments %}
+                <div class="space-y-4">
+                    {% for item in enrollments %}
+                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <h4 class="text-sm font-medium text-gray-900">{{ item.enrollment.qualification.name }}</h4>
+                                <p class="mt-1 text-xs text-gray-500">{{ item.enrollment.qualification.saqa_id }}</p>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                {{ item.enrollment.status|title }}
+                            </span>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="mt-4">
+                            <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+                                <span>Progress</span>
+                                <span>{{ item.progress }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-primary-600 h-2 rounded-full animate-progress" style="--progress-width: {{ item.progress }}%; width: {{ item.progress }}%;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 flex items-center justify-between">
+                            <span class="text-xs text-gray-500">
+                                <svg class="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                {{ item.enrollment.campus.name }}
+                            </span>
+                            <a href="#" class="text-xs text-primary-600 hover:text-primary-700 font-medium">View Details →</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No active programs</h3>
+                    <p class="mt-1 text-sm text-gray-500">Get started by enrolling in a program.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Upcoming Assessments -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Upcoming Assessments</h3>
+            </div>
+            <div class="divide-y divide-gray-200">
+                {% if upcoming_assessments %}
+                    {% for assessment in upcoming_assessments %}
+                    <div class="px-6 py-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                                <svg class="h-5 w-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">{{ assessment.activity.name }}</p>
+                                <p class="text-xs text-gray-500">{{ assessment.enrollment.qualification.name }}</p>
+                            </div>
+                        </div>
+                        <span class="text-sm text-gray-500">{{ assessment.scheduled_date|date:"d M Y" }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="px-6 py-8 text-center">
+                    <p class="text-sm text-gray-500">No upcoming assessments scheduled.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar (1 column) -->
+    <div class="space-y-6">
+        <!-- Pending Tasks -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-medium text-gray-900">To Do</h3>
+                <a href="{% url 'workflows:task_list' %}" class="text-sm text-primary-600 hover:text-primary-700">View all</a>
+            </div>
+            <div class="divide-y divide-gray-200">
+                {% if tasks %}
+                    {% for task in tasks %}
+                    <div class="px-6 py-3 flex items-center space-x-3">
+                        <input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                               hx-post="{% url 'workflows:complete_task' task.pk %}"
+                               hx-swap="outerHTML"
+                               hx-target="closest div">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm text-gray-900 truncate">{{ task.name }}</p>
+                            {% if task.due_date %}
+                            <p class="text-xs text-gray-500">Due: {{ task.due_date|date:"d M" }}</p>
+                            {% endif %}
+                        </div>
+                        {% if task.priority == 'urgent' or task.priority == 'high' %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                            {{ task.priority|title }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="px-6 py-8 text-center">
+                    <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-500">All caught up! 🎉</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Announcements -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Announcements</h3>
+            </div>
+            <div class="divide-y divide-gray-200">
+                {% if announcements %}
+                    {% for announcement in announcements %}
+                    <div class="px-6 py-4">
+                        <p class="text-sm font-medium text-gray-900">{{ announcement.title }}</p>
+                        <p class="mt-1 text-xs text-gray-500">{{ announcement.created_at|date:"d M Y" }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="px-6 py-8 text-center">
+                    <p class="text-sm text-gray-500">No announcements</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

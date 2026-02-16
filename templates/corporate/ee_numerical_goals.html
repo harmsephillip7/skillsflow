@@ -1,0 +1,174 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}Numerical Goals - {{ client.company_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li><a href="{% url 'corporate:ee_clients_dashboard' %}" class="text-gray-700 hover:text-blue-600">EE Clients</a></li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li><a href="{% url 'corporate:ee_service_management' client.pk %}" class="text-gray-700 hover:text-blue-600">{{ client.company_name }}</a></li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">Numerical Goals</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'corporate:ee_service_management' client.pk %}" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 mr-2">
+    ← Back
+</a>
+{% endblock %}
+
+{% block main_content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-900">Numerical Goals</h1>
+    <p class="text-gray-500 mt-1">{{ client.company_name }} - EE Year {{ ee_service_year.reporting_year }}</p>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <p class="text-sm text-gray-500">Total Goals</p>
+        <p class="text-2xl font-bold text-gray-900">{{ total_goals }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <p class="text-sm text-gray-500">Total Targets</p>
+        <p class="text-2xl font-bold text-purple-600">{{ total_targets|intcomma }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <p class="text-sm text-gray-500">Total Actual</p>
+        <p class="text-2xl font-bold text-gray-900">{{ total_actual|intcomma }}</p>
+    </div>
+</div>
+
+{% if goals %}
+<!-- Goals by Occupational Level -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+    <div class="p-4 border-b border-gray-100 bg-gray-50">
+        <h2 class="text-lg font-semibold text-gray-900">EE Numerical Goals by Occupational Level</h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Occupational Level</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Target Year</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Total Target</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Total Actual</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Progress</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for goal in goals %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ goal.get_occupational_level_display }}</td>
+                    <td class="px-4 py-3 text-sm text-center">{{ goal.target_year }}</td>
+                    <td class="px-4 py-3 text-sm text-center font-semibold text-purple-600">{{ goal.total_target }}</td>
+                    <td class="px-4 py-3 text-sm text-center">{{ goal.total_actual }}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center">
+                            <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                                {% if goal.total_target > 0 %}
+                                <div class="{% if goal.total_actual >= goal.total_target %}bg-green-500{% else %}bg-purple-600{% endif %} h-2 rounded-full" 
+                                     style="width: {% widthratio goal.total_actual goal.total_target 100 %}%"></div>
+                                {% endif %}
+                            </div>
+                            {% if goal.total_target > 0 %}
+                            <span class="text-xs {% if goal.total_actual >= goal.total_target %}text-green-600{% else %}text-gray-600{% endif %}">
+                                {% widthratio goal.total_actual goal.total_target 100 %}%
+                            </span>
+                            {% else %}
+                            <span class="text-xs text-gray-400">-</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Detailed Breakdown (Expandable) -->
+{% for goal in goals %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-4">
+    <div class="p-4 border-b border-gray-100 bg-gray-50 cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
+        <div class="flex justify-between items-center">
+            <h3 class="font-semibold text-gray-900">{{ goal.get_occupational_level_display }} - Target Year {{ goal.target_year }}</h3>
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+        </div>
+    </div>
+    <div class="hidden p-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-gray-50 rounded-lg p-3">
+                <p class="text-xs text-gray-500">African Male</p>
+                <p class="font-semibold">{{ goal.actual_african_male }} / {{ goal.african_male_target }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <p class="text-xs text-gray-500">African Female</p>
+                <p class="font-semibold">{{ goal.actual_african_female }} / {{ goal.african_female_target }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <p class="text-xs text-gray-500">Coloured Male</p>
+                <p class="font-semibold">{{ goal.actual_coloured_male }} / {{ goal.coloured_male_target }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <p class="text-xs text-gray-500">Coloured Female</p>
+                <p class="font-semibold">{{ goal.actual_coloured_female }} / {{ goal.coloured_female_target }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <p class="text-xs text-gray-500">Indian Male</p>
+                <p class="font-semibold">{{ goal.actual_indian_male }} / {{ goal.indian_male_target }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <p class="text-xs text-gray-500">Indian Female</p>
+                <p class="font-semibold">{{ goal.actual_indian_female }} / {{ goal.indian_female_target }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <p class="text-xs text-gray-500">White Male</p>
+                <p class="font-semibold">{{ goal.actual_white_male }} / {{ goal.white_male_target }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <p class="text-xs text-gray-500">White Female</p>
+                <p class="font-semibold">{{ goal.actual_white_female }} / {{ goal.white_female_target }}</p>
+            </div>
+        </div>
+        <div class="mt-3 pt-3 border-t border-gray-100">
+            <div class="bg-purple-50 rounded-lg p-3">
+                <p class="text-xs text-purple-600">People with Disabilities</p>
+                <p class="font-semibold text-purple-900">{{ goal.actual_disabled }} / {{ goal.disabled_target }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% else %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+    <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+    </svg>
+    <h2 class="text-xl font-semibold text-gray-900 mb-2">No Numerical Goals Set</h2>
+    <p class="text-gray-500 mb-4">
+        {% if ee_service_year.ee_plan %}
+        This EE Plan does not have numerical goals defined yet.
+        {% else %}
+        Please link an EE Plan to this service year to define numerical goals.
+        {% endif %}
+    </p>
+    <a href="{% url 'corporate:ee_service_management' client.pk %}" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+        Back to EE Management
+    </a>
+</div>
+{% endif %}
+
+<div class="mt-6">
+    <a href="{% url 'corporate:ee_service_management' client.pk %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+        ← Back to EE Management
+    </a>
+</div>
+{% endblock %}

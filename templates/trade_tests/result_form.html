@@ -1,0 +1,148 @@
+{% extends 'base/app_layout.html' %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}Record Trade Test Result{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Header -->
+    <div>
+        <nav class="text-sm mb-2">
+            <a href="{% url 'trade_tests:dashboard' %}" class="text-primary-600 hover:text-primary-800">Trade Tests</a>
+            <span class="text-gray-400 mx-2">/</span>
+            <a href="{% url 'trade_tests:application_detail' booking.application.pk %}" class="text-primary-600 hover:text-primary-800">{{ booking.application.application_number }}</a>
+            <span class="text-gray-400 mx-2">/</span>
+            <span class="text-gray-500">Record Result</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">Record Trade Test Result</h1>
+        <p class="text-gray-500 mt-1">Enter the test results for Attempt {{ booking.attempt_number }}</p>
+    </div>
+
+    <!-- Booking Summary -->
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">Booking Details</h3>
+                <div class="mt-2 text-sm text-blue-700">
+                    <p><strong>Learner:</strong> {{ booking.application.learner.get_full_name }}</p>
+                    <p><strong>Trade:</strong> {{ booking.application.trade.name }}</p>
+                    <p><strong>Test Date:</strong> {{ booking.scheduled_date|date:"d M Y" }} at {{ booking.scheduled_time|time:"H:i" }}</p>
+                    <p><strong>Centre:</strong> {{ booking.centre.name }}</p>
+                    <p><strong>Pass Marks:</strong> Theory {{ booking.application.trade.theory_pass_mark|default:"N/A" }}% | Practical {{ booking.application.trade.practical_pass_mark|default:"N/A" }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        
+        <!-- Section Selection -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Result Section</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Section *</label>
+                    {{ form.section }}
+                    {% if form.section.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.section.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500">Select which section this result is for</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Details -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Result Details</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Result *</label>
+                    {{ form.result }}
+                    {% if form.result.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.result.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Score (%)</label>
+                    {{ form.score }}
+                    {% if form.score.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.score.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500">Optional: Enter the percentage score if available</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assessor Details -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Assessor Details</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Assessor Name</label>
+                    {{ form.assessor_name }}
+                    {% if form.assessor_name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.assessor_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Assessor Registration Number</label>
+                    {{ form.assessor_registration_number }}
+                    {% if form.assessor_registration_number.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.assessor_registration_number.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Comments -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Comments</h2>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Assessor Comments</label>
+                {{ form.comments }}
+                {% if form.comments.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.comments.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Info Note -->
+        <div class="px-6 py-5 border-b border-gray-100 bg-yellow-50">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-yellow-800">Important Notes</h3>
+                    <div class="mt-2 text-sm text-yellow-700">
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li>The learner will be notified via email/SMS about their result.</li>
+                            <li>If the result is "Not Yet Competent" and attempts remain, a new booking will be automatically created.</li>
+                            <li>Maximum of 3 attempts allowed per application.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+            <a href="{% url 'trade_tests:application_detail' booking.application.pk %}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition-colors">
+                Save Result
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,604 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}B-BBEE Management - {{ client.company_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:bbbee_clients_dashboard' %}" class="text-gray-700 hover:text-blue-600">B-BBEE Clients</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">{{ client.company_name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex space-x-3">
+    <a href="{% url 'corporate:client_360' client.pk %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+        </svg>
+        Client 360
+    </a>
+    {% if current_service_year %}
+    <a href="{% url 'corporate:bbbee_scorecard_summary' client.pk current_service_year.pk %}" class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+        </svg>
+        View Scorecard
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block main_content %}
+<!-- Header -->
+<div class="mb-8">
+    <div class="flex justify-between items-start">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ client.company_name }}</h1>
+            <p class="text-gray-500 mt-1">B-BBEE Verification Service Management</p>
+        </div>
+        <!-- Service Year Selector -->
+        <div class="flex items-center space-x-2">
+            <label class="text-sm text-gray-600">Financial Year:</label>
+            <select onchange="window.location.href='?year=' + this.value" class="rounded-lg border-gray-300 text-sm">
+                {% for year in bbbee_service_years %}
+                <option value="{{ year.financial_year }}" {% if current_service_year.financial_year == year.financial_year %}selected{% endif %}>
+                    FY{{ year.financial_year }} ({{ year.financial_year_display }})
+                </option>
+                {% endfor %}
+            </select>
+            <button onclick="document.getElementById('createYearModal').classList.remove('hidden')" 
+                    class="inline-flex items-center px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm" title="Add new year">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Add Year
+            </button>
+        </div>
+    </div>
+    
+    {% if not subscription %}
+    <!-- Billing Reminder Banner -->
+    <div class="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start">
+        <svg class="w-5 h-5 text-amber-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div class="flex-1">
+            <p class="text-sm text-amber-800"><strong>Billing not set up:</strong> Remember to create a subscription for this client to track billing and contracts.</p>
+            <a href="{% url 'corporate:add_subscription' client.pk %}" class="text-sm text-amber-700 hover:text-amber-900 underline mt-1 inline-block">
+                Set up billing subscription →
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if current_service_year %}
+<!-- Status & Progress Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-500">Status</span>
+            <span class="px-2 py-1 text-xs rounded-full 
+                {% if current_service_year.status == 'COMPLETED' or current_service_year.status == 'CERTIFICATE_ISSUED' %}bg-green-100 text-green-800
+                {% elif current_service_year.status == 'VERIFIED' %}bg-blue-100 text-blue-800
+                {% elif current_service_year.status == 'VERIFICATION_IN_PROGRESS' or current_service_year.status == 'VERIFICATION_SCHEDULED' %}bg-yellow-100 text-yellow-800
+                {% elif current_service_year.status == 'NOT_STARTED' %}bg-gray-100 text-gray-800
+                {% else %}bg-orange-100 text-orange-800{% endif %}">
+                {{ current_service_year.get_status_display }}
+            </span>
+        </div>
+        <p class="text-sm text-gray-700">
+            {% if current_service_year.target_verification_date %}
+            Target: {{ current_service_year.target_verification_date|date:"d M Y" }}
+            {% else %}
+            No target date set
+            {% endif %}
+        </p>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-500">Enterprise Type</span>
+            <span class="px-2 py-1 text-xs rounded-full 
+                {% if current_service_year.enterprise_type == 'EME' %}bg-green-100 text-green-800
+                {% elif current_service_year.enterprise_type == 'QSE' %}bg-blue-100 text-blue-800
+                {% else %}bg-purple-100 text-purple-800{% endif %}">
+                {{ current_service_year.get_enterprise_type_display }}
+            </span>
+        </div>
+        <p class="text-lg font-semibold text-gray-900">
+            {% if current_service_year.annual_turnover %}
+            R{{ current_service_year.annual_turnover|floatformat:0|intcomma }}
+            {% else %}
+            Not specified
+            {% endif %}
+        </p>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-500">Projected Level</span>
+        </div>
+        {% if scores_summary %}
+        <p class="text-2xl font-bold text-emerald-600">{{ scores_summary.projected_level }}</p>
+        <p class="text-xs text-gray-500">{{ scores_summary.recognition }}% recognition</p>
+        {% else %}
+        <p class="text-lg font-semibold text-gray-400">Not calculated</p>
+        {% endif %}
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-500">Overall Progress</span>
+            <span class="text-lg font-semibold text-emerald-600">{{ current_service_year.progress_percentage|default:0 }}%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-emerald-600 h-2 rounded-full" style="width: {{ current_service_year.progress_percentage|default:0 }}%"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Enterprise Info Alert (for EME/QSE) -->
+{% if enterprise_info %}
+<div class="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+    <div class="flex items-start">
+        <svg class="w-5 h-5 text-blue-600 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div>
+            <h4 class="font-medium text-blue-800">{{ current_service_year.get_enterprise_type_display }} Requirements</h4>
+            <p class="text-sm text-blue-700 mt-1">{{ enterprise_info.notes }}</p>
+            {% if enterprise_info.auto_level_rules %}
+            <p class="text-xs text-blue-600 mt-2 font-mono whitespace-pre-line">{{ enterprise_info.auto_level_rules }}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Latest Certificate Info -->
+{% if latest_scorecard %}
+<div class="mb-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-6 text-white">
+    <div class="flex items-center justify-between">
+        <div>
+            <h3 class="text-lg font-semibold">Current B-BBEE Certificate</h3>
+            <p class="text-emerald-100 mt-1">Level {{ latest_scorecard.bbbee_level }} • Valid until {{ latest_scorecard.expiry_date|date:"d M Y" }}</p>
+        </div>
+        <div class="text-right">
+            <p class="text-3xl font-bold">{{ latest_scorecard.total_score }} pts</p>
+            <p class="text-emerald-100 text-sm">Verified {{ latest_scorecard.verification_date|date:"d M Y" }}</p>
+        </div>
+    </div>
+    {% if latest_scorecard.certificate %}
+    <a href="{{ latest_scorecard.certificate.url }}" target="_blank" class="inline-flex items-center mt-4 px-3 py-1.5 bg-white/20 rounded-lg text-sm hover:bg-white/30">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        Download Certificate
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Scorecard Elements -->
+<div class="mb-8">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Scorecard Elements (Generic - 109 Points)</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Ownership Element -->
+        <a href="{% url 'corporate:bbbee_ownership' client.pk current_service_year.pk %}" 
+           class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Ownership</h3>
+                        <p class="text-xs text-gray-500">25 points max</p>
+                    </div>
+                </div>
+                <span class="text-lg font-bold text-purple-600">
+                    {% if ownership_data %}{{ ownership_data.calculated_score|floatformat:1 }}{% else %}0{% endif %}
+                </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-purple-600 h-2 rounded-full" style="width: {% if ownership_data %}{{ ownership_data.calculated_score|floatformat:0 }}{% else %}0{% endif %}%"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">
+                {% if ownership_data %}
+                Black ownership: {{ ownership_data.total_black_voting_rights }}% • Black women: {{ ownership_data.black_women_voting_rights }}%
+                {% else %}
+                No ownership data captured
+                {% endif %}
+            </p>
+        </a>
+        
+        <!-- Management Control Element -->
+        <a href="{% url 'corporate:bbbee_management_control' client.pk current_service_year.pk %}" 
+           class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Management Control</h3>
+                        <p class="text-xs text-gray-500">19 points max</p>
+                    </div>
+                </div>
+                <span class="text-lg font-bold text-blue-600">
+                    {% if management_data %}{{ management_data.calculated_score|floatformat:1 }}{% else %}0{% endif %}
+                </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full" style="width: {% widthratio management_data.calculated_score|default:0 19 100 %}%"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">
+                {% if management_data %}
+                Board: {{ management_data.board_black }}/{{ management_data.board_total }} black • Exec: {{ management_data.exec_black }}/{{ management_data.exec_total }} black
+                {% else %}
+                No management data captured
+                {% endif %}
+            </p>
+        </a>
+        
+        <!-- Skills Development Element -->
+        <a href="{% url 'corporate:bbbee_skills_development' client.pk current_service_year.pk %}" 
+           class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Skills Development</h3>
+                        <p class="text-xs text-gray-500">20 points max</p>
+                    </div>
+                </div>
+                <span class="text-lg font-bold text-amber-600">
+                    {% if skills_data %}{{ skills_data.calculated_score|floatformat:1 }}{% else %}0{% endif %}
+                </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-amber-600 h-2 rounded-full" style="width: {% widthratio skills_data.calculated_score|default:0 20 100 %}%"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">
+                {% if skills_data %}
+                Spend: R{{ skills_data.total_skills_spend|floatformat:0|intcomma }} • Learnerships: {{ skills_data.learnerships_total }}
+                {% else %}
+                {% if current_service_year.wspatr_service_year %}Linked to WSP/ATR{% else %}No data - Link WSP/ATR{% endif %}
+                {% endif %}
+            </p>
+        </a>
+        
+        <!-- Enterprise & Supplier Development Element -->
+        <a href="{% url 'corporate:bbbee_esd' client.pk current_service_year.pk %}" 
+           class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Enterprise & Supplier Dev</h3>
+                        <p class="text-xs text-gray-500">40 points max</p>
+                    </div>
+                </div>
+                <span class="text-lg font-bold text-emerald-600">
+                    {% if esd_data %}{{ esd_data.calculated_score|floatformat:1 }}{% else %}0{% endif %}
+                </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-emerald-600 h-2 rounded-full" style="width: {% widthratio esd_data.calculated_score|default:0 40 100 %}%"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">
+                {% if esd_data %}
+                Procurement: R{{ esd_data.total_procurement_spend|floatformat:0|intcomma }} • B-BBEE: {{ esd_data.bbbee_procurement_percentage|floatformat:1 }}%
+                {% else %}
+                No ESD data captured
+                {% endif %}
+            </p>
+        </a>
+        
+        <!-- Socio-Economic Development Element -->
+        <a href="{% url 'corporate:bbbee_sed' client.pk current_service_year.pk %}" 
+           class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Socio-Economic Dev</h3>
+                        <p class="text-xs text-gray-500">5 points max</p>
+                    </div>
+                </div>
+                <span class="text-lg font-bold text-rose-600">
+                    {% if sed_data %}{{ sed_data.calculated_score|floatformat:1 }}{% else %}0{% endif %}
+                </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-rose-600 h-2 rounded-full" style="width: {% widthratio sed_data.calculated_score|default:0 5 100 %}%"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">
+                {% if sed_data %}
+                Contributions: R{{ sed_data.total_sed_spend|floatformat:0|intcomma }} • Beneficiaries: {{ sed_data.total_beneficiaries }}
+                {% else %}
+                No SED data captured
+                {% endif %}
+            </p>
+        </a>
+        
+        <!-- Documents -->
+        <a href="{% url 'corporate:bbbee_documents' client.pk current_service_year.pk %}" 
+           class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Documents</h3>
+                        <p class="text-xs text-gray-500">Supporting evidence</p>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                    <span class="text-gray-500">Company:</span>
+                    <span class="font-medium {% if section_progress.company >= 100 %}text-green-600{% else %}text-gray-700{% endif %}">{{ section_progress.company }}%</span>
+                </div>
+                <div>
+                    <span class="text-gray-500">Ownership:</span>
+                    <span class="font-medium {% if section_progress.ownership >= 100 %}text-green-600{% else %}text-gray-700{% endif %}">{{ section_progress.ownership }}%</span>
+                </div>
+                <div>
+                    <span class="text-gray-500">Verification:</span>
+                    <span class="font-medium {% if section_progress.verification >= 100 %}text-green-600{% else %}text-gray-700{% endif %}">{{ section_progress.verification }}%</span>
+                </div>
+                <div>
+                    <span class="text-gray-500">ESD:</span>
+                    <span class="font-medium {% if section_progress.esd >= 100 %}text-green-600{% else %}text-gray-700{% endif %}">{{ section_progress.esd }}%</span>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Data Links Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Linked Data Sources -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="font-semibold text-gray-900 mb-4">Linked Data Sources</h3>
+        <div class="space-y-3">
+            <!-- EE Link -->
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-purple-100 rounded flex items-center justify-center mr-3">
+                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Employment Equity</p>
+                        <p class="text-xs text-gray-500">For Management Control</p>
+                    </div>
+                </div>
+                {% if current_service_year.ee_service_year %}
+                <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                    Linked: {{ current_service_year.ee_service_year.reporting_year }}
+                </span>
+                {% else %}
+                <span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">Not linked</span>
+                {% endif %}
+            </div>
+            
+            <!-- WSP/ATR Link -->
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-blue-100 rounded flex items-center justify-center mr-3">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">WSP/ATR</p>
+                        <p class="text-xs text-gray-500">For Skills Development</p>
+                    </div>
+                </div>
+                {% if current_service_year.wspatr_service_year %}
+                <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                    Linked: FY{{ current_service_year.wspatr_service_year.financial_year }}
+                </span>
+                {% else %}
+                <span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">Not linked</span>
+                {% endif %}
+            </div>
+            
+            <!-- Employee Snapshot Link -->
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-amber-100 rounded flex items-center justify-center mr-3">
+                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Employee Snapshot</p>
+                        <p class="text-xs text-gray-500">Demographic data</p>
+                    </div>
+                </div>
+                {% if current_service_year.employee_snapshot %}
+                <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                    {{ current_service_year.employee_snapshot.snapshot_date|date:"d M Y" }}
+                </span>
+                {% else %}
+                <span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">Not linked</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Verification Agency -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="font-semibold text-gray-900 mb-4">Verification Details</h3>
+        {% if current_service_year.verification_agency %}
+        <div class="space-y-3">
+            <div>
+                <label class="text-xs text-gray-500">Agency</label>
+                <p class="font-medium text-gray-900">{{ current_service_year.verification_agency }}</p>
+            </div>
+            {% if current_service_year.verification_agency_contact %}
+            <div>
+                <label class="text-xs text-gray-500">Contact</label>
+                <p class="text-gray-700">{{ current_service_year.verification_agency_contact }}</p>
+            </div>
+            {% endif %}
+            {% if current_service_year.verification_agency_email %}
+            <div>
+                <label class="text-xs text-gray-500">Email</label>
+                <p class="text-gray-700">{{ current_service_year.verification_agency_email }}</p>
+            </div>
+            {% endif %}
+            {% if current_service_year.certificate_number %}
+            <div>
+                <label class="text-xs text-gray-500">Certificate Number</label>
+                <p class="font-mono text-gray-900">{{ current_service_year.certificate_number }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm">No verification agency assigned yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Update Status Form -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+    <h3 class="font-semibold text-gray-900 mb-4">Update Status</h3>
+    <form action="{% url 'corporate:bbbee_update_status' client.pk current_service_year.pk %}" method="post" class="flex items-end space-x-4">
+        {% csrf_token %}
+        <div class="flex-1">
+            <label class="block text-sm text-gray-600 mb-1">Status</label>
+            <select name="status" class="w-full rounded-lg border-gray-300">
+                {% for choice in current_service_year.STATUS_CHOICES %}
+                <option value="{{ choice.0 }}" {% if current_service_year.status == choice.0 %}selected{% endif %}>
+                    {{ choice.1 }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="flex-1">
+            <label class="block text-sm text-gray-600 mb-1">Notes (optional)</label>
+            <input type="text" name="notes" class="w-full rounded-lg border-gray-300" placeholder="Add a note about this status change">
+        </div>
+        <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+            Update
+        </button>
+    </form>
+</div>
+
+{% else %}
+<!-- No Service Year -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+    <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+    </svg>
+    <h3 class="text-lg font-semibold text-gray-900 mb-2">No B-BBEE Service Year</h3>
+    <p class="text-gray-500 mb-4">Create a service year to start tracking B-BBEE verification.</p>
+    <button onclick="document.getElementById('createYearModal').classList.remove('hidden')" 
+            class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+        Create Service Year
+    </button>
+</div>
+{% endif %}
+
+<!-- Create Year Modal -->
+<div id="createYearModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black opacity-50" onclick="document.getElementById('createYearModal').classList.add('hidden')"></div>
+        <div class="relative bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Create B-BBEE Service Year</h3>
+            <form action="{% url 'corporate:bbbee_create_service_year' client.pk %}" method="post">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Financial Year (ending)</label>
+                        <select name="financial_year" class="w-full rounded-lg border-gray-300">
+                            {% for year in years_available %}
+                            <option value="{{ year }}">FY{{ year }}</option>
+                            {% empty %}
+                            <option value="2025">FY2025</option>
+                            <option value="2026">FY2026</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Year-End Month</label>
+                        <select name="year_end_month" class="w-full rounded-lg border-gray-300">
+                            <option value="1">January</option>
+                            <option value="2" selected>February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Annual Turnover (R)</label>
+                        <input type="number" name="annual_turnover" class="w-full rounded-lg border-gray-300" 
+                               placeholder="e.g., 50000000" step="1">
+                        <p class="text-xs text-gray-500 mt-1">Used to determine EME/QSE/Generic classification</p>
+                    </div>
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="auto_link" checked class="rounded border-gray-300 text-emerald-600">
+                            <span class="ml-2 text-sm text-gray-700">Auto-link to existing EE/WSP-ATR data</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="document.getElementById('createYearModal').classList.add('hidden')" 
+                            class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+                        Create
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,680 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}{{ qualification.short_title }} - Qualification{% endblock %}
+
+{% block page_title %}{{ qualification.short_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'academics:qualification_list' %}" class="text-primary-600 hover:text-primary-800">Qualifications</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ qualification.saqa_id }}</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'academics:qualification_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Back to List
+    </a>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    
+    <!-- Header Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-start justify-between">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="font-mono text-sm text-primary-600">{{ qualification.saqa_id }}</span>
+                    {% if qualification.qcto_code %}
+                    <span class="text-gray-300">|</span>
+                    <span class="font-mono text-sm text-gray-500">QCTO: {{ qualification.qcto_code }}</span>
+                    {% endif %}
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mt-1">{{ qualification.title }}</h2>
+                <p class="text-gray-500 mt-1">{{ qualification.get_qualification_type_display }} • {{ qualification.seta.name }}</p>
+            </div>
+            <div class="text-right">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                    {% if accreditation_status == 'ACTIVE' %}bg-green-100 text-green-800
+                    {% elif accreditation_status == 'EXPIRING' %}bg-amber-100 text-amber-800
+                    {% elif accreditation_status == 'EXPIRED' %}bg-red-100 text-red-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {% if accreditation_status == 'ACTIVE' %}🟢 Accreditation Active
+                    {% elif accreditation_status == 'EXPIRING' %}🟡 Expiring in {{ days_until_expiry }} days
+                    {% elif accreditation_status == 'EXPIRED' %}🔴 Accreditation Expired
+                    {% else %}⚪ Status Unknown{% endif %}
+                </span>
+                {% if qualification.accreditation_expiry %}
+                <p class="text-sm text-gray-500 mt-2">Expires: {{ qualification.accreditation_expiry|date:"d M Y" }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+                <p class="text-2xl font-bold text-gray-900">{{ qualification.nqf_level }}</p>
+                <p class="text-xs text-gray-500 mt-1">NQF Level</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+                <p class="text-2xl font-bold text-gray-900">{{ qualification.credits }}</p>
+                <p class="text-xs text-gray-500 mt-1">Credits</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+                <p class="text-2xl font-bold text-gray-900">{{ active_enrollments }}</p>
+                <p class="text-xs text-gray-500 mt-1">Active Learners</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+                <p class="text-2xl font-bold text-gray-900">{{ qualification.modules.count }}</p>
+                <p class="text-xs text-gray-500 mt-1">Modules</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+                <p class="text-2xl font-bold text-primary-600">{{ checklist_percent }}%</p>
+                <p class="text-xs text-gray-500 mt-1">Checklist Complete</p>
+            </div>
+        </div>
+        
+        <!-- Delivery Modes -->
+        <div class="mt-6 flex items-center gap-4">
+            <span class="text-sm font-medium text-gray-700">Delivery Modes:</span>
+            <div class="flex items-center gap-2">
+                {% if qualification.ready_in_person %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    🏢 In-Person Ready
+                </span>
+                {% else %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-500">
+                    🏢 In-Person
+                </span>
+                {% endif %}
+                
+                {% if qualification.ready_online %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    💻 Online Ready
+                </span>
+                {% else %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-500">
+                    💻 Online
+                </span>
+                {% endif %}
+                
+                {% if qualification.ready_hybrid %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    🔄 Hybrid Ready
+                </span>
+                {% else %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-500">
+                    🔄 Hybrid
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Accreditation Checklist -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">Accreditation Checklist</h3>
+                            <p class="text-sm text-gray-500 mt-1">Track requirements for QCTO accreditation</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-2xl font-bold text-primary-600">{{ completed_items }}/{{ total_items }}</span>
+                            <p class="text-xs text-gray-500">Complete</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress bar -->
+                    <div class="mt-4 w-full bg-gray-200 rounded-full h-3">
+                        <div class="h-3 rounded-full transition-all duration-500
+                            {% if checklist_percent == 100 %}bg-green-500
+                            {% elif checklist_percent >= 50 %}bg-blue-500
+                            {% elif checklist_percent > 0 %}bg-yellow-500
+                            {% else %}bg-gray-400{% endif %}"
+                            style="width: {{ checklist_percent }}%"></div>
+                    </div>
+                </div>
+                
+                {% if checklist_by_category %}
+                <div class="divide-y divide-gray-100">
+                    {% for category, items in checklist_by_category.items %}
+                    <div class="px-6 py-4">
+                        <h4 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">{{ category }}</h4>
+                        <div class="space-y-3">
+                            {% for data in items %}
+                            <div class="flex items-start justify-between p-3 rounded-lg {% if data.completed %}bg-green-50{% else %}bg-gray-50{% endif %}">
+                                <div class="flex items-start">
+                                    <form method="post" action="{% url 'academics:toggle_checklist_item' data.item.pk %}" class="flex-shrink-0 mr-3">
+                                        {% csrf_token %}
+                                        <button type="submit" class="w-6 h-6 mt-0.5 rounded-full border-2 flex items-center justify-center transition-colors
+                                            {% if data.completed %}bg-green-500 border-green-500 text-white hover:bg-green-600
+                                            {% else %}bg-white border-gray-300 hover:border-primary-500{% endif %}">
+                                            {% if data.completed %}
+                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                            {% endif %}
+                                        </button>
+                                    </form>
+                                    <div>
+                                        <p class="text-sm font-medium {% if data.completed %}text-green-800 line-through{% else %}text-gray-900{% endif %}">
+                                            {{ data.item.title }}
+                                            {% if data.item.is_required %}<span class="text-red-500">*</span>{% endif %}
+                                        </p>
+                                        {% if data.item.description %}
+                                        <p class="text-xs text-gray-500 mt-1">{{ data.item.description }}</p>
+                                        {% endif %}
+                                        {% if data.progress and data.progress.completed_at %}
+                                        <p class="text-xs text-green-600 mt-1">
+                                            Completed {{ data.progress.completed_at|date:"d M Y" }} 
+                                            {% if data.progress.completed_by %}by {{ data.progress.completed_by.get_full_name }}{% endif %}
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="px-6 py-12 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    <h3 class="mt-4 text-sm font-medium text-gray-900">No checklist items</h3>
+                    <p class="mt-2 text-sm text-gray-500">Set up accreditation requirements for this qualification.</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Campus Accreditations -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Campus Accreditations</h3>
+                        <p class="text-sm text-gray-500 mt-1">Sites approved to deliver this qualification (multiple accreditation letters per campus)</p>
+                    </div>
+                    <a href="{% url 'academics:campus_accreditation_add' qualification.pk %}" 
+                       class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Campus Accreditation
+                    </a>
+                </div>
+                
+                {% if campus_accreditations_grouped %}
+                <div class="divide-y divide-gray-100">
+                    {% for campus_name, campus_data in campus_accreditations_grouped.items %}
+                    <div class="px-6 py-4">
+                        <!-- Campus Header -->
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <h4 class="text-sm font-semibold text-gray-900">{{ campus_name }}</h4>
+                                <span class="text-xs text-gray-500">({{ campus_data.campus.brand.name }})</span>
+                                {% if campus_data.has_expiring_soon %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                    ⚠️ Expiring Soon
+                                </span>
+                                {% endif %}
+                                {% if not campus_data.has_active %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                    🔴 No Active Accreditation
+                                </span>
+                                {% endif %}
+                            </div>
+                            <span class="text-xs text-gray-400">{{ campus_data.accreditations|length }} letter{{ campus_data.accreditations|length|pluralize }}</span>
+                        </div>
+                        
+                        <!-- Accreditation Letters Table -->
+                        <div class="bg-gray-50 rounded-lg overflow-hidden">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Capacity</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Document</th>
+                                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    {% for accred in campus_data.accreditations %}
+                                    <tr class="{% if accred.status == 'ACTIVE' %}bg-white{% elif accred.status == 'EXPIRED' %}bg-red-50{% else %}bg-gray-50{% endif %}">
+                                        <td class="px-3 py-2 text-sm">
+                                            <span class="font-medium text-gray-900">{{ accred.letter_reference|default:"—" }}</span>
+                                            {% if accred.letter_date %}
+                                            <span class="text-xs text-gray-400 block">Issued: {{ accred.letter_date|date:"d M Y" }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-3 py-2 text-sm text-gray-700">
+                                            {{ accred.accredited_from|date:"d M Y" }} — {{ accred.accredited_until|date:"d M Y" }}
+                                            {% if accred.is_expiring_soon %}
+                                            <span class="block text-xs text-amber-600 font-medium">⚠️ {{ accred.days_until_expiry }} days left</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-3 py-2">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                                {% if accred.status == 'ACTIVE' %}bg-green-100 text-green-800
+                                                {% elif accred.status == 'SUPERSEDED' %}bg-blue-100 text-blue-800
+                                                {% elif accred.status == 'EXPIRED' %}bg-red-100 text-red-800
+                                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                                {% if accred.status == 'ACTIVE' %}🟢{% elif accred.status == 'SUPERSEDED' %}🔵{% else %}🔴{% endif %}
+                                                {{ accred.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td class="px-3 py-2 text-sm text-gray-500">
+                                            {{ accred.learner_capacity|default:"—" }}
+                                        </td>
+                                        <td class="px-3 py-2 text-sm">
+                                            {% if accred.accreditation_document %}
+                                            <a href="{{ accred.accreditation_document.url }}" target="_blank" 
+                                               class="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-700 bg-purple-50 rounded hover:bg-purple-100 transition"
+                                               title="Download accreditation letter">
+                                                <svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                </svg>
+                                                Letter
+                                            </a>
+                                            {% else %}
+                                            <span class="text-gray-400 text-xs">No document</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-3 py-2 text-right">
+                                            <div class="flex items-center justify-end gap-2">
+                                                <a href="{% url 'academics:campus_accreditation_edit' accred.pk %}" 
+                                                   class="text-gray-400 hover:text-gray-600" title="Edit">
+                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                    </svg>
+                                                </a>
+                                                <a href="{% url 'academics:campus_accreditation_delete' accred.pk %}" 
+                                                   class="text-gray-400 hover:text-red-600" title="Delete">
+                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="px-6 py-8 text-center text-gray-500">
+                    <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    <h3 class="mt-4 text-sm font-medium text-gray-900">No campus accreditations</h3>
+                    <p class="mt-2 text-sm text-gray-500">Add accreditation letters for campuses delivering this qualification.</p>
+                    <a href="{% url 'academics:campus_accreditation_add' qualification.pk %}" 
+                       class="mt-4 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 transition">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Campus Accreditation
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Implementation Plans -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Implementation Plans</h3>
+                        <p class="text-sm text-gray-500 mt-1">Delivery schedules and module sequencing</p>
+                    </div>
+                    <a href="{% url 'academics:implementation_plan_create' qualification.pk %}" class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        New Implementation Plan
+                    </a>
+                </div>
+                
+                {% if implementation_plans %}
+                <div class="divide-y divide-gray-100">
+                    {% for plan in implementation_plans %}
+                    <a href="{% url 'academics:implementation_plan_detail' plan.pk %}" class="block px-6 py-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <h4 class="text-sm font-medium text-gray-900">{{ plan.name }}</h4>
+                                    {% if plan.is_default %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Default</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">{{ plan.get_delivery_mode_display }} • {{ plan.total_weeks }} weeks • {{ plan.phases.count }} phases</p>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                    {% if plan.status == 'ACTIVE' %}bg-blue-100 text-blue-800
+                                    {% elif plan.status == 'DRAFT' %}bg-gray-100 text-gray-800
+                                    {% else %}bg-amber-100 text-amber-800{% endif %}">
+                                    {{ plan.get_status_display }}
+                                </span>
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                <div class="px-6 py-3 bg-gray-50 border-t border-gray-100">
+                    <a href="{% url 'academics:implementation_plan_list' qualification.pk %}" class="text-sm text-primary-600 hover:text-primary-800 font-medium">
+                        View All Implementation Plans →
+                    </a>
+                </div>
+                {% else %}
+                <div class="px-6 py-8 text-center">
+                    <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-500">No implementation plans created yet</p>
+                    <a href="{% url 'academics:implementation_plan_create' qualification.pk %}" class="mt-3 inline-flex items-center text-sm text-primary-600 hover:text-primary-800 font-medium">
+                        Create First Implementation Plan →
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Modules & Lesson Plans -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">Modules & Lesson Plans</h3>
+                    <span class="text-sm text-gray-500">{{ modules.count }} modules</span>
+                </div>
+                {% if modules %}
+                <div class="divide-y divide-gray-100">
+                    {% regroup modules by get_module_type_display as module_groups %}
+                    {% for group in module_groups %}
+                    <div class="px-6 py-3 bg-gray-50">
+                        <h4 class="text-sm font-semibold text-gray-700">{{ group.grouper }} Modules</h4>
+                    </div>
+                    {% for module in group.list %}
+                    <a href="{% url 'academics:lesson_plan_list' module.pk %}" class="block px-6 py-4 hover:bg-gray-50 transition">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                        {% if module.module_type == 'K' %}bg-blue-100 text-blue-800
+                                        {% elif module.module_type == 'P' %}bg-green-100 text-green-800
+                                        {% else %}bg-purple-100 text-purple-800{% endif %}">
+                                        {{ module.module_type }}
+                                    </span>
+                                    <span class="font-mono text-sm text-gray-500">{{ module.code }}</span>
+                                </div>
+                                <h4 class="font-medium text-gray-900 mt-1 truncate">{{ module.title }}</h4>
+                                <p class="text-xs text-gray-500 mt-1">{{ module.credits }} credits • NQF {{ module.nqf_level }}</p>
+                            </div>
+                            <div class="ml-4 flex items-center space-x-3">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium
+                                    {% if module.lesson_plan_count > 0 %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-500{% endif %}">
+                                    {{ module.lesson_plan_count }} lesson plan{{ module.lesson_plan_count|pluralize }}
+                                </span>
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="px-6 py-8 text-center">
+                    <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-500">No modules added yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            
+            <!-- Alerts -->
+            {% if recent_alerts %}
+            <div class="bg-amber-50 rounded-xl border border-amber-200 p-6">
+                <h3 class="text-sm font-semibold text-amber-800 mb-3">⚠️ Active Alerts</h3>
+                <div class="space-y-2">
+                    {% for alert in recent_alerts %}
+                    <div class="text-sm text-amber-700">
+                        <span class="font-medium">{{ alert.get_alert_type_display }}</span>
+                        <p class="text-xs">{{ alert.message|truncatewords:15 }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                <a href="{% url 'academics:accreditation_alerts' %}" class="mt-3 inline-block text-xs text-amber-800 hover:text-amber-900 font-medium">
+                    View All Alerts →
+                </a>
+            </div>
+            {% endif %}
+            
+            <!-- Personnel -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold text-gray-900">Registered Personnel</h3>
+                    <a href="{% url 'academics:personnel_create' qualification.pk %}" 
+                       class="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Add
+                    </a>
+                </div>
+                {% if personnel %}
+                <div class="space-y-3">
+                    {% for person in personnel %}
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ person.user.get_full_name }}</p>
+                            <p class="text-xs text-gray-500">{{ person.get_personnel_type_display }}</p>
+                        </div>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                            {% if person.registration_status == 'ACTIVE' %}bg-green-100 text-green-800
+                            {% elif person.registration_status == 'EXPIRING' %}bg-amber-100 text-amber-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ person.registration_status }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500">No personnel registered</p>
+                {% endif %}
+            </div>
+            
+            <!-- Learning Materials -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-sm font-semibold text-gray-900 mb-4">Learning Materials</h3>
+                {% if materials %}
+                <div class="space-y-3">
+                    {% for material in materials %}
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ material.get_material_type_display }}</p>
+                            <p class="text-xs text-gray-500">v{{ material.version }}</p>
+                        </div>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                            {% if material.approved %}bg-green-100 text-green-800{% else %}bg-amber-100 text-amber-800{% endif %}">
+                            {% if material.approved %}Approved{% else %}Pending{% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500">No materials uploaded</p>
+                {% endif %}
+            </div>
+            
+            <!-- Qualification Info -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-sm font-semibold text-gray-900 mb-4">Qualification Details</h3>
+                <dl class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Duration</dt>
+                        <dd class="text-gray-900">{{ qualification.minimum_duration_months }}-{{ qualification.maximum_duration_months }} months</dd>
+                    </div>
+                    {% if qualification.accreditation_number %}
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Accreditation #</dt>
+                        <dd class="text-gray-900 font-mono text-xs">{{ qualification.accreditation_number }}</dd>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">SAQA Registration</dt>
+                        <dd class="text-gray-900">{{ qualification.registration_start|date:"d M Y" }} - {{ qualification.registration_end|date:"d M Y" }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Last Enrollment</dt>
+                        <dd class="text-gray-900">{{ qualification.last_enrollment_date|date:"d M Y" }}</dd>
+                    </div>
+                </dl>
+            </div>
+            
+            <!-- Qualification Pricing -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold text-gray-900">Pricing</h3>
+                    {% if request.user.is_staff %}
+                    <a href="{% url 'admin:qualificationpricing_create' qualification.pk %}" 
+                       class="text-xs text-primary-600 hover:text-primary-800 font-medium">+ Add Pricing</a>
+                    {% endif %}
+                </div>
+                
+                {% if current_pricing %}
+                <div class="bg-primary-50 rounded-lg p-4 mb-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-primary-700">{{ current_year }} (Current)</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-bold text-primary-900">R {{ current_pricing.total_price|floatformat:2 }}</span>
+                            {% if request.user.is_staff %}
+                            <a href="{% url 'admin:qualificationpricing_edit' current_pricing.pk %}" 
+                               class="text-primary-600 hover:text-primary-800" title="Edit">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if current_pricing.registration_fee %}
+                    <div class="mt-2 text-xs text-primary-600 space-y-1">
+                        <div class="flex justify-between">
+                            <span>Registration</span>
+                            <span>R {{ current_pricing.registration_fee|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Tuition</span>
+                            <span>R {{ current_pricing.tuition_fee|floatformat:2 }}</span>
+                        </div>
+                        {% if current_pricing.materials_fee %}
+                        <div class="flex justify-between">
+                            <span>Materials</span>
+                            <span>R {{ current_pricing.materials_fee|floatformat:2 }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="bg-amber-50 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-amber-700">⚠️ No pricing set for {{ current_year }}</p>
+                    {% if request.user.is_staff %}
+                    <a href="{% url 'admin:qualificationpricing_create' qualification.pk %}" 
+                       class="mt-2 inline-flex items-center text-sm text-amber-800 hover:text-amber-900 font-medium">
+                        <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add {{ current_year }} Pricing
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                {% if pricing_history %}
+                <div class="border-t border-gray-100 pt-4">
+                    <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Pricing History</h4>
+                    <div class="space-y-2">
+                        {% for pricing in pricing_history %}
+                        <div class="flex justify-between items-center text-sm {% if pricing.academic_year == current_year %}font-medium{% endif %}">
+                            <span class="text-gray-600">
+                                {{ pricing.academic_year }}
+                                {% if pricing.academic_year > current_year %}
+                                <span class="text-xs text-blue-600">(Future)</span>
+                                {% elif pricing.academic_year == current_year %}
+                                <span class="text-xs text-green-600">(Current)</span>
+                                {% endif %}
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-gray-900">R {{ pricing.total_price|floatformat:2 }}</span>
+                                {% if request.user.is_staff %}
+                                <a href="{% url 'admin:qualificationpricing_edit' pricing.pk %}" 
+                                   class="text-gray-400 hover:text-primary-600" title="Edit">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Quick Links -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-sm font-semibold text-gray-900 mb-4">Quick Links</h3>
+                <div class="space-y-2">
+                    <a href="{% url 'academics:compliance_dashboard' %}" class="flex items-center text-sm text-gray-600 hover:text-primary-600 py-1">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        Compliance Dashboard
+                    </a>
+                    <a href="{% url 'academics:accreditation_alerts' %}" class="flex items-center text-sm text-gray-600 hover:text-primary-600 py-1">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                        All Alerts
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

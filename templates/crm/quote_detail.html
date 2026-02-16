@@ -1,0 +1,471 @@
+{% extends 'crm/crm_base.html' %}
+{% load static %}
+
+{% block title %}{{ quote.quote_number }} - Quote - CRM - SkillsFlow{% endblock %}
+
+{% block page_title %}Quote {{ quote.quote_number }}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:dashboard' %}" class="text-gray-500 hover:text-gray-700">CRM</a>
+</li>
+{% if quote.lead %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:lead_detail' quote.lead.pk %}" class="text-gray-500 hover:text-gray-700">{{ quote.lead.get_full_name }}</a>
+</li>
+{% endif %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ quote.quote_number }}</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <!-- Download PDF -->
+    <a href="{% url 'crm:download_quote_pdf' quote.pk %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Download PDF
+    </a>
+    
+    {% if quote.status == 'DRAFT' or quote.status == 'SENT' %}
+    <!-- Send Email -->
+    <button onclick="sendEmail()" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        Send Email
+    </button>
+    
+    <!-- Send WhatsApp -->
+    {% if whatsapp_available %}
+    <button onclick="showWhatsAppModal()" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+        </svg>
+        Send via WhatsApp
+    </button>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block crm_content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+        
+        <!-- Quote Header -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-start justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">{{ quote.quote_number }}</h2>
+                    <p class="text-sm text-gray-500 mt-1">Created {{ quote.created_at|date:"d M Y" }}</p>
+                </div>
+                
+                <span class="px-3 py-1.5 inline-flex text-sm leading-5 font-semibold rounded-lg 
+                    {% if quote.status == 'DRAFT' %}bg-gray-100 text-gray-800
+                    {% elif quote.status == 'SENT' %}bg-blue-100 text-blue-800
+                    {% elif quote.status == 'VIEWED' %}bg-yellow-100 text-yellow-800
+                    {% elif quote.status == 'ACCEPTED' %}bg-green-100 text-green-800
+                    {% elif quote.status == 'REJECTED' %}bg-red-100 text-red-800
+                    {% elif quote.status == 'EXPIRED' %}bg-gray-100 text-gray-600
+                    {% elif quote.status == 'CONVERTED' %}bg-purple-100 text-purple-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ quote.get_status_display }}
+                </span>
+            </div>
+            
+            <!-- Validity -->
+            <div class="mt-4 flex items-center space-x-4 text-sm">
+                <div class="flex items-center">
+                    <svg class="w-4 h-4 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span class="text-gray-500">Quote Date: {{ quote.quote_date|date:"d M Y" }}</span>
+                </div>
+                <div class="flex items-center {% if is_expired %}text-red-600{% endif %}">
+                    <svg class="w-4 h-4 {% if is_expired %}text-red-400{% else %}text-gray-400{% endif %} mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="{% if is_expired %}font-medium{% else %}text-gray-500{% endif %}">
+                        {% if is_expired %}Expired on {{ quote.valid_until|date:"d M Y" }}{% else %}Valid until {{ quote.valid_until|date:"d M Y" }}{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Client Info -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quote For</h3>
+            
+            {% if quote.lead %}
+            <div class="flex items-center">
+                <div class="flex-shrink-0 h-12 w-12">
+                    <div class="h-12 w-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-lg font-semibold">
+                        {{ quote.lead.first_name|slice:":1" }}{{ quote.lead.last_name|slice:":1" }}
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <a href="{% url 'crm:lead_detail' quote.lead.pk %}" class="text-lg font-medium text-gray-900 hover:text-primary-600">
+                        {{ quote.lead.get_full_name }}
+                    </a>
+                    <p class="text-sm text-gray-500">{{ quote.lead.email|default:quote.lead.phone }}</p>
+                </div>
+            </div>
+            {% elif quote.learner %}
+            <div class="flex items-center">
+                <div class="flex-shrink-0 h-12 w-12">
+                    <div class="h-12 w-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-lg font-semibold">
+                        {{ quote.learner.first_name|slice:":1" }}{{ quote.learner.surname|slice:":1" }}
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-lg font-medium text-gray-900">{{ quote.learner.first_name }} {{ quote.learner.surname }}</p>
+                    <p class="text-sm text-gray-500">{{ quote.learner.email }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Line Items -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-900">Quote Items</h3>
+            </div>
+            
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in quote.line_items.all %}
+                    <tr>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ item.description }}</div>
+                            <div class="text-xs text-gray-500">{{ item.get_item_type_display }}</div>
+                            {% if item.discount_reason %}
+                            <div class="text-xs text-green-600">{{ item.discount_reason }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{{ item.quantity }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">R {{ item.unit_price|floatformat:2 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">R {{ item.line_total|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-4 text-sm text-gray-500 text-center">No line items</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-50">
+                    <tr>
+                        <td colspan="3" class="px-6 py-3 text-sm font-medium text-gray-900 text-right">Subtotal</td>
+                        <td class="px-6 py-3 text-sm font-medium text-gray-900 text-right">R {{ quote.subtotal|floatformat:2 }}</td>
+                    </tr>
+                    {% if quote.vat_amount > 0 %}
+                    <tr>
+                        <td colspan="3" class="px-6 py-3 text-sm text-gray-500 text-right">VAT ({{ quote.vat_rate }}%)</td>
+                        <td class="px-6 py-3 text-sm text-gray-500 text-right">R {{ quote.vat_amount|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="bg-primary-50">
+                        <td colspan="3" class="px-6 py-4 text-base font-bold text-gray-900 text-right">Total</td>
+                        <td class="px-6 py-4 text-base font-bold text-primary-600 text-right">R {{ quote.total|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        
+        <!-- Payment Schedule -->
+        {% if payment_schedule %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-900">Payment Schedule</h3>
+                <p class="text-sm text-gray-500">{{ quote.get_payment_plan_display }}</p>
+            </div>
+            
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for schedule in payment_schedule %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ schedule.installment_number }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ schedule.description }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ schedule.due_date|date:"d M Y" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">R {{ schedule.amount|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        
+        <!-- Status Timeline -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Status Timeline</h3>
+            
+            <div class="space-y-4">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">Created</p>
+                        <p class="text-xs text-gray-500">{{ quote.created_at|date:"d M Y H:i" }}</p>
+                    </div>
+                </div>
+                
+                {% if quote.sent_at %}
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">Sent</p>
+                        <p class="text-xs text-gray-500">{{ quote.sent_at|date:"d M Y H:i" }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if quote.viewed_at %}
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">Viewed</p>
+                        <p class="text-xs text-gray-500">{{ quote.viewed_at|date:"d M Y H:i" }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if quote.accepted_at %}
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">Accepted</p>
+                        <p class="text-xs text-gray-500">{{ quote.accepted_at|date:"d M Y H:i" }}</p>
+                    </div>
+                </div>
+                {% elif quote.rejected_at %}
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">Rejected</p>
+                        <p class="text-xs text-gray-500">{{ quote.rejected_at|date:"d M Y H:i" }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Share Link -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Share Link</h3>
+            
+            <div class="flex items-center space-x-2">
+                <input type="text" id="public-url" value="{{ public_url }}" readonly class="block w-full rounded-lg border-gray-300 bg-gray-50 text-sm focus:border-primary-500 focus:ring-primary-500">
+                <button onclick="copyPublicUrl()" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                    </svg>
+                </button>
+            </div>
+            <p class="mt-2 text-xs text-gray-500">This link allows the recipient to view and accept the quote online.</p>
+        </div>
+        
+        <!-- Quote Details -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Details</h3>
+            
+            <dl class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Academic Year</dt>
+                    <dd class="text-gray-900 font-medium">{{ quote.academic_year }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Payment Plan</dt>
+                    <dd class="text-gray-900 font-medium">{{ quote.get_payment_plan_display }}</dd>
+                </div>
+                {% if quote.intake %}
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Intake</dt>
+                    <dd class="text-gray-900 font-medium">{{ quote.intake.code }}</dd>
+                </div>
+                {% endif %}
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">VAT Rate</dt>
+                    <dd class="text-gray-900 font-medium">{{ quote.vat_rate }}%</dd>
+                </div>
+                {% if quote.campus %}
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Campus</dt>
+                    <dd class="text-gray-900 font-medium">{{ quote.campus.name }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+        
+        <!-- Notes -->
+        {% if quote.notes %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
+            <p class="text-sm text-gray-600">{{ quote.notes|linebreaks }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- WhatsApp Modal -->
+<div id="whatsapp-modal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Send via WhatsApp</h3>
+            <button onclick="hideWhatsAppModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <p class="text-sm text-gray-500 mb-4">How would you like to send the quote?</p>
+        
+        <div class="space-y-3">
+            <button onclick="sendWhatsApp('link')" class="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+                Send Link Only
+            </button>
+            
+            <button onclick="sendWhatsApp('pdf')" class="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+                Send PDF Document
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const quoteId = '{{ quote.pk }}';
+
+function copyPublicUrl() {
+    const input = document.getElementById('public-url');
+    input.select();
+    document.execCommand('copy');
+    
+    // Show feedback
+    alert('Link copied to clipboard!');
+}
+
+function sendEmail() {
+    fetch(`{% url 'crm:send_quote_email' quote.pk %}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error sending email: ' + error);
+    });
+}
+
+function showWhatsAppModal() {
+    document.getElementById('whatsapp-modal').classList.remove('hidden');
+}
+
+function hideWhatsAppModal() {
+    document.getElementById('whatsapp-modal').classList.add('hidden');
+}
+
+function sendWhatsApp(type) {
+    hideWhatsAppModal();
+    
+    fetch(`{% url 'crm:send_quote_whatsapp' quote.pk %}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ type: type })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error sending WhatsApp: ' + error);
+    });
+}
+</script>
+{% endblock %}

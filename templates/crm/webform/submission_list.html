@@ -1,0 +1,285 @@
+{% extends 'crm/crm_fullscreen_base.html' %}
+{% load static %}
+
+{% block title %}Web Form Submissions{% endblock %}
+
+{% block crm_content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Web Form Submissions</h1>
+            <p class="text-muted mb-0">View all incoming web form submissions</p>
+        </div>
+        <a href="{% url 'crm:webform_sources' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Back to Sources
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small">Source</label>
+                    <select name="source" class="form-select form-select-sm">
+                        <option value="">All Sources</option>
+                        {% for src in sources %}
+                        <option value="{{ src.id }}" {% if source_filter == src.id|stringformat:'s' %}selected{% endif %}>
+                            {{ src.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All Statuses</option>
+                        <option value="SUCCESS" {% if status_filter == 'SUCCESS' %}selected{% endif %}>Success</option>
+                        <option value="DUPLICATE" {% if status_filter == 'DUPLICATE' %}selected{% endif %}>Duplicate</option>
+                        <option value="FAILED" {% if status_filter == 'FAILED' %}selected{% endif %}>Failed</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">From Date</label>
+                    <input type="date" name="from_date" class="form-control form-control-sm" value="{{ from_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">To Date</label>
+                    <input type="date" name="to_date" class="form-control form-control-sm" value="{{ to_date }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary btn-sm me-2">Filter</button>
+                    <a href="{% url 'crm:webform_submissions' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center py-3">
+                    <div class="h4 mb-0">{{ total_count }}</div>
+                    <small class="text-muted">Total Submissions</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success bg-opacity-10">
+                <div class="card-body text-center py-3">
+                    <div class="h4 mb-0 text-success">{{ success_count }}</div>
+                    <small class="text-muted">Leads Created</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info bg-opacity-10">
+                <div class="card-body text-center py-3">
+                    <div class="h4 mb-0 text-info">{{ duplicate_count }}</div>
+                    <small class="text-muted">Duplicates</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger bg-opacity-10">
+                <div class="card-body text-center py-3">
+                    <div class="h4 mb-0 text-danger">{{ failed_count }}</div>
+                    <small class="text-muted">Failed</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submissions Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if submissions %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Source</th>
+                            <th>Form</th>
+                            <th>Status</th>
+                            <th>Lead</th>
+                            <th>Details</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in submissions %}
+                        <tr>
+                            <td>
+                                <small>{{ sub.created_at|date:"M d, Y H:i" }}</small>
+                            </td>
+                            <td>
+                                {% if sub.source %}
+                                <a href="{% url 'crm:webform_source_detail' sub.source.pk %}">
+                                    {{ sub.source.name }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if sub.form_mapping %}
+                                {{ sub.form_mapping.form_name }}
+                                {% else %}
+                                <span class="text-muted">Unknown</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if sub.status == 'SUCCESS' %}bg-success
+                                    {% elif sub.status == 'DUPLICATE' %}bg-info
+                                    {% elif sub.status == 'FAILED' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ sub.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if sub.lead %}
+                                <a href="{% url 'crm:lead_detail' sub.lead.pk %}">
+                                    {{ sub.lead.get_full_name }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if sub.error_message %}
+                                <span class="text-danger" title="{{ sub.error_message }}">
+                                    <i class="fas fa-exclamation-circle"></i> Error
+                                </span>
+                                {% elif sub.status == 'DUPLICATE' %}
+                                <span class="text-info">
+                                    <i class="fas fa-sync"></i> Updated existing
+                                </span>
+                                {% else %}
+                                <span class="text-success">
+                                    <i class="fas fa-check"></i> OK
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                    data-bs-toggle="modal" data-bs-target="#submissionModal{{ sub.id }}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if submissions.has_other_pages %}
+            <div class="card-footer">
+                <nav>
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        {% if submissions.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ submissions.previous_page_number }}{% if request.GET.source %}&source={{ request.GET.source }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.from_date %}&from_date={{ request.GET.from_date }}{% endif %}{% if request.GET.to_date %}&to_date={{ request.GET.to_date }}{% endif %}">
+                                &laquo;
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in submissions.paginator.page_range %}
+                            {% if submissions.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > submissions.number|add:'-3' and num < submissions.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.source %}&source={{ request.GET.source }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.from_date %}&from_date={{ request.GET.from_date }}{% endif %}{% if request.GET.to_date %}&to_date={{ request.GET.to_date }}{% endif %}">
+                                    {{ num }}
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if submissions.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ submissions.next_page_number }}{% if request.GET.source %}&source={{ request.GET.source }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.from_date %}&from_date={{ request.GET.from_date }}{% endif %}{% if request.GET.to_date %}&to_date={{ request.GET.to_date }}{% endif %}">
+                                &raquo;
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h6>No Submissions Found</h6>
+                <p class="text-muted">When leads submit web forms, they'll appear here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Submission Detail Modals -->
+{% for sub in submissions %}
+<div class="modal fade" id="submissionModal{{ sub.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Submission Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Source:</strong> {{ sub.source.name|default:"-" }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Form:</strong> {{ sub.form_mapping.form_name|default:"-" }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Status:</strong>
+                        <span class="badge 
+                            {% if sub.status == 'SUCCESS' %}bg-success
+                            {% elif sub.status == 'DUPLICATE' %}bg-info
+                            {% elif sub.status == 'FAILED' %}bg-danger
+                            {% else %}bg-secondary{% endif %}">
+                            {{ sub.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Timestamp:</strong> {{ sub.created_at|date:"M d, Y H:i:s" }}
+                    </div>
+                </div>
+                
+                {% if sub.lead %}
+                <div class="mb-3">
+                    <strong>Lead:</strong>
+                    <a href="{% url 'crm:lead_detail' sub.lead.pk %}">{{ sub.lead.get_full_name }}</a>
+                    ({{ sub.lead.email }})
+                </div>
+                {% endif %}
+                
+                {% if sub.error_message %}
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> {{ sub.error_message }}
+                </div>
+                {% endif %}
+                
+                <hr>
+                <h6>Raw Data Received</h6>
+                <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">{{ sub.raw_payload|pprint }}</pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

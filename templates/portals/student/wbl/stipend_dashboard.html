@@ -1,0 +1,512 @@
+{% extends 'portals/student/base.html' %}
+{% load humanize %}
+
+{% block title %}Stipend Dashboard - SkillsFlow{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+    .calculation-row {
+        transition: all 0.3s ease;
+    }
+    .calculation-row:hover {
+        background-color: #f9fafb;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex mb-4" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'portals:student_dashboard' %}" class="text-gray-700 hover:text-primary-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'portals:student_wbl_dashboard' %}" class="text-gray-700 hover:text-primary-600">WBL</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">Stipend Dashboard</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+{% if no_learner_profile %}
+<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+    <p class="text-yellow-800">No learner profile found. Please contact administration.</p>
+</div>
+
+{% elif no_active_placement %}
+<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+    <p class="text-yellow-800">No active workplace placement found. Stipend information is only available for learners with active placements.</p>
+</div>
+
+{% else %}
+<div class="space-y-6">
+    
+    <!-- Header with Current Month Overview -->
+    <div class="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold">Stipend Dashboard</h1>
+                <p class="text-primary-100 mt-1">{{ placement.host.employer.company_name }}</p>
+            </div>
+            <div class="text-right">
+                <div class="text-sm text-primary-100">Current Month Expected</div>
+                <div class="text-4xl font-bold" id="currentMonthAmount">R{{ placement.stipend_amount|floatformat:2 }}</div>
+                <div class="text-sm text-primary-100 mt-1" id="statusBadge">Calculating...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Active Disputes Alert -->
+    {% if active_disputes %}
+    <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+        <div class="flex items-start">
+            <svg class="w-6 h-6 text-red-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <div>
+                <h3 class="font-semibold text-red-900">Active Disputes</h3>
+                <p class="text-sm text-red-700 mt-1">You have {{ active_disputes.count }} pending dispute(s). Status will be updated once resolved.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Two Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column - Current Month Breakdown -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Transparent Calculation Breakdown -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="p-6 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Current Month Calculation</h2>
+                    <p class="text-sm text-gray-600">Transparent breakdown of your stipend</p>
+                </div>
+                
+                <div class="p-6" id="calculationBreakdown">
+                    <!-- Loading state -->
+                    <div class="text-center py-8">
+                        <svg class="inline w-8 h-8 text-primary-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="text-gray-600 mt-2">Loading calculation...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- What-If Calculator -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="p-6 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">What-If Calculator</h2>
+                    <p class="text-sm text-gray-600">See how future absences will affect your stipend</p>
+                </div>
+                
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Future Absent Days</label>
+                        <input type="range" id="futureAbsent" min="0" max="10" value="0" class="w-full">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>0</span>
+                            <span id="futureAbsentValue" class="font-semibold text-gray-900">0 days</span>
+                            <span>10</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Future Sick Days</label>
+                        <input type="range" id="futureSick" min="0" max="5" value="0" class="w-full">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>0</span>
+                            <span id="futureSickValue" class="font-semibold text-gray-900">0 days</span>
+                            <span>5</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Future Family Leave Days</label>
+                        <input type="range" id="futureFamily" min="0" max="3" value="0" class="w-full">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>0</span>
+                            <span id="futureFamilyValue" class="font-semibold text-gray-900">0 days</span>
+                            <span>3</span>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4 border-t border-gray-100">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Projected Net Amount:</span>
+                            <span id="projectedAmount" class="text-2xl font-bold text-gray-900">R0.00</span>
+                        </div>
+                        <div class="h-4 bg-gray-200 rounded-full overflow-hidden">
+                            <div id="projectedBar" class="h-full bg-green-500 transition-all duration-300" style="width: 100%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1" id="projectedPercentage">100% of base stipend</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Historical Comparison Chart -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="p-6 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Payment History</h2>
+                    <p class="text-sm text-gray-600">Last 6 months</p>
+                </div>
+                
+                <div class="p-6">
+                    <canvas id="historyChart" height="80"></canvas>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Right Column - Summary Cards -->
+        <div class="space-y-6">
+            
+            <!-- Attendance Summary -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">This Month's Attendance</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                            <span class="text-sm text-gray-700">Present</span>
+                        </div>
+                        <span class="font-semibold text-gray-900">{{ attendance_summary.present }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-amber-500 mr-2"></div>
+                            <span class="text-sm text-gray-700">Sick Leave</span>
+                        </div>
+                        <span class="font-semibold text-gray-900">{{ attendance_summary.sick }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                            <span class="text-sm text-gray-700">Annual Leave</span>
+                        </div>
+                        <span class="font-semibold text-gray-900">{{ attendance_summary.annual }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
+                            <span class="text-sm text-gray-700">Family Leave</span>
+                        </div>
+                        <span class="font-semibold text-gray-900">{{ attendance_summary.family }}</span>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                            <span class="text-sm font-semibold text-gray-700">Absent</span>
+                        </div>
+                        <span class="font-semibold text-red-600">{{ attendance_summary.absent }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Month Progress -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Month Progress</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Days Elapsed</span>
+                        <span class="font-semibold text-gray-900">{{ days_elapsed }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Days Remaining</span>
+                        <span class="font-semibold text-gray-900">{{ days_remaining }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm pt-2 border-t border-gray-100">
+                        <span class="text-gray-600">Working Days</span>
+                        <span class="font-semibold text-gray-900">{{ total_working_days }}</span>
+                    </div>
+                    {% if daily_rate %}
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Daily Rate</span>
+                        <span class="font-semibold text-primary-600">R{{ daily_rate|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Leave Policy -->
+            {% if leave_policy %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Leave Allowances</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Annual Leave</span>
+                        <span class="font-semibold text-gray-900">{{ leave_policy.annual_days }} days/year</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Sick Leave</span>
+                        <span class="font-semibold text-gray-900">{{ leave_policy.sick_days }} days/year</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Family Leave</span>
+                        <span class="font-semibold text-gray-900">{{ leave_policy.family_days }} days/year</span>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-3">* Pro-rated based on employment period</p>
+            </div>
+            {% endif %}
+            
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Actions</h3>
+                <div class="space-y-2">
+                    <a href="{% url 'portals:student_attendance' %}" class="block w-full px-4 py-2 bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 text-center text-sm font-medium">
+                        View Full Attendance
+                    </a>
+                    <a href="{% url 'portals:student_stipend_history' %}" class="block w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-center text-sm font-medium">
+                        Payment History
+                    </a>
+                    <a href="{% url 'portals:student_calendar' %}" class="block w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-center text-sm font-medium">
+                        View Calendar
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load current month calculation
+async function loadCurrentCalculation() {
+    try {
+        const response = await fetch('{% url "portals:stipend_calculate_preview" %}');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayCalculation(data.calculation);
+        } else {
+            document.getElementById('calculationBreakdown').innerHTML = 
+                '<p class="text-red-600">Error loading calculation: ' + data.error + '</p>';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('calculationBreakdown').innerHTML = 
+            '<p class="text-red-600">Failed to load calculation</p>';
+    }
+}
+
+function displayCalculation(calc) {
+    const html = `
+        <div class="space-y-4">
+            <!-- Base Amount -->
+            <div class="calculation-row p-4 rounded-lg bg-gray-50">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="font-semibold text-gray-900">Base Monthly Stipend</div>
+                        <div class="text-xs text-gray-600">Set by administrator</div>
+                    </div>
+                    <div class="text-lg font-bold text-gray-900">R${calc.base_amount}</div>
+                </div>
+            </div>
+            
+            <!-- Daily Rate -->
+            <div class="calculation-row p-4 rounded-lg border border-gray-200">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="font-medium text-gray-700">Daily Rate</div>
+                        <div class="text-xs text-gray-600">R${calc.base_amount} ÷ ${calc.total_billable_days} days</div>
+                    </div>
+                    <div class="text-lg font-semibold text-primary-600">R${calc.daily_rate}/day</div>
+                </div>
+            </div>
+            
+            <!-- Attendance Summary -->
+            <div class="space-y-2">
+                <h4 class="font-semibold text-gray-900">Attendance Summary</h4>
+                
+                <div class="calculation-row p-3 rounded-lg border border-green-100 bg-green-50">
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-700">Present Days: ${calc.present_days} × R${calc.daily_rate}</span>
+                        <span class="font-semibold text-green-700">R${(calc.present_days * calc.daily_rate).toFixed(2)}</span>
+                    </div>
+                </div>
+                
+                <div class="calculation-row p-3 rounded-lg border border-blue-100 bg-blue-50">
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-700">Sick Leave (Paid): ${calc.sick_days_paid} days</span>
+                        <span class="font-semibold text-blue-700">Paid</span>
+                    </div>
+                </div>
+                
+                <div class="calculation-row p-3 rounded-lg border border-blue-100 bg-blue-50">
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-700">Annual Leave (Paid): ${calc.annual_days_paid} days</span>
+                        <span class="font-semibold text-blue-700">Paid</span>
+                    </div>
+                </div>
+                
+                ${calc.family_days > 0 ? `
+                <div class="calculation-row p-3 rounded-lg border border-purple-100 bg-purple-50">
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-700">Family Leave: ${calc.family_days} days</span>
+                        <span class="font-semibold text-purple-700">Policy Dependent</span>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+            
+            <!-- Deductions -->
+            ${calc.deductions > 0 ? `
+            <div class="space-y-2">
+                <h4 class="font-semibold text-gray-900">Deductions</h4>
+                
+                ${calc.absent_days > 0 ? `
+                <div class="calculation-row p-3 rounded-lg border border-red-100 bg-red-50">
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-700">Absent (Unpaid): ${calc.absent_days} × R${calc.daily_rate}</span>
+                        <span class="font-semibold text-red-700">-R${(calc.absent_days * calc.daily_rate).toFixed(2)}</span>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="calculation-row p-4 rounded-lg bg-gray-50 border-2 border-gray-300">
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold text-gray-700">Total Deductions</span>
+                        <span class="text-lg font-bold text-red-600">-R${calc.deductions}</span>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+            
+            <!-- Net Amount -->
+            <div class="calculation-row p-6 rounded-lg bg-gradient-to-r from-primary-600 to-primary-700 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="text-lg font-semibold">Net Stipend Payable</div>
+                        <div class="text-sm text-primary-100">After all deductions</div>
+                    </div>
+                    <div class="text-3xl font-bold">R${calc.net_amount}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('calculationBreakdown').innerHTML = html;
+    document.getElementById('currentMonthAmount').textContent = 'R' + calc.net_amount;
+    
+    // Update status badge
+    const percentage = (calc.net_amount / calc.base_amount) * 100;
+    let statusHTML = '';
+    if (percentage >= 95) {
+        statusHTML = '<span class="px-2 py-1 bg-green-500 text-white text-xs rounded">Excellent Attendance</span>';
+    } else if (percentage >= 80) {
+        statusHTML = '<span class="px-2 py-1 bg-blue-500 text-white text-xs rounded">Good Attendance</span>';
+    } else {
+        statusHTML = '<span class="px-2 py-1 bg-amber-500 text-white text-xs rounded">Needs Improvement</span>';
+    }
+    document.getElementById('statusBadge').innerHTML = statusHTML;
+}
+
+// What-If Calculator
+let debounceTimer;
+function updateWhatIf() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+        const absent = document.getElementById('futureAbsent').value;
+        const sick = document.getElementById('futureSick').value;
+        const family = document.getElementById('futureFamily').value;
+        
+        document.getElementById('futureAbsentValue').textContent = absent + ' days';
+        document.getElementById('futureSickValue').textContent = sick + ' days';
+        document.getElementById('futureFamilyValue').textContent = family + ' days';
+        
+        try {
+            const response = await fetch(`{% url "portals:stipend_what_if_calculator" %}?absent=${absent}&sick=${sick}&family=${family}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const proj = data.projection;
+                document.getElementById('projectedAmount').textContent = 'R' + proj.projected_net;
+                document.getElementById('projectedPercentage').textContent = proj.percentage_of_base + '% of base stipend';
+                
+                const bar = document.getElementById('projectedBar');
+                bar.style.width = proj.percentage_of_base + '%';
+                
+                // Color code based on percentage
+                if (proj.warning_level === 'red') {
+                    bar.className = 'h-full bg-red-500 transition-all duration-300';
+                } else if (proj.warning_level === 'amber') {
+                    bar.className = 'h-full bg-amber-500 transition-all duration-300';
+                } else {
+                    bar.className = 'h-full bg-green-500 transition-all duration-300';
+                }
+            }
+        } catch (error) {
+            console.error('What-if error:', error);
+        }
+    }, 300);
+}
+
+document.getElementById('futureAbsent').addEventListener('input', updateWhatIf);
+document.getElementById('futureSick').addEventListener('input', updateWhatIf);
+document.getElementById('futureFamily').addEventListener('input', updateWhatIf);
+
+// Historical Chart
+const historicalData = {{ historical_stipends|safe|default:"[]" }};
+const chartLabels = [];
+const chartAmounts = [];
+
+{% for stipend in historical_stipends reversed %}
+chartLabels.push('{{ stipend.get_month_display }} {{ stipend.year }}');
+chartAmounts.push({{ stipend.net_amount }});
+{% endfor %}
+
+const ctx = document.getElementById('historyChart').getContext('2d');
+const historyChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: chartLabels,
+        datasets: [{
+            label: 'Net Stipend (R)',
+            data: chartAmounts,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return 'R' + value;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Load calculation on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCurrentCalculation();
+    updateWhatIf(); // Initialize what-if calculator
+});
+</script>
+{% endblock %}

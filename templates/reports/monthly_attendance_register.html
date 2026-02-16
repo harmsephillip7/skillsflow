@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Register - {{ register.period.month_name }} {{ register.period.year }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.4;
+            color: #1f2937;
+            background: white;
+        }
+        
+        .container {
+            padding: 20px;
+            max-width: 297mm; /* A4 landscape width */
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3b82f6;
+        }
+        
+        .header-left h1 {
+            font-size: 18px;
+            color: #1e40af;
+            margin-bottom: 5px;
+        }
+        
+        .header-left h2 {
+            font-size: 14px;
+            color: #374151;
+            font-weight: normal;
+        }
+        
+        .header-right {
+            text-align: right;
+            font-size: 9px;
+            color: #6b7280;
+        }
+        
+        .header-right .period {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        
+        /* Summary Stats */
+        .summary-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-box {
+            flex: 1;
+            padding: 10px;
+            background: #f3f4f6;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .stat-box .value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e40af;
+        }
+        
+        .stat-box .label {
+            font-size: 9px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        
+        /* Attendance Table */
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 8px;
+        }
+        
+        .attendance-table th,
+        .attendance-table td {
+            border: 1px solid #d1d5db;
+            padding: 4px 3px;
+            text-align: center;
+        }
+        
+        .attendance-table th {
+            background: #1e40af;
+            color: white;
+            font-weight: 600;
+            font-size: 8px;
+        }
+        
+        .attendance-table th.learner-info {
+            text-align: left;
+            min-width: 120px;
+        }
+        
+        .attendance-table th.day-col {
+            width: 20px;
+            font-size: 7px;
+        }
+        
+        .attendance-table th.summary-col {
+            background: #374151;
+            min-width: 45px;
+        }
+        
+        .attendance-table td.learner-name {
+            text-align: left;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .attendance-table td.learner-id {
+            text-align: left;
+            font-size: 7px;
+            color: #6b7280;
+        }
+        
+        /* Attendance codes */
+        .code {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            line-height: 16px;
+            border-radius: 3px;
+            font-weight: 600;
+            font-size: 7px;
+        }
+        
+        .code-P { background: #dcfce7; color: #166534; }
+        .code-AL { background: #dbeafe; color: #1e40af; }
+        .code-SL { background: #fef3c7; color: #92400e; }
+        .code-FL { background: #ede9fe; color: #5b21b6; }
+        .code-UL { background: #fee2e2; color: #991b1b; }
+        .code-PH { background: #cffafe; color: #0e7490; }
+        .code-A { background: #fecaca; color: #991b1b; }
+        .code-S { background: #e5e7eb; color: #374151; }
+        .code-none { background: #f3f4f6; color: #9ca3af; }
+        
+        .verified {
+            border: 2px solid #22c55e;
+        }
+        
+        .partial-verified {
+            border: 2px solid #f59e0b;
+        }
+        
+        .unverified-flag {
+            color: #dc2626;
+            font-weight: bold;
+        }
+        
+        /* Stipend columns */
+        .stipend-col {
+            background: #fefce8;
+        }
+        
+        /* Totals row */
+        .totals-row {
+            background: #e5e7eb;
+            font-weight: bold;
+        }
+        
+        /* Legend */
+        .legend {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 6px;
+        }
+        
+        .legend h3 {
+            font-size: 11px;
+            margin-bottom: 10px;
+            color: #374151;
+        }
+        
+        .legend-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 8px;
+        }
+        
+        .legend-code {
+            width: 20px;
+            height: 16px;
+            line-height: 16px;
+            text-align: center;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        
+        /* Verification legend */
+        .verification-legend {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #d1d5db;
+        }
+        
+        .verification-legend span {
+            margin-right: 20px;
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #d1d5db;
+            display: flex;
+            justify-content: space-between;
+            font-size: 8px;
+            color: #6b7280;
+        }
+        
+        .signature-block {
+            margin-top: 30px;
+            display: flex;
+            gap: 50px;
+        }
+        
+        .signature-line {
+            width: 200px;
+            padding-top: 30px;
+            border-top: 1px solid #374151;
+            font-size: 9px;
+        }
+        
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 10mm;
+            }
+            
+            body {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <h1>Monthly Attendance Register</h1>
+                <h2>{{ register.project.reference_number }} - {{ register.project.title }}</h2>
+            </div>
+            <div class="header-right">
+                <div class="period">{{ register.period.month_name }} {{ register.period.year }}</div>
+                <div>Working Days: {{ register.total_working_days }}</div>
+                <div>Generated: {{ register.generated_at|date:"d M Y H:i" }}</div>
+            </div>
+        </div>
+        
+        <!-- Summary Stats -->
+        <div class="summary-row">
+            <div class="stat-box">
+                <div class="value">{{ register.totals.learner_count }}</div>
+                <div class="label">Learners</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">{{ register.totals.total_present }}</div>
+                <div class="label">Days Present</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">{{ register.totals.total_leave }}</div>
+                <div class="label">Leave Days</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">{{ register.totals.total_absent }}</div>
+                <div class="label">Absent/Missing</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">{{ register.totals.fully_verified }} / {{ register.totals.learner_count }}</div>
+                <div class="label">Fully Verified</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">R {{ register.totals.total_stipend|floatformat:2 }}</div>
+                <div class="label">Total Stipend</div>
+            </div>
+        </div>
+        
+        <!-- Attendance Table -->
+        <table class="attendance-table">
+            <thead>
+                <tr>
+                    <th class="learner-info">#</th>
+                    <th class="learner-info">Learner Name</th>
+                    <th class="learner-info">ID Number</th>
+                    {% for day in register.working_days %}
+                    <th class="day-col">{{ day.day }}</th>
+                    {% endfor %}
+                    <th class="summary-col">P</th>
+                    <th class="summary-col">L</th>
+                    <th class="summary-col">A</th>
+                    <th class="summary-col">-</th>
+                    <th class="summary-col">V%</th>
+                    <th class="summary-col stipend-col">Rate</th>
+                    <th class="summary-col stipend-col">Days</th>
+                    <th class="summary-col stipend-col">Stipend</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for learner in register.learners %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td class="learner-name">{{ learner.learner_name }}</td>
+                    <td class="learner-id">{{ learner.learner_id }}</td>
+                    
+                    {% for day in learner.daily_attendance %}
+                    <td>
+                        <span class="code code-{{ day.code }}{% if day.verified %} verified{% elif day.mentor_verified or day.facilitator_verified %} partial-verified{% endif %}">
+                            {{ day.code }}
+                        </span>
+                    </td>
+                    {% endfor %}
+                    
+                    <td>{{ learner.summary.type_counts.PRESENT }}</td>
+                    <td>{{ learner.summary.type_counts.ANNUAL|add:learner.summary.type_counts.SICK|add:learner.summary.type_counts.FAMILY }}</td>
+                    <td>{{ learner.summary.type_counts.ABSENT }}</td>
+                    <td>{{ learner.summary.missed_logging }}</td>
+                    <td class="{% if learner.summary.verification.percentage < 100 %}unverified-flag{% endif %}">
+                        {{ learner.summary.verification.percentage }}%
+                    </td>
+                    <td class="stipend-col">R{{ learner.summary.stipend.daily_rate|floatformat:0 }}</td>
+                    <td class="stipend-col">{{ learner.summary.stipend.payable_days }}</td>
+                    <td class="stipend-col">R{{ learner.summary.stipend.net_amount|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="100" style="text-align: center; padding: 20px; color: #6b7280;">
+                        No learner placements found for this project.
+                    </td>
+                </tr>
+                {% endfor %}
+                
+                <!-- Totals Row -->
+                {% if register.learners %}
+                <tr class="totals-row">
+                    <td colspan="3">TOTALS</td>
+                    {% for day in register.working_days %}
+                    <td></td>
+                    {% endfor %}
+                    <td>{{ register.totals.total_present }}</td>
+                    <td>{{ register.totals.total_leave }}</td>
+                    <td>{{ register.totals.total_absent }}</td>
+                    <td></td>
+                    <td></td>
+                    <td class="stipend-col"></td>
+                    <td class="stipend-col">{{ register.totals.total_payable_days }}</td>
+                    <td class="stipend-col">R{{ register.totals.total_stipend|floatformat:2 }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        
+        <!-- Legend -->
+        <div class="legend">
+            <h3>Legend</h3>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <span class="legend-code code-P">P</span>
+                    <span>Present</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-code code-AL">AL</span>
+                    <span>Annual Leave</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-code code-SL">SL</span>
+                    <span>Sick Leave</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-code code-FL">FL</span>
+                    <span>Family Leave</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-code code-UL">UL</span>
+                    <span>Unpaid Leave</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-code code-PH">PH</span>
+                    <span>Public Holiday</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-code code-A">A</span>
+                    <span>Absent</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-code code-S">S</span>
+                    <span>Suspended</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-code code-none">-</span>
+                    <span>No Record</span>
+                </div>
+            </div>
+            <div class="verification-legend">
+                <span><strong>Verification:</strong></span>
+                <span>🟢 Green border = Dual verified (Mentor + Facilitator)</span>
+                <span>🟡 Yellow border = Partial verification</span>
+                <span>⚠️ Red % = Incomplete verification for learner</span>
+            </div>
+        </div>
+        
+        <!-- Signature Block -->
+        <div class="signature-block">
+            <div class="signature-line">
+                Project Manager Signature
+            </div>
+            <div class="signature-line">
+                Date
+            </div>
+            <div class="signature-line">
+                Approved By
+            </div>
+            <div class="signature-line">
+                Date
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div>{{ register.project.reference_number }} | {{ register.period.month_name }} {{ register.period.year }}</div>
+            <div>Page 1 of 1</div>
+            <div>Generated by SkillsFlow ERP</div>
+        </div>
+    </div>
+</body>
+</html>

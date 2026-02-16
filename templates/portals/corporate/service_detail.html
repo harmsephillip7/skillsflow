@@ -1,0 +1,530 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{{ subscription.service.name }} - Corporate Portal{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <nav class="flex items-center text-sm text-gray-500 mb-2">
+            <a href="{% url 'portals:corporate_dashboard' %}" class="hover:text-primary-600">Dashboard</a>
+            <i class="fas fa-chevron-right mx-2 text-xs"></i>
+            <a href="{% url 'portals:corporate_services' %}" class="hover:text-primary-600">Services</a>
+            <i class="fas fa-chevron-right mx-2 text-xs"></i>
+            <span class="text-gray-900">{{ subscription.service.name }}</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">{{ subscription.service.name }}</h1>
+        <p class="mt-1 text-sm text-gray-500">{{ subscription.service.category.name }} • Started {{ subscription.start_date|date:"d M Y" }}</p>
+    </div>
+    <div class="mt-4 sm:mt-0 flex items-center gap-3">
+        {% if project %}
+        {% if project.health == 'GREEN' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+            <i class="fas fa-check-circle mr-2"></i>On Track
+        </span>
+        {% elif project.health == 'AMBER' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
+            <i class="fas fa-exclamation-circle mr-2"></i>At Risk
+        </span>
+        {% else %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+            <i class="fas fa-times-circle mr-2"></i>Critical
+        </span>
+        {% endif %}
+        {% endif %}
+        <a href="{% url 'portals:corporate_services' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <i class="fas fa-arrow-left mr-2"></i>Back
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if no_client %}
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+    <i class="fas fa-exclamation-triangle text-amber-500 text-4xl mb-3"></i>
+    <h3 class="text-lg font-semibold text-amber-800">No Corporate Account Linked</h3>
+</div>
+{% else %}
+
+<div class="space-y-6">
+    <!-- Service Overview -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <!-- Progress -->
+            <div class="md:col-span-2">
+                <h3 class="text-sm font-medium text-gray-700 mb-3">Overall Progress</h3>
+                <div class="flex items-end gap-4">
+                    <div class="text-4xl font-bold text-gray-900">{{ project.progress_percentage|default:0 }}%</div>
+                    <div class="flex-1">
+                        <div class="w-full bg-gray-200 rounded-full h-4">
+                            <div class="{% if project.health == 'GREEN' %}bg-green-500{% elif project.health == 'AMBER' %}bg-amber-500{% else %}bg-red-500{% endif %} h-4 rounded-full transition-all" style="width: {{ project.progress_percentage|default:0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                {% if project %}
+                <p class="text-sm text-gray-500 mt-2">{{ project.get_status_display }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Quick Stats -->
+            <div>
+                <h3 class="text-sm font-medium text-gray-700 mb-3">Milestones</h3>
+                <div class="text-2xl font-bold text-gray-900">
+                    {% with completed=milestones|length %}
+                    {% for m in milestones %}{% if m.milestone.status == 'COMPLETED' %}{% endif %}{% endfor %}
+                    {{ milestones|length }}
+                    {% endwith %}
+                </div>
+                <p class="text-sm text-gray-500">Total deliverables</p>
+            </div>
+
+            <div>
+                <h3 class="text-sm font-medium text-gray-700 mb-3">Consultant</h3>
+                <p class="font-medium text-gray-900">{{ subscription.assigned_consultant.get_full_name|default:"Not assigned" }}</p>
+                {% if subscription.assigned_consultant.email %}
+                <a href="mailto:{{ subscription.assigned_consultant.email }}" class="text-sm text-primary-600 hover:text-primary-700">
+                    {{ subscription.assigned_consultant.email }}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Milestones & Tasks -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">
+                        <i class="fas fa-tasks text-primary-600 mr-2"></i>Deliverables & Milestones
+                    </h3>
+                </div>
+                
+                {% if milestones %}
+                <div class="divide-y divide-gray-100">
+                    {% for m in milestones %}
+                    <div class="p-6">
+                        <!-- Milestone Header -->
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center {% if m.milestone.status == 'COMPLETED' %}bg-green-100 text-green-600{% elif m.milestone.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-600{% elif m.milestone.status == 'BLOCKED' %}bg-red-100 text-red-600{% else %}bg-gray-100 text-gray-400{% endif %}">
+                                    {% if m.milestone.status == 'COMPLETED' %}
+                                    <i class="fas fa-check text-sm"></i>
+                                    {% elif m.milestone.status == 'IN_PROGRESS' %}
+                                    <i class="fas fa-spinner text-sm"></i>
+                                    {% elif m.milestone.status == 'BLOCKED' %}
+                                    <i class="fas fa-ban text-sm"></i>
+                                    {% else %}
+                                    <span class="text-sm font-medium">{{ m.milestone.sequence }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="font-medium text-gray-900">{{ m.milestone.name }}</h4>
+                                    {% if m.milestone.description %}
+                                    <p class="text-sm text-gray-500 mt-1">{{ m.milestone.description }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if m.milestone.status == 'COMPLETED' %}bg-green-100 text-green-800{% elif m.milestone.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800{% elif m.milestone.status == 'BLOCKED' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ m.milestone.get_status_display }}
+                            </span>
+                        </div>
+
+                        <!-- Tasks -->
+                        {% if m.tasks %}
+                        <div class="ml-12 space-y-2">
+                            {% for task in m.tasks %}
+                            {% if task.client_visible %}
+                            <div class="flex items-center justify-between text-sm p-2 rounded hover:bg-gray-50 group">
+                                <div class="flex items-center flex-1">
+                                    <span class="w-5 h-5 mr-3 flex-shrink-0 flex items-center justify-center {% if task.status == 'DONE' %}text-green-500{% elif task.status == 'IN_PROGRESS' %}text-blue-500{% elif task.status == 'BLOCKED' %}text-red-500{% else %}text-gray-300{% endif %}">
+                                        {% if task.status == 'DONE' %}
+                                        <i class="fas fa-check-circle"></i>
+                                        {% elif task.status == 'IN_PROGRESS' %}
+                                        <i class="fas fa-circle-notch"></i>
+                                        {% elif task.status == 'BLOCKED' %}
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        {% else %}
+                                        <i class="far fa-circle"></i>
+                                        {% endif %}
+                                    </span>
+                                    <span class="{% if task.status == 'DONE' %}text-gray-500 line-through{% else %}text-gray-700{% endif %}">
+                                        {{ task.title }}
+                                        {% if task.requires_evidence %}
+                                        <span class="ml-1 text-xs {% if task.has_required_evidence %}text-green-600{% else %}text-orange-500{% endif %}" title="{% if task.has_required_evidence %}Evidence uploaded{% else %}Evidence required{% endif %}">
+                                            <i class="fas fa-paperclip"></i>{% if not task.has_required_evidence %}!{% endif %}
+                                        </span>
+                                        {% endif %}
+                                    </span>
+                                    {% if task.due_date %}
+                                    <span class="ml-auto text-xs text-gray-400">Due {{ task.due_date|date:"d M" }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- SDF Actions (if contact has permissions) -->
+                                {% if contact.can_complete_deliverables or contact.can_upload_evidence %}
+                                <div class="flex items-center space-x-2 ml-4 opacity-0 group-hover:opacity-100 transition">
+                                    {% if contact.can_upload_evidence and task.status != 'DONE' %}
+                                    <button onclick="openSdfEvidenceModal({{ task.pk }}, '{{ task.title|escapejs }}')" 
+                                            class="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded transition" 
+                                            title="Upload Evidence">
+                                        <i class="fas fa-upload"></i> Evidence
+                                    </button>
+                                    {% endif %}
+                                    {% if contact.can_complete_deliverables and task.status != 'DONE' %}
+                                    <button onclick="openSdfCompleteModal({{ task.pk }}, '{{ task.title|escapejs }}', {{ task.requires_evidence|yesno:'true,false' }}, {{ task.has_required_evidence|yesno:'true,false' }})" 
+                                            class="px-2 py-1 text-xs bg-green-100 hover:bg-green-200 text-green-700 rounded transition"
+                                            title="Mark Complete">
+                                        <i class="fas fa-check"></i> Complete
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Show task evidence for client -->
+                            {% if task.evidence.exists %}
+                            <div class="ml-8 pl-4 border-l-2 border-gray-200 space-y-1">
+                                {% for evidence in task.evidence.all %}
+                                <div class="flex items-center text-xs text-gray-500 py-1">
+                                    <i class="fas {% if evidence.is_image %}fa-image{% else %}fa-file{% endif %} mr-2 text-gray-400"></i>
+                                    <a href="{{ evidence.file.url }}" target="_blank" class="text-primary-600 hover:text-primary-800">{{ evidence.name }}</a>
+                                    <span class="ml-2 text-gray-400">{{ evidence.file_size|filesizeformat }}</span>
+                                    {% if evidence.uploaded_by_contact %}
+                                    <span class="ml-2 text-gray-400">by {{ evidence.uploaded_by_contact.full_name }}</span>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Milestone Progress -->
+                        {% if m.tasks_total > 0 %}
+                        <div class="ml-12 mt-3">
+                            <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+                                <span>{{ m.tasks_done }} of {{ m.tasks_total }} tasks completed</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="bg-primary-500 h-1.5 rounded-full" style="width: {% widthratio m.tasks_done m.tasks_total 100 %}%"></div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Documents -->
+                        {% if m.documents %}
+                        <div class="ml-12 mt-4 pt-3 border-t border-gray-100">
+                            <p class="text-xs font-medium text-gray-500 mb-2">Attached Documents</p>
+                            <div class="flex flex-wrap gap-2">
+                                {% for doc in m.documents %}
+                                <a href="{{ doc.file.url }}" target="_blank" class="inline-flex items-center px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded text-sm text-gray-700 transition">
+                                    <i class="fas fa-file-alt mr-2 text-gray-400"></i>
+                                    {{ doc.name|truncatewords:3 }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="p-8 text-center text-gray-500">
+                    <i class="fas fa-tasks text-3xl text-gray-300 mb-3"></i>
+                    <p>No milestones have been set up for this service yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Service Details -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">Service Details</h3>
+                </div>
+                <div class="p-5">
+                    <dl class="space-y-4">
+                        <div>
+                            <dt class="text-xs text-gray-500">Service Type</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ subscription.service.get_service_type_display }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-gray-500">Category</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ subscription.service.category.name }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-gray-500">Start Date</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ subscription.start_date|date:"d M Y" }}</dd>
+                        </div>
+                        {% if subscription.end_date %}
+                        <div>
+                            <dt class="text-xs text-gray-500">End Date</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ subscription.end_date|date:"d M Y" }}</dd>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <dt class="text-xs text-gray-500">Status</dt>
+                            <dd>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {% if subscription.status == 'ACTIVE' %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ subscription.get_status_display }}
+                                </span>
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Project Documents -->
+            {% if project_documents %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">Project Documents</h3>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for doc in project_documents %}
+                    <a href="{{ doc.file.url }}" target="_blank" class="flex items-center px-5 py-3 hover:bg-gray-50 transition">
+                        <i class="fas fa-file-pdf text-red-500 mr-3"></i>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-medium text-gray-900 truncate">{{ doc.name }}</p>
+                            <p class="text-xs text-gray-500">{{ doc.upload_date|date:"d M Y" }}</p>
+                        </div>
+                        <i class="fas fa-download text-gray-400"></i>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Team -->
+            {% if team_members %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">Project Team</h3>
+                </div>
+                <div class="p-5 space-y-3">
+                    {% for member in team_members %}
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-medium text-sm">
+                            {{ member.first_name.0 }}{{ member.last_name.0 }}
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">{{ member.get_full_name }}</p>
+                            <p class="text-xs text-gray-500">{{ member.email }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Deadlines -->
+            {% if deadlines %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">Upcoming Deadlines</h3>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for deadline in deadlines %}
+                    <div class="px-5 py-3">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm font-medium text-gray-900">{{ deadline.title }}</p>
+                            <span class="text-xs text-amber-600 font-medium">{{ deadline.deadline_date|date:"d M" }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Learners Section (for training services) -->
+    {% if is_training_service and learners %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900">
+                <i class="fas fa-user-graduate text-green-600 mr-2"></i>Enrolled Learners
+            </h3>
+            <a href="{% url 'portals:corporate_learners' %}" class="text-sm text-primary-600 hover:text-primary-700">View all →</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Learner</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qualification</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Progress</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Activities</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for l in learners %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <a href="{% url 'portals:corporate_learner_detail' l.learner.id %}" class="font-medium text-gray-900 hover:text-primary-600">
+                                {{ l.learner.user.get_full_name }}
+                            </a>
+                            <p class="text-xs text-gray-500">{{ l.employee.employee_number|default:l.learner.id_number }}</p>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {{ l.enrollment.qualification.title|truncatewords:5 }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center justify-center">
+                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: {{ l.progress }}%"></div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-900">{{ l.progress }}%</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-center text-sm text-gray-600">
+                            {{ l.completed_activities }} / {{ l.total_activities }}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                {{ l.enrollment.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- SDF Complete Task Modal -->
+{% if contact.can_complete_deliverables %}
+<div id="sdfCompleteModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeSdfCompleteModal()"></div>
+        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>Mark Task Complete
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">You are marking "<span id="sdfCompleteTaskName" class="font-medium"></span>" as complete.</p>
+                
+                <div id="sdfEvidenceWarning" class="hidden mb-4 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    This task requires evidence. Please upload evidence before completing.
+                </div>
+                
+                <form method="post" id="sdfCompleteForm" action="">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Completion Notes (optional)</label>
+                        <textarea name="completion_notes" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-green-500 focus:border-green-500" placeholder="Add any notes about the completion..."></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeSdfCompleteModal()" class="px-4 py-2 text-sm text-gray-700 hover:text-gray-900">Cancel</button>
+                        <button type="submit" id="sdfCompleteSubmit" class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
+                            <i class="fas fa-check mr-2"></i>Mark Complete
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- SDF Evidence Upload Modal -->
+{% if contact.can_upload_evidence %}
+<div id="sdfEvidenceModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeSdfEvidenceModal()"></div>
+        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-upload text-primary-500 mr-2"></i>Upload Evidence
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">Upload evidence for "<span id="sdfEvidenceTaskName" class="font-medium"></span>"</p>
+                
+                <form method="post" id="sdfEvidenceForm" action="" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Evidence Name</label>
+                            <input type="text" name="evidence_name" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500" placeholder="Leave blank to use filename">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                            <textarea name="evidence_description" rows="2" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">File *</label>
+                            <input type="file" name="evidence_file" required accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <p class="text-xs text-gray-500 mt-1">Allowed: PDF, Word, Excel, Images (JPG, PNG, GIF)</p>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" onclick="closeSdfEvidenceModal()" class="px-4 py-2 text-sm text-gray-700 hover:text-gray-900">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700">
+                            <i class="fas fa-upload mr-2"></i>Upload
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+{% if contact.can_complete_deliverables %}
+function openSdfCompleteModal(taskId, taskName, requiresEvidence, hasEvidence) {
+    document.getElementById('sdfCompleteTaskName').textContent = taskName;
+    document.getElementById('sdfCompleteForm').action = "{% url 'portals:corporate_task_complete' 0 %}".replace('0', taskId);
+    
+    // Show warning if evidence is required but not uploaded
+    var warning = document.getElementById('sdfEvidenceWarning');
+    var submitBtn = document.getElementById('sdfCompleteSubmit');
+    if (requiresEvidence && !hasEvidence) {
+        warning.classList.remove('hidden');
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+        warning.classList.add('hidden');
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    
+    document.getElementById('sdfCompleteModal').classList.remove('hidden');
+}
+
+function closeSdfCompleteModal() {
+    document.getElementById('sdfCompleteModal').classList.add('hidden');
+}
+{% endif %}
+
+{% if contact.can_upload_evidence %}
+function openSdfEvidenceModal(taskId, taskName) {
+    document.getElementById('sdfEvidenceTaskName').textContent = taskName;
+    document.getElementById('sdfEvidenceForm').action = "{% url 'portals:corporate_task_evidence' 0 %}".replace('0', taskId);
+    document.getElementById('sdfEvidenceModal').classList.remove('hidden');
+}
+
+function closeSdfEvidenceModal() {
+    document.getElementById('sdfEvidenceModal').classList.add('hidden');
+}
+{% endif %}
+
+// Close modals on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        {% if contact.can_complete_deliverables %}closeSdfCompleteModal();{% endif %}
+        {% if contact.can_upload_evidence %}closeSdfEvidenceModal();{% endif %}
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,326 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{{ campus.name }} - Capacity Details{% endblock %}
+
+{% block page_title %}{{ campus.name }} Capacity{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'core:organization_dashboard' %}" class="text-gray-500 hover:text-primary-600">Organization</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'core:capacity_dashboard' %}" class="text-gray-500 hover:text-primary-600">Capacity</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ campus.name }}</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="{% url 'core:capacity_dashboard' %}" class="mr-4 text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ campus.name }}</h1>
+                    <p class="text-sm text-gray-500 mt-1">{{ campus.brand.name }} • {{ campus.get_campus_type_display }}</p>
+                </div>
+            </div>
+            {% if perms.tenants.change_campus %}
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'admin:campus_edit' campus.pk %}" 
+                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Edit Capacity Settings
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="p-6">
+        <!-- Capacity Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <!-- Total Capacity -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-gray-500">Total Capacity</h3>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        Max: {{ campus.max_learner_capacity }}
+                    </span>
+                </div>
+                <div class="flex items-end justify-between">
+                    <div>
+                        <p class="text-3xl font-bold text-gray-900">{{ metrics.total_learners }}</p>
+                        <p class="text-sm text-gray-500">active learners</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-2xl font-bold {% if campus.total_utilization_percentage >= campus.target_utilization %}text-green-600{% else %}text-amber-600{% endif %}">
+                            {{ campus.total_utilization_percentage }}%
+                        </p>
+                        <p class="text-xs text-gray-500">utilization</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="h-3 rounded-full bg-indigo-600" style="width: {% if campus.total_utilization_percentage > 100 %}100{% else %}{{ campus.total_utilization_percentage }}{% endif %}%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- On-Campus Capacity -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-gray-500">On-Campus Seats</h3>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Max: {{ campus.on_campus_capacity }}
+                    </span>
+                </div>
+                <div class="flex items-end justify-between">
+                    <div>
+                        <p class="text-3xl font-bold text-gray-900">{{ campus.current_on_campus_learners }}</p>
+                        <p class="text-sm text-gray-500">on campus now</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-2xl font-bold {% if campus.on_campus_utilization_percentage >= 90 %}text-red-600{% elif campus.on_campus_utilization_percentage >= 75 %}text-amber-600{% else %}text-green-600{% endif %}">
+                            {{ campus.on_campus_utilization_percentage }}%
+                        </p>
+                        <p class="text-xs text-gray-500">seat utilization</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="h-3 rounded-full {% if campus.on_campus_utilization_percentage >= 90 %}bg-red-500{% elif campus.on_campus_utilization_percentage >= 75 %}bg-amber-500{% else %}bg-green-500{% endif %}" 
+                             style="width: {% if campus.on_campus_utilization_percentage > 100 %}100{% else %}{{ campus.on_campus_utilization_percentage }}{% endif %}%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Target Utilization -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-gray-500">Target Utilization</h3>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </div>
+                <div class="text-center">
+                    <p class="text-5xl font-bold text-indigo-600">{{ campus.target_utilization }}%</p>
+                    <p class="text-sm text-gray-500 mt-2">configured target</p>
+                </div>
+                <div class="mt-4 text-center">
+                    {% if campus.total_utilization_percentage >= campus.target_utilization %}
+                    <span class="inline-flex items-center text-sm text-green-600">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        Target achieved
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center text-sm text-amber-600">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        {{ campus.target_utilization|add:"-"|add:campus.total_utilization_percentage }}% below target
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Available Capacity -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-gray-500">Available Capacity</h3>
+                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-500">Total Spots</span>
+                            <span class="font-medium text-gray-900">{{ campus.max_learner_capacity|add:"-"|add:metrics.total_learners }}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="h-2 rounded-full bg-green-500" style="width: {% widthratio campus.max_learner_capacity|add:"-"|add:metrics.total_learners campus.max_learner_capacity 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-500">On-Campus Seats</span>
+                            <span class="font-medium text-gray-900">{{ campus.on_campus_capacity|add:"-"|add:campus.current_on_campus_learners }}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="h-2 rounded-full bg-blue-500" style="width: {% widthratio campus.on_campus_capacity|add:"-"|add:campus.current_on_campus_learners campus.on_campus_capacity 100 %}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status Breakdown -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Enrollment Status Breakdown -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Enrollment by Status</h3>
+                <div class="space-y-3">
+                    {% for status, count in metrics.status_breakdown.items %}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 rounded-full mr-3 
+                                {% if status == 'ACTIVE' %}bg-green-500
+                                {% elif status == 'ENROLLED' %}bg-blue-500
+                                {% elif status == 'COMPLETED' %}bg-teal-500
+                                {% elif status == 'ON_HOLD' %}bg-amber-500
+                                {% elif status == 'WITHDRAWN' %}bg-red-500
+                                {% else %}bg-gray-400{% endif %}"></span>
+                            <span class="text-sm text-gray-600">{{ status|title }}</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">{{ count }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-gray-500">No enrollments found</p>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Historical Trend Mini -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">6-Month Trend</h3>
+                <div class="h-48">
+                    <canvas id="historyChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active Intakes -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Active Intakes</h3>
+                <p class="text-sm text-gray-500">Current and upcoming intakes at this campus</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Intake</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qualification</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Enrolled</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Utilization</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for item in intakes %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ item.intake.code }}</div>
+                                <div class="text-xs text-gray-500">{{ item.intake.start_date|date:"d M Y" }} - {{ item.intake.end_date|date:"d M Y" }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">{{ item.intake.qualification.short_title }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if item.intake.delivery_mode == 'ON_CAMPUS' %}bg-green-100 text-green-800
+                                    {% elif item.intake.delivery_mode == 'OFF_SITE' %}bg-amber-100 text-amber-800
+                                    {% elif item.intake.delivery_mode == 'WORKPLACE' %}bg-blue-100 text-blue-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ item.intake.get_delivery_mode_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="text-sm font-medium text-gray-900">{{ item.enrolled }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="text-sm text-gray-500">{{ item.capacity }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <div class="flex items-center justify-center">
+                                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="h-2 rounded-full {% if item.utilization >= 90 %}bg-green-500{% elif item.utilization >= 50 %}bg-amber-500{% else %}bg-red-500{% endif %}" 
+                                             style="width: {% if item.utilization > 100 %}100{% else %}{{ item.utilization }}{% endif %}%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">{{ item.utilization }}%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if item.intake.status == 'ACTIVE' %}bg-green-100 text-green-800
+                                    {% elif item.intake.status == 'ENROLLMENT_OPEN' %}bg-blue-100 text-blue-800
+                                    {% elif item.intake.status == 'RECRUITING' %}bg-purple-100 text-purple-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ item.intake.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                                No active intakes at this campus
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const historyData = {{ history|safe }};
+    
+    if (historyData && historyData.length > 0) {
+        const ctx = document.getElementById('historyChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: historyData.map(d => d.snapshot_date),
+                datasets: [{
+                    label: 'Enrolled',
+                    data: historyData.map(d => d.enrolled || 0),
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock main_content %}

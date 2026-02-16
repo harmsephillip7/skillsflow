@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Request Status | SkillsFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+</head>
+<body class="h-full bg-gray-50">
+    <div class="min-h-full flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full">
+            <!-- Logo -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-900">SkillsFlow</h1>
+                </div>
+            </div>
+            
+            <div class="glass-card rounded-2xl shadow-xl p-8">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Check Request Status</h2>
+                    <p class="text-gray-500 mt-2">Enter your email to check your registration status</p>
+                </div>
+                
+                <!-- Messages -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                {% if not request_found and request.method == 'POST' %}
+                    <!-- No Request Found -->
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 text-yellow-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-yellow-800">No Request Found</h3>
+                                <p class="text-sm text-yellow-700 mt-1">
+                                    We couldn't find a registration request for <strong>{{ email }}</strong>.
+                                </p>
+                                <p class="text-sm text-yellow-700 mt-2">
+                                    If you haven't registered yet, <a href="{% url 'core:signup' %}" class="font-medium underline">click here to sign up</a>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+                
+                {% if request_found %}
+                    <!-- Request Status Display -->
+                    <div class="mb-6">
+                        <!-- Status Badge -->
+                        <div class="text-center mb-4">
+                            {% if access_request.status == 'PENDING' %}
+                                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Pending Review
+                                </span>
+                            {% elif access_request.status == 'UNDER_REVIEW' %}
+                                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                    <svg class="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                    </svg>
+                                    Under Review
+                                </span>
+                            {% elif access_request.status == 'APPROVED' %}
+                                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    Approved
+                                </span>
+                            {% elif access_request.status == 'REJECTED' %}
+                                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                    Rejected
+                                </span>
+                            {% elif access_request.status == 'EXPIRED' %}
+                                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Expired
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Request Details -->
+                        <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Name:</span>
+                                <span class="font-medium text-gray-900">{{ access_request.full_name }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Email:</span>
+                                <span class="font-medium text-gray-900">{{ access_request.email }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Submitted:</span>
+                                <span class="font-medium text-gray-900">{{ access_request.requested_at|date:"d M Y, H:i" }}</span>
+                            </div>
+                            {% if access_request.requested_brand %}
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Organization:</span>
+                                <span class="font-medium text-gray-900">{{ access_request.requested_brand.name }}</span>
+                            </div>
+                            {% endif %}
+                            {% if access_request.requested_campus %}
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Campus:</span>
+                                <span class="font-medium text-gray-900">{{ access_request.requested_campus.name }}</span>
+                            </div>
+                            {% endif %}
+                            {% if access_request.reviewed_at %}
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Reviewed:</span>
+                                <span class="font-medium text-gray-900">{{ access_request.reviewed_at|date:"d M Y, H:i" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if access_request.review_notes %}
+                        <div class="mt-4 bg-blue-50 rounded-lg p-4">
+                            <h4 class="text-sm font-medium text-blue-800 mb-1">Administrator Notes:</h4>
+                            <p class="text-sm text-blue-700">{{ access_request.review_notes }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if access_request.status == 'APPROVED' %}
+                        <div class="mt-4 bg-green-50 rounded-lg p-4 text-center">
+                            <p class="text-sm text-green-700 mb-3">Your account has been approved! You can now sign in.</p>
+                            <a href="{% url 'core:login' %}" 
+                               class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                                Sign In Now
+                                <svg class="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                </svg>
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        {% if access_request.status == 'REJECTED' %}
+                        <div class="mt-4 bg-red-50 rounded-lg p-4 text-center">
+                            <p class="text-sm text-red-700">Your request was not approved. If you believe this is an error, please contact your supervisor or email support.</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if access_request.status == 'EXPIRED' %}
+                        <div class="mt-4 bg-gray-50 rounded-lg p-4 text-center">
+                            <p class="text-sm text-gray-700 mb-3">This request has expired. Please submit a new registration.</p>
+                            <a href="{% url 'core:signup' %}" 
+                               class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors">
+                                Register Again
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <!-- Search Form -->
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                                Email Address
+                            </label>
+                            <input type="email" id="email" name="email" required
+                                   value="{{ email|default:'' }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                                   placeholder="Enter the email you registered with">
+                        </div>
+                        
+                        <button type="submit"
+                                class="w-full px-4 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+                            Check Status
+                        </button>
+                    </form>
+                {% endif %}
+                
+                <!-- Back Links -->
+                <div class="mt-6 flex justify-between text-sm">
+                    <a href="{% url 'core:signup' %}" class="text-primary-600 hover:text-primary-800">
+                        ← New Registration
+                    </a>
+                    <a href="{% url 'core:login' %}" class="text-primary-600 hover:text-primary-800">
+                        Sign In →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

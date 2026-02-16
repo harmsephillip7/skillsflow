@@ -1,0 +1,574 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="flex items-center text-sm text-gray-500 mb-2">
+                <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <a href="{% url 'admin:enrollment_list' %}" class="hover:text-primary-600">Enrollments</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="text-gray-700">Edit</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">{{ page_title }}</h1>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{% url 'admin:enrollment_detail' object.pk %}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                View
+            </a>
+        </div>
+    </div>
+    
+    <!-- Current Status Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div>
+                    <p class="text-sm text-gray-500">Learner</p>
+                    <p class="font-semibold text-gray-900">{{ object.learner }}</p>
+                </div>
+                <div class="h-8 w-px bg-gray-200"></div>
+                <div>
+                    <p class="text-sm text-gray-500">Qualification</p>
+                    <p class="font-semibold text-gray-900">{{ object.qualification }}</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-500">Current Status</p>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                    {% if stage_info %}bg-{{ stage_info.color }}-100 text-{{ stage_info.color }}-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ object.get_status_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Tabs Navigation -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="border-b border-gray-100">
+                <nav class="flex space-x-1 p-2" role="tablist">
+                    <button type="button" 
+                            onclick="showTab('overview')"
+                            id="tab-overview"
+                            class="tab-button active px-4 py-2 text-sm font-medium rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                            role="tab">
+                        Overview
+                    </button>
+                    <button type="button" 
+                            onclick="showTab('status')"
+                            id="tab-status"
+                            class="tab-button px-4 py-2 text-sm font-medium rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                            role="tab">
+                        Status
+                    </button>
+                    <button type="button" 
+                            onclick="showTab('funding')"
+                            id="tab-funding"
+                            class="tab-button px-4 py-2 text-sm font-medium rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                            role="tab">
+                        Funding
+                    </button>
+                    <button type="button" 
+                            onclick="showTab('certification')"
+                            id="tab-certification"
+                            class="tab-button px-4 py-2 text-sm font-medium rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                            role="tab">
+                        Certification & NLRD
+                    </button>
+                    <button type="button" 
+                            onclick="showTab('history')"
+                            id="tab-history"
+                            class="tab-button px-4 py-2 text-sm font-medium rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                            role="tab">
+                        History
+                    </button>
+                </nav>
+            </div>
+            
+            <!-- Tab Panels -->
+            <div class="p-6">
+                <!-- Overview Tab -->
+                <div id="panel-overview" class="tab-panel">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Enrollment Number -->
+                        <div>
+                            <label for="id_enrollment_number" class="block text-sm font-medium text-gray-700 mb-1">
+                                Enrollment Number
+                            </label>
+                            <input type="text" 
+                                   name="enrollment_number" 
+                                   id="id_enrollment_number"
+                                   value="{{ form.enrollment_number.value|default:'' }}"
+                                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-gray-600"
+                                   readonly>
+                        </div>
+                        
+                        <!-- Learner -->
+                        <div>
+                            <label for="id_learner" class="block text-sm font-medium text-gray-700 mb-1">
+                                Learner
+                            </label>
+                            {{ form.learner }}
+                        </div>
+                        
+                        <!-- Qualification -->
+                        <div>
+                            <label for="id_qualification" class="block text-sm font-medium text-gray-700 mb-1">
+                                Qualification
+                            </label>
+                            {{ form.qualification }}
+                        </div>
+                        
+                        <!-- Cohort -->
+                        <div>
+                            <label for="id_cohort" class="block text-sm font-medium text-gray-700 mb-1">
+                                Cohort
+                            </label>
+                            {{ form.cohort }}
+                        </div>
+                        
+                        <!-- Dates -->
+                        <div>
+                            <label for="id_application_date" class="block text-sm font-medium text-gray-700 mb-1">
+                                Application Date
+                            </label>
+                            <input type="date" 
+                                   name="application_date" 
+                                   id="id_application_date"
+                                   value="{{ form.application_date.value|date:'Y-m-d' }}"
+                                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        </div>
+                        
+                        <div>
+                            <label for="id_enrollment_date" class="block text-sm font-medium text-gray-700 mb-1">
+                                Enrollment Date
+                            </label>
+                            <input type="date" 
+                                   name="enrollment_date" 
+                                   id="id_enrollment_date"
+                                   value="{{ form.enrollment_date.value|date:'Y-m-d' }}"
+                                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        </div>
+                        
+                        <div>
+                            <label for="id_start_date" class="block text-sm font-medium text-gray-700 mb-1">
+                                Start Date
+                            </label>
+                            <input type="date" 
+                                   name="start_date" 
+                                   id="id_start_date"
+                                   value="{{ form.start_date.value|date:'Y-m-d' }}"
+                                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        </div>
+                        
+                        <div>
+                            <label for="id_expected_completion" class="block text-sm font-medium text-gray-700 mb-1">
+                                Expected Completion
+                            </label>
+                            <input type="date" 
+                                   name="expected_completion" 
+                                   id="id_expected_completion"
+                                   value="{{ form.expected_completion.value|date:'Y-m-d' }}"
+                                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        </div>
+                        
+                        <div>
+                            <label for="id_actual_completion" class="block text-sm font-medium text-gray-700 mb-1">
+                                Actual Completion
+                            </label>
+                            <input type="date" 
+                                   name="actual_completion" 
+                                   id="id_actual_completion"
+                                   value="{{ form.actual_completion.value|date:'Y-m-d' }}"
+                                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status Tab -->
+                <div id="panel-status" class="tab-panel hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Status Change -->
+                        <div class="space-y-6">
+                            <div>
+                                <label for="id_status" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Status <span class="text-red-500">*</span>
+                                </label>
+                                
+                                {% if allowed_transitions %}
+                                <!-- Controlled transitions -->
+                                <select name="status" 
+                                        id="id_status"
+                                        class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        onchange="checkTransitionReason(this)">
+                                    <option value="{{ current_status }}">{{ object.get_status_display }} (Current)</option>
+                                    {% for trans in allowed_transitions %}
+                                    <option value="{{ trans.code }}" 
+                                            data-requires-reason="{{ trans.requires_reason|yesno:'true,false' }}"
+                                            data-color="{{ trans.color }}">
+                                        {{ trans.name }}
+                                        {% if trans.requires_reason %}(Requires reason){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Only allowed transitions are shown based on the configured process flow.
+                                </p>
+                                {% else %}
+                                <!-- Legacy mode - all statuses -->
+                                <select name="status" 
+                                        id="id_status"
+                                        class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    {% for value, label in all_statuses %}
+                                    <option value="{{ value }}" {% if value == current_status %}selected{% endif %}>
+                                        {{ label }}{% if value == current_status %} (Current){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <p class="mt-1 text-xs text-amber-600">
+                                    <svg class="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                    No process flow configured - all transitions allowed.
+                                </p>
+                                {% endif %}
+                            </div>
+                            
+                            <div id="reason-container" class="{% if not object.status_reason %}hidden{% endif %}">
+                                <label for="id_status_reason" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Status Change Reason
+                                </label>
+                                <textarea name="status_reason" 
+                                          id="id_status_reason"
+                                          rows="3"
+                                          placeholder="Please provide a reason for this status change..."
+                                          class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none">{{ form.status_reason.value|default:'' }}</textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Transition Flow Visual -->
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-3">Allowed Transitions</h4>
+                            {% if allowed_transitions %}
+                            <div class="space-y-2">
+                                {% for trans in allowed_transitions %}
+                                <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{{ stage_info.color|default:'gray' }}-100 text-{{ stage_info.color|default:'gray' }}-800">
+                                        {{ object.get_status_display }}
+                                    </span>
+                                    <svg class="w-5 h-5 mx-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                                    </svg>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{{ trans.color }}-100 text-{{ trans.color }}-800">
+                                        {{ trans.name }}
+                                    </span>
+                                    {% if trans.requires_reason %}
+                                    <span class="ml-2 text-xs text-amber-600">
+                                        <svg class="w-4 h-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/>
+                                        </svg>
+                                        Requires reason
+                                    </span>
+                                    {% endif %}
+                                    {% if trans.requires_approval %}
+                                    <span class="ml-2 text-xs text-red-600">
+                                        <svg class="w-4 h-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                        </svg>
+                                        Requires approval
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-500">
+                                <p>No process flow configured for enrollments.</p>
+                                <a href="{% url 'workflows:processflow_list' %}" class="text-primary-600 hover:text-primary-700">
+                                    Configure Process Flows
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Funding Tab -->
+                <div id="panel-funding" class="tab-panel hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="id_funding_type" class="block text-sm font-medium text-gray-700 mb-1">
+                                Funding Type
+                            </label>
+                            <select name="funding_type" 
+                                    id="id_funding_type"
+                                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                {% for value, label in funding_types %}
+                                <option value="{{ value }}" {% if form.funding_type.value == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="id_funding_source" class="block text-sm font-medium text-gray-700 mb-1">
+                                Funding Source
+                            </label>
+                            <input type="text" 
+                                   name="funding_source" 
+                                   id="id_funding_source"
+                                   value="{{ form.funding_source.value|default:'' }}"
+                                   placeholder="e.g., SETA name, Employer name"
+                                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        </div>
+                        
+                        <div>
+                            <label for="id_funding_reference" class="block text-sm font-medium text-gray-700 mb-1">
+                                Funding Reference
+                            </label>
+                            <input type="text" 
+                                   name="funding_reference" 
+                                   id="id_funding_reference"
+                                   value="{{ form.funding_reference.value|default:'' }}"
+                                   placeholder="Grant/Bursary reference number"
+                                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" 
+                                       name="agreement_signed" 
+                                       {% if form.agreement_signed.value %}checked{% endif %}
+                                       class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                                <span class="ml-2 text-sm text-gray-700">Agreement Signed</span>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label for="id_agreement_date" class="block text-sm font-medium text-gray-700 mb-1">
+                                Agreement Date
+                            </label>
+                            <input type="date" 
+                                   name="agreement_date" 
+                                   id="id_agreement_date"
+                                   value="{{ form.agreement_date.value|date:'Y-m-d' }}"
+                                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Certification & NLRD Tab -->
+                <div id="panel-certification" class="tab-panel hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- NLRD Section -->
+                        <div class="space-y-6">
+                            <h4 class="text-md font-semibold text-gray-900 border-b pb-2">NLRD Submission</h4>
+                            
+                            <div class="flex items-center">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" 
+                                           name="nlrd_submitted" 
+                                           {% if form.nlrd_submitted.value %}checked{% endif %}
+                                           class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                                    <span class="ml-2 text-sm text-gray-700">NLRD Submitted</span>
+                                </label>
+                            </div>
+                            
+                            <div>
+                                <label for="id_nlrd_submission_date" class="block text-sm font-medium text-gray-700 mb-1">
+                                    NLRD Submission Date
+                                </label>
+                                <input type="date" 
+                                       name="nlrd_submission_date" 
+                                       id="id_nlrd_submission_date"
+                                       value="{{ form.nlrd_submission_date.value|date:'Y-m-d' }}"
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                            
+                            <div>
+                                <label for="id_nlrd_reference" class="block text-sm font-medium text-gray-700 mb-1">
+                                    NLRD Reference
+                                </label>
+                                <input type="text" 
+                                       name="nlrd_reference" 
+                                       id="id_nlrd_reference"
+                                       value="{{ form.nlrd_reference.value|default:'' }}"
+                                       placeholder="NLRD submission reference number"
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                        </div>
+                        
+                        <!-- Certification Section -->
+                        <div class="space-y-6">
+                            <h4 class="text-md font-semibold text-gray-900 border-b pb-2">Certification</h4>
+                            
+                            <div>
+                                <label for="id_certificate_number" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Certificate Number
+                                </label>
+                                <input type="text" 
+                                       name="certificate_number" 
+                                       id="id_certificate_number"
+                                       value="{{ form.certificate_number.value|default:'' }}"
+                                       placeholder="Certificate number"
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                {% if current_status == 'COMPLETED' and not form.certificate_number.value %}
+                                <p class="mt-1 text-xs text-amber-600">
+                                    <svg class="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/>
+                                    </svg>
+                                    Required to change status to Certified
+                                </p>
+                                {% endif %}
+                            </div>
+                            
+                            <div>
+                                <label for="id_certificate_date" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Certificate Date
+                                </label>
+                                <input type="date" 
+                                       name="certificate_date" 
+                                       id="id_certificate_date"
+                                       value="{{ form.certificate_date.value|date:'Y-m-d' }}"
+                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- History Tab -->
+                <div id="panel-history" class="tab-panel hidden">
+                    {% if status_history %}
+                    <div class="flow-root">
+                        <ul role="list" class="-mb-8">
+                            {% for record in status_history %}
+                            <li>
+                                <div class="relative pb-8">
+                                    {% if not forloop.last %}
+                                    <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    {% endif %}
+                                    <div class="relative flex items-start space-x-3">
+                                        <div class="relative">
+                                            <span class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center ring-8 ring-white">
+                                                <svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="text-sm">
+                                                <span class="font-medium text-gray-900">
+                                                    {{ record.from_status|default:"Start" }}
+                                                </span>
+                                                <span class="text-gray-400 mx-1">→</span>
+                                                <span class="font-medium text-gray-900">
+                                                    {{ record.to_status }}
+                                                </span>
+                                            </div>
+                                            <p class="mt-0.5 text-sm text-gray-500">
+                                                {{ record.changed_at|date:"M d, Y H:i" }}
+                                                {% if record.changed_by %}
+                                                by {{ record.changed_by.get_full_name|default:record.changed_by.email }}
+                                                {% endif %}
+                                            </p>
+                                            {% if record.reason %}
+                                            <p class="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                                                {{ record.reason }}
+                                            </p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <p class="mt-2">No status history recorded.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="flex items-center justify-end gap-3">
+            <a href="{% url 'admin:enrollment_list' %}" 
+               class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
+                Cancel
+            </a>
+            <button type="submit" 
+                    class="px-6 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition shadow-sm">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .tab-button.active {
+        background-color: rgb(239 246 255);
+        color: rgb(37 99 235);
+    }
+</style>
+
+<script>
+function showTab(tabId) {
+    // Hide all panels
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.add('hidden');
+    });
+    
+    // Remove active from all buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected panel
+    document.getElementById('panel-' + tabId).classList.remove('hidden');
+    document.getElementById('tab-' + tabId).classList.add('active');
+}
+
+function checkTransitionReason(select) {
+    const selectedOption = select.options[select.selectedIndex];
+    const requiresReason = selectedOption.dataset.requiresReason === 'true';
+    const reasonContainer = document.getElementById('reason-container');
+    
+    if (requiresReason) {
+        reasonContainer.classList.remove('hidden');
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Check URL hash for tab
+    const hash = window.location.hash.replace('#', '');
+    if (hash && document.getElementById('panel-' + hash)) {
+        showTab(hash);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,513 @@
+{% extends 'crm/crm_base.html' %}
+{% load static %}
+
+{% block title %}{{ campaign.name }} - Campaign - SkillsFlow{% endblock %}
+
+{% block page_title %}{{ campaign.name }}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:dashboard' %}" class="text-gray-500 hover:text-gray-700">CRM</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:campaign_list' %}" class="text-gray-500 hover:text-gray-700">Campaigns</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ campaign.name|truncatewords:3 }}</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    {% if campaign.status == 'draft' %}
+    <a href="{% url 'crm:campaign_update' campaign.id %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        Edit
+    </a>
+    <button onclick="addRecipients()" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/>
+        </svg>
+        Add Recipients
+    </button>
+    <button onclick="submitForApproval()" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Submit for Approval
+    </button>
+    {% endif %}
+    
+    {% if can_approve %}
+    <button onclick="approveCampaign()" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Approve
+    </button>
+    <button onclick="rejectCampaign()" class="inline-flex items-center px-4 py-2 border border-red-500 text-red-700 shadow-sm text-sm font-medium rounded-md bg-white hover:bg-red-50">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Reject
+    </button>
+    {% endif %}
+    
+    {% if can_send %}
+    <button onclick="sendNow()" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        </svg>
+        Send Now
+    </button>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block crm_content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+        
+        <!-- Status Banner -->
+        <div class="rounded-xl p-4 
+            {% if campaign.status == 'draft' %}bg-gray-100 border border-gray-200
+            {% elif campaign.status == 'pending_approval' %}bg-yellow-50 border border-yellow-200
+            {% elif campaign.status == 'approved' %}bg-blue-50 border border-blue-200
+            {% elif campaign.status == 'scheduled' %}bg-indigo-50 border border-indigo-200
+            {% elif campaign.status == 'sending' %}bg-orange-50 border border-orange-200
+            {% elif campaign.status == 'sent' %}bg-green-50 border border-green-200
+            {% endif %}">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    {% if campaign.status == 'sending' %}
+                    <svg class="animate-spin w-5 h-5 mr-3 text-orange-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    {% endif %}
+                    <span class="font-semibold 
+                        {% if campaign.status == 'draft' %}text-gray-700
+                        {% elif campaign.status == 'pending_approval' %}text-yellow-700
+                        {% elif campaign.status == 'approved' %}text-blue-700
+                        {% elif campaign.status == 'scheduled' %}text-indigo-700
+                        {% elif campaign.status == 'sending' %}text-orange-700
+                        {% elif campaign.status == 'sent' %}text-green-700
+                        {% endif %}">
+                        {{ campaign.get_status_display }}
+                    </span>
+                </div>
+                {% if campaign.scheduled_at %}
+                <span class="text-sm text-gray-600">
+                    Scheduled for {{ campaign.scheduled_at|date:"M d, Y H:i" }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Delivery Stats (for sent campaigns) -->
+        {% if campaign.status == 'sent' %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Delivery Performance</h3>
+            
+            <div class="grid grid-cols-4 gap-4 mb-6">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-gray-900">{{ recipient_stats.total }}</div>
+                    <div class="text-sm text-gray-500">Recipients</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-600">{{ delivery_rate }}%</div>
+                    <div class="text-sm text-gray-500">Delivered</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-600">{{ open_rate }}%</div>
+                    <div class="text-sm text-gray-500">Opened</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-primary-600">{{ click_rate }}%</div>
+                    <div class="text-sm text-gray-500">Clicked</div>
+                </div>
+            </div>
+            
+            <!-- Delivery breakdown -->
+            <div class="grid grid-cols-5 gap-2 text-center text-sm">
+                <div class="p-2 bg-gray-50 rounded">
+                    <div class="font-semibold text-gray-600">{{ recipient_stats.pending }}</div>
+                    <div class="text-gray-400">Pending</div>
+                </div>
+                <div class="p-2 bg-blue-50 rounded">
+                    <div class="font-semibold text-blue-600">{{ recipient_stats.sent }}</div>
+                    <div class="text-blue-400">Sent</div>
+                </div>
+                <div class="p-2 bg-green-50 rounded">
+                    <div class="font-semibold text-green-600">{{ recipient_stats.delivered }}</div>
+                    <div class="text-green-400">Delivered</div>
+                </div>
+                <div class="p-2 bg-red-50 rounded">
+                    <div class="font-semibold text-red-600">{{ recipient_stats.failed }}</div>
+                    <div class="text-red-400">Failed</div>
+                </div>
+                <div class="p-2 bg-purple-50 rounded">
+                    <div class="font-semibold text-purple-600">{{ recipient_stats.opened }}</div>
+                    <div class="text-purple-400">Opened</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Message Preview -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Message Preview</h3>
+            
+            <div class="border rounded-lg p-4 bg-gray-50">
+                {% if campaign.channel == 'email' and campaign.subject %}
+                <div class="mb-3 pb-3 border-b border-gray-200">
+                    <span class="text-sm text-gray-500">Subject:</span>
+                    <p class="font-medium text-gray-900">{{ campaign.subject }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="whitespace-pre-wrap text-gray-700">{{ campaign.content }}</div>
+            </div>
+            
+            <div class="mt-4 flex items-center text-sm text-gray-500">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Variables like {{ '{{first_name}}' }} will be replaced with actual values
+            </div>
+        </div>
+        
+        <!-- Recipients Sample -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Recipients ({{ recipient_stats.total }})</h3>
+            </div>
+            
+            {% if sample_recipients %}
+            <div class="space-y-2">
+                {% for recipient in sample_recipients %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-medium">
+                            {{ recipient.lead.first_name|slice:":1" }}{{ recipient.lead.last_name|slice:":1" }}
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">{{ recipient.lead.full_name }}</p>
+                            <p class="text-xs text-gray-500">{{ recipient.lead.email }}</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                        {% if recipient.status == 'pending' %}bg-gray-100 text-gray-800
+                        {% elif recipient.status == 'sent' %}bg-blue-100 text-blue-800
+                        {% elif recipient.status == 'delivered' %}bg-green-100 text-green-800
+                        {% elif recipient.status == 'failed' %}bg-red-100 text-red-800
+                        {% endif %}">
+                        {{ recipient.get_status_display }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% if recipient_stats.total > 10 %}
+            <p class="mt-3 text-sm text-gray-500 text-center">
+                Showing 10 of {{ recipient_stats.total }} recipients
+            </p>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <p>No recipients added yet</p>
+                {% if campaign.status == 'draft' %}
+                <button onclick="addRecipients()" class="mt-2 text-primary-600 hover:text-primary-700">
+                    Add recipients →
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Failed Recipients (if any) -->
+        {% if failed_recipients %}
+        <div class="bg-white rounded-xl shadow-sm border border-red-100 p-6">
+            <h3 class="text-lg font-semibold text-red-700 mb-4">Failed Deliveries</h3>
+            
+            <div class="space-y-2">
+                {% for recipient in failed_recipients %}
+                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">{{ recipient.lead.full_name }}</p>
+                        <p class="text-xs text-red-600">{{ recipient.error_message }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        
+        <!-- Campaign Info -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Campaign Details</h3>
+            
+            <dl class="space-y-3">
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase">Channel</dt>
+                    <dd class="mt-1 flex items-center">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if campaign.channel == 'whatsapp' %}bg-green-100 text-green-800
+                            {% elif campaign.channel == 'sms' %}bg-purple-100 text-purple-800
+                            {% elif campaign.channel == 'email' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ campaign.get_channel_display }}
+                        </span>
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase">Type</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ campaign.get_campaign_type_display }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase">Brand</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ campaign.brand.name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase">Target Audience</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ campaign.get_target_audience_display|default:"All leads" }}</dd>
+                </div>
+                {% if campaign.message_template %}
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase">Template</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ campaign.message_template.name }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+        
+        <!-- Timeline -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Timeline</h3>
+            
+            <div class="flow-root">
+                <ul class="-mb-8">
+                    <li>
+                        <div class="relative pb-8">
+                            <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                            <div class="relative flex space-x-3">
+                                <div class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center ring-8 ring-white">
+                                    <svg class="h-4 w-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="min-w-0 flex-1 pt-1.5">
+                                    <p class="text-sm text-gray-500">Created by {{ campaign.created_by.get_full_name }}</p>
+                                    <p class="text-xs text-gray-400">{{ campaign.created_at|date:"M d, Y H:i" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    
+                    {% if campaign.approved_at %}
+                    <li>
+                        <div class="relative pb-8">
+                            <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                            <div class="relative flex space-x-3">
+                                <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center ring-8 ring-white">
+                                    <svg class="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="min-w-0 flex-1 pt-1.5">
+                                    <p class="text-sm text-gray-500">Approved{% if campaign.approved_by %} by {{ campaign.approved_by.get_full_name }}{% endif %}</p>
+                                    <p class="text-xs text-gray-400">{{ campaign.approved_at|date:"M d, Y H:i" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endif %}
+                    
+                    {% if campaign.started_at %}
+                    <li>
+                        <div class="relative pb-8">
+                            <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                            <div class="relative flex space-x-3">
+                                <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center ring-8 ring-white">
+                                    <svg class="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
+                                    </svg>
+                                </div>
+                                <div class="min-w-0 flex-1 pt-1.5">
+                                    <p class="text-sm text-gray-500">Sending started</p>
+                                    <p class="text-xs text-gray-400">{{ campaign.started_at|date:"M d, Y H:i" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endif %}
+                    
+                    {% if campaign.completed_at %}
+                    <li>
+                        <div class="relative">
+                            <div class="relative flex space-x-3">
+                                <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center ring-8 ring-white">
+                                    <svg class="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="min-w-0 flex-1 pt-1.5">
+                                    <p class="text-sm text-gray-500">Completed</p>
+                                    <p class="text-xs text-gray-400">{{ campaign.completed_at|date:"M d, Y H:i" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals and Scripts -->
+<script>
+async function addRecipients() {
+    if (!confirm('Add recipients based on the target audience criteria?')) return;
+    
+    try {
+        const response = await fetch('{% url "crm:campaign_add_recipients" campaign.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({})
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            alert(`Added ${data.created} recipients. Total: ${data.total}`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred');
+    }
+}
+
+async function submitForApproval() {
+    if (!confirm('Submit this campaign for manager approval?')) return;
+    
+    try {
+        const response = await fetch('{% url "crm:campaign_submit_approval" campaign.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred');
+    }
+}
+
+async function approveCampaign() {
+    if (!confirm('Approve this campaign?')) return;
+    
+    try {
+        const response = await fetch('{% url "crm:campaign_approval" campaign.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ action: 'approve' })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred');
+    }
+}
+
+async function rejectCampaign() {
+    const reason = prompt('Rejection reason:');
+    if (!reason) return;
+    
+    try {
+        const response = await fetch('{% url "crm:campaign_approval" campaign.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ action: 'reject', reason: reason })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred');
+    }
+}
+
+async function sendNow() {
+    if (!confirm('Send this campaign now to all recipients?')) return;
+    
+    try {
+        const response = await fetch('{% url "crm:campaign_send" campaign.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred');
+    }
+}
+</script>
+{% endblock %}

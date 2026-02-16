@@ -1,0 +1,182 @@
+[
+  {
+    "model": "tenants.brand",
+    "pk": 7,
+    "fields": {
+      "code": "AFSKILLS",
+      "name": "Africa Skills",
+      "legal_name": "Africa Skills (Pty) Ltd",
+      "logo": "",
+      "favicon": "",
+      "primary_color": "#002859",
+      "secondary_color": "#6c757d",
+      "accreditation_number": "2007/011991/07",
+      "seta_registration": "",
+      "email": "info@africaskills.co.za",
+      "phone": "044 884 0791",
+      "website": "https://africaskills.co.za",
+      "is_active": true
+    }
+  },
+  {
+    "model": "tenants.campus",
+    "pk": 27,
+    "fields": {
+      "brand": 7,
+      "code": "AFSKILLS-GTECH",
+      "name": "GeorgeTech Campus",
+      "campus_type": "HEAD_OFFICE",
+      "region": "Western Cape",
+      "address_line1": "133 Mitchell Street",
+      "address_line2": "Cnr York & P.W. Botha Blvd",
+      "suburb": "",
+      "city": "George",
+      "province": "Western Cape",
+      "postal_code": "6529",
+      "country": "South Africa",
+      "email": "study@africaskills.co.za",
+      "phone": "044 050 0211",
+      "latitude": null,
+      "longitude": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tenants.campus",
+    "pk": 28,
+    "fields": {
+      "brand": 7,
+      "code": "AFSKILLS-CEN",
+      "name": "Centurion Campus",
+      "campus_type": "CAMPUS",
+      "region": "Gauteng",
+      "address_line1": "2 Regency Drive",
+      "address_line2": "Route 21 Corporate Park",
+      "suburb": "",
+      "city": "Centurion",
+      "province": "Gauteng",
+      "postal_code": "0187",
+      "country": "South Africa",
+      "email": "study@africaskills.co.za",
+      "phone": "012 940 3457",
+      "latitude": null,
+      "longitude": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tenants.campus",
+    "pk": 29,
+    "fields": {
+      "brand": 7,
+      "code": "AFSKILLS-NTAKA",
+      "name": "George Ntaka Campus",
+      "campus_type": "CAMPUS",
+      "region": "Western Cape",
+      "address_line1": "1661 Ntaka Street",
+      "address_line2": "",
+      "suburb": "Thembalethu",
+      "city": "George",
+      "province": "Western Cape",
+      "postal_code": "6529",
+      "country": "South Africa",
+      "email": "study@africaskills.co.za",
+      "phone": "044 050 0211",
+      "latitude": null,
+      "longitude": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tenants.campus",
+    "pk": 30,
+    "fields": {
+      "brand": 7,
+      "code": "AFSKILLS-POF",
+      "name": "Pofadder Campus",
+      "campus_type": "CAMPUS",
+      "region": "Northern Cape",
+      "address_line1": "Community Skills Development Training Centre",
+      "address_line2": "19 Mission Street",
+      "suburb": "",
+      "city": "Pofadder",
+      "province": "Northern Cape",
+      "postal_code": "8890",
+      "country": "South Africa",
+      "email": "study-pofadder@africaskills.co.za",
+      "phone": "053 050 0160",
+      "latitude": null,
+      "longitude": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tenants.campus",
+    "pk": 31,
+    "fields": {
+      "brand": 7,
+      "code": "AFSKILLS-VTECH",
+      "name": "Vereeniging Tech Campus",
+      "campus_type": "CAMPUS",
+      "region": "Gauteng",
+      "address_line1": "Cnr. 21 De Villiers & Leslie Streets",
+      "address_line2": "",
+      "suburb": "",
+      "city": "Vereeniging",
+      "province": "Gauteng",
+      "postal_code": "1930",
+      "country": "South Africa",
+      "email": "study-vtech@africaskills.co.za",
+      "phone": "016 100 1769",
+      "latitude": null,
+      "longitude": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tenants.campus",
+    "pk": 32,
+    "fields": {
+      "brand": 7,
+      "code": "AFSKILLS-BUS",
+      "name": "Business Campus",
+      "campus_type": "CAMPUS",
+      "region": "Gauteng",
+      "address_line1": "",
+      "address_line2": "",
+      "suburb": "",
+      "city": "Johannesburg",
+      "province": "Gauteng",
+      "postal_code": "",
+      "country": "South Africa",
+      "email": "study@africaskills.co.za",
+      "phone": "044 884 0791",
+      "latitude": null,
+      "longitude": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tenants.campus",
+    "pk": 33,
+    "fields": {
+      "brand": 7,
+      "code": "AFSKILLS-BRK",
+      "name": "Brakpan Campus",
+      "campus_type": "CAMPUS",
+      "region": "Gauteng",
+      "address_line1": "",
+      "address_line2": "",
+      "suburb": "",
+      "city": "Brakpan",
+      "province": "Gauteng",
+      "postal_code": "",
+      "country": "South Africa",
+      "email": "study@africaskills.co.za",
+      "phone": "044 884 0791",
+      "latitude": null,
+      "longitude": null,
+      "is_active": true
+    }
+  }
+]

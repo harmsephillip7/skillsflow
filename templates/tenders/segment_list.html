@@ -1,0 +1,168 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Tender Segments - SkillsFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'core:dashboard' %}" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100" title="Main Dashboard">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                    </a>
+                    <a href="{% url 'tenders:dashboard' %}" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100" title="Tender Dashboard">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">Tender Segments</h1>
+                        <p class="text-sm text-gray-500">Configure segments and probability decay models</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="{% url 'tenders:segment_create' %}" class="inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add Segment
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Info Banner -->
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-amber-800">About Probability Decay</h3>
+                    <p class="mt-1 text-sm text-amber-700">
+                        Segments define how the success probability decreases over time after submitting an application. 
+                        This helps forecast expected revenue more accurately. Choose from Linear (steady decline), 
+                        Exponential (rapid initial drop), or Step-based (fixed drops at milestones) decay models.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Segments Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for segment in segments %}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">{{ segment.name }}</h3>
+                            {% if segment.description %}
+                            <p class="text-sm text-gray-500 mt-1">{{ segment.description|truncatechars:60 }}</p>
+                            {% endif %}
+                        </div>
+                        {% if segment.is_active %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Active</span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Inactive</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Probability Settings -->
+                    <div class="space-y-3 mb-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-500">Decay Model</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
+                                {% if segment.decay_model == 'LINEAR' %}bg-blue-100 text-blue-700
+                                {% elif segment.decay_model == 'EXPONENTIAL' %}bg-purple-100 text-purple-700
+                                {% else %}bg-amber-100 text-amber-700{% endif %}">
+                                {{ segment.get_decay_model_display }}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-500">Initial Probability</span>
+                            <span class="text-sm font-medium text-gray-900">{{ segment.initial_probability|floatformat:0 }}%</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-500">Floor Probability</span>
+                            <span class="text-sm font-medium text-gray-900">{{ segment.floor_probability|floatformat:0 }}%</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-500">Expected Response</span>
+                            <span class="text-sm font-medium text-gray-900">{{ segment.expected_response_days }} days</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Probability Visualization -->
+                    <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                        <div class="flex items-end justify-between h-16">
+                            {% with segment.initial_probability as init %}
+                            {% with segment.floor_probability as floor %}
+                            <div class="w-4 bg-green-500 rounded-t" style="height: {{ init }}%"></div>
+                            <div class="w-4 bg-green-400 rounded-t" style="height: {% widthratio init|add:floor 2 100 %}%"></div>
+                            <div class="w-4 bg-amber-400 rounded-t" style="height: {% widthratio init|add:floor|add:floor 3 100 %}%"></div>
+                            <div class="w-4 bg-amber-500 rounded-t" style="height: {% widthratio floor|add:floor 2 100 %}%"></div>
+                            <div class="w-4 bg-red-400 rounded-t" style="height: {{ floor }}%"></div>
+                            {% endwith %}
+                            {% endwith %}
+                        </div>
+                        <div class="flex justify-between mt-1 text-xs text-gray-400">
+                            <span>Day 0</span>
+                            <span>→</span>
+                            <span>Day {{ segment.expected_response_days }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div class="flex items-center justify-between text-sm border-t border-gray-100 pt-4">
+                        <div>
+                            <span class="text-gray-500">Tenders:</span>
+                            <span class="font-medium text-gray-900 ml-1">{{ segment.tender_count|default:0 }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Win Rate:</span>
+                            <span class="font-medium text-green-600 ml-1">{{ segment.win_rate|floatformat:0|default:0 }}%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                    <a href="{% url 'tenders:segment_detail' segment.pk %}" class="text-sm text-amber-600 hover:text-amber-700 font-medium">
+                        View Details
+                    </a>
+                    <a href="{% url 'admin:tenders_tendersegment_change' segment.pk %}" class="p-1.5 text-gray-400 hover:text-gray-600 rounded" title="Edit">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full">
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+                    <svg class="mx-auto w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                    </svg>
+                    <h3 class="mt-4 text-sm font-medium text-gray-900">No segments configured</h3>
+                    <p class="mt-1 text-sm text-gray-500">Create segments to categorize tenders and configure probability decay.</p>
+                    <a href="{% url 'tenders:segment_create' %}" class="mt-4 inline-flex items-center px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Create First Segment
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

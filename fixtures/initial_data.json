@@ -1,0 +1,245 @@
+[
+  {
+    "model": "workflows.milestone",
+    "pk": 1,
+    "fields": {
+      "journey_type": "learner",
+      "name": "profile_complete",
+      "display_name": "Complete Your Profile",
+      "description": "Fill in all your personal details including contact information and demographics.",
+      "order": 1,
+      "points": 10,
+      "icon": "user",
+      "color": "blue",
+      "completion_criteria": {"field": "learner_profile"}
+    }
+  },
+  {
+    "model": "workflows.milestone",
+    "pk": 2,
+    "fields": {
+      "journey_type": "learner",
+      "name": "id_uploaded",
+      "display_name": "Upload ID Document",
+      "description": "Upload your South African ID document or passport for verification.",
+      "order": 2,
+      "points": 15,
+      "icon": "id-card",
+      "color": "green",
+      "completion_criteria": {"document_type": "id_document"}
+    }
+  },
+  {
+    "model": "workflows.milestone",
+    "pk": 3,
+    "fields": {
+      "journey_type": "learner",
+      "name": "matric_uploaded",
+      "display_name": "Upload Matric Certificate",
+      "description": "Upload your Grade 12/Matric certificate or equivalent qualification.",
+      "order": 3,
+      "points": 15,
+      "icon": "academic-cap",
+      "color": "purple",
+      "completion_criteria": {"document_type": "matric_certificate"}
+    }
+  },
+  {
+    "model": "workflows.milestone",
+    "pk": 4,
+    "fields": {
+      "journey_type": "learner",
+      "name": "enrolled",
+      "display_name": "Enrolled in a Program",
+      "description": "Successfully enrolled in your first training program.",
+      "order": 4,
+      "points": 20,
+      "icon": "book-open",
+      "color": "yellow",
+      "completion_criteria": {"has_enrollment": true}
+    }
+  },
+  {
+    "model": "workflows.milestone",
+    "pk": 5,
+    "fields": {
+      "journey_type": "learner",
+      "name": "first_assessment",
+      "display_name": "Complete First Assessment",
+      "description": "Successfully complete your first formative or summative assessment.",
+      "order": 5,
+      "points": 25,
+      "icon": "clipboard-check",
+      "color": "orange",
+      "completion_criteria": {"assessment_completed": 1}
+    }
+  },
+  {
+    "model": "workflows.milestone",
+    "pk": 6,
+    "fields": {
+      "journey_type": "learner",
+      "name": "workplace_started",
+      "display_name": "Start Workplace Learning",
+      "description": "Begin your workplace-based learning component with a host employer.",
+      "order": 6,
+      "points": 30,
+      "icon": "briefcase",
+      "color": "teal",
+      "completion_criteria": {"has_employment": true}
+    }
+  },
+  {
+    "model": "workflows.milestone",
+    "pk": 7,
+    "fields": {
+      "journey_type": "learner",
+      "name": "poe_submitted",
+      "display_name": "Submit Portfolio of Evidence",
+      "description": "Submit your complete Portfolio of Evidence for moderation.",
+      "order": 7,
+      "points": 35,
+      "icon": "folder",
+      "color": "indigo",
+      "completion_criteria": {"poe_submitted": true}
+    }
+  },
+  {
+    "model": "workflows.milestone",
+    "pk": 8,
+    "fields": {
+      "journey_type": "learner",
+      "name": "competent",
+      "display_name": "Declared Competent",
+      "description": "Successfully declared competent after external assessment.",
+      "order": 8,
+      "points": 50,
+      "icon": "badge-check",
+      "color": "green",
+      "completion_criteria": {"status": "competent"}
+    }
+  },
+  {
+    "model": "workflows.milestone",
+    "pk": 9,
+    "fields": {
+      "journey_type": "learner",
+      "name": "certified",
+      "display_name": "Receive Your Certificate",
+      "description": "Receive your QCTO-issued certificate of competence.",
+      "order": 9,
+      "points": 100,
+      "icon": "certificate",
+      "color": "gold",
+      "completion_criteria": {"certificate_issued": true}
+    }
+  },
+  {
+    "model": "core.role",
+    "pk": 1,
+    "fields": {
+      "code": "SUPER_ADMIN",
+      "name": "Super Administrator",
+      "description": "Full system administrator with all permissions",
+      "access_level": "SYSTEM",
+      "permissions": {"all": true},
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.role",
+    "pk": 2,
+    "fields": {
+      "code": "STUDENT",
+      "name": "Student/Learner",
+      "description": "A person enrolled in a training program",
+      "access_level": "SELF",
+      "permissions": {"view_own_enrollments": true, "view_own_assessments": true, "upload_documents": true},
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.role",
+    "pk": 3,
+    "fields": {
+      "code": "FACILITATOR",
+      "name": "Facilitator",
+      "description": "Trainer who delivers learning content to learners",
+      "access_level": "CAMPUS",
+      "permissions": {"view_cohorts": true, "capture_attendance": true, "view_learners": true},
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.role",
+    "pk": 4,
+    "fields": {
+      "code": "ASSESSOR",
+      "name": "Assessor",
+      "description": "Conducts assessments and records learner competence",
+      "access_level": "CAMPUS",
+      "permissions": {"conduct_assessments": true, "capture_results": true, "view_poe": true},
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.role",
+    "pk": 5,
+    "fields": {
+      "code": "MODERATOR",
+      "name": "Moderator",
+      "description": "Reviews assessment results for quality assurance",
+      "access_level": "CAMPUS",
+      "permissions": {"moderate_assessments": true, "approve_results": true},
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.role",
+    "pk": 6,
+    "fields": {
+      "code": "ACADEMIC_COORDINATOR",
+      "name": "Academic Coordinator",
+      "description": "Manages academic programs and curriculum at campus level",
+      "access_level": "CAMPUS",
+      "permissions": {"manage_qualifications": true, "manage_enrollments": true, "view_reports": true},
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.role",
+    "pk": 7,
+    "fields": {
+      "code": "FINANCE_CLERK",
+      "name": "Finance Clerk",
+      "description": "Handles invoicing, payments, and financial reporting",
+      "access_level": "CAMPUS",
+      "permissions": {"manage_invoices": true, "manage_payments": true, "view_financial_reports": true},
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.role",
+    "pk": 8,
+    "fields": {
+      "code": "SALES_REP",
+      "name": "Sales Representative",
+      "description": "Manages leads, sales, and client relationships",
+      "access_level": "CAMPUS",
+      "permissions": {"manage_leads": true, "manage_quotes": true, "view_crm_reports": true},
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.role",
+    "pk": 9,
+    "fields": {
+      "code": "CORPORATE_CLIENT_SDF",
+      "name": "Corporate Client SDF",
+      "description": "Corporate client representative managing employee training",
+      "access_level": "SELF",
+      "permissions": {"view_corporate_dashboard": true, "manage_employees": true, "submit_wsp_atr": true},
+      "is_active": true
+    }
+  }
+]

@@ -1,0 +1,166 @@
+{% extends 'crm/crm_base.html' %}
+{% load static %}
+
+{% block title %}Bulk Messaging - CRM - SkillsFlow{% endblock %}
+
+{% block page_title %}Bulk Messaging{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:dashboard' %}" class="text-gray-500 hover:text-gray-700">CRM</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Bulk Messaging</span>
+</li>
+{% endblock %}
+
+{% block crm_content %}
+<div class="space-y-6">
+    
+    <!-- Info Banner -->
+    <div class="bg-gradient-to-r from-green-600 to-emerald-700 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold">Bulk Messaging</h2>
+                <p class="mt-1 text-green-100">Send monthly messages to leads who have consented</p>
+            </div>
+            <div class="text-right">
+                <p class="text-4xl font-bold">{{ total_with_consent }}</p>
+                <p class="text-sm text-green-100">Leads with Consent</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <form method="get" class="flex items-center space-x-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Lead Type</label>
+                <select name="lead_type" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Types</option>
+                    {% for value, label in lead_types %}
+                    <option value="{{ value }}" {% if request.GET.lead_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Age Filter</label>
+                <select name="age" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Ages</option>
+                    <option value="minor" {% if request.GET.age == 'minor' %}selected{% endif %}>Under 18 (Minors)</option>
+                    <option value="adult" {% if request.GET.age == 'adult' %}selected{% endif %}>18+ (Adults)</option>
+                </select>
+            </div>
+            <div class="pt-6">
+                <button type="submit" class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors">
+                    Filter
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Leads with Consent -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">Leads with Messaging Consent</h3>
+            <div class="flex items-center space-x-2">
+                <span class="text-sm text-gray-500">{{ leads|length }} leads shown</span>
+                <button class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    Send Bulk Message
+                </button>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left">
+                            <input type="checkbox" id="select-all" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lead</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Consent Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for lead in leads %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <input type="checkbox" name="lead_ids" value="{{ lead.pk }}" 
+                                   class="lead-checkbox rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                        </td>
+                        <td class="px-4 py-3">
+                            <a href="{% url 'crm:lead_detail' lead.pk %}" class="text-sm font-medium text-gray-900 hover:text-primary-600">
+                                {{ lead.first_name }} {{ lead.last_name }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="text-sm text-gray-900">{{ lead.phone }}</div>
+                            {% if lead.whatsapp_number %}
+                            <div class="text-xs text-green-600">WA: {{ lead.whatsapp_number }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if lead.lead_type == 'SCHOOL_LEAVER' %}bg-blue-100 text-blue-800
+                                {% elif lead.lead_type == 'ADULT' %}bg-green-100 text-green-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ lead.get_lead_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-500">
+                            {% if lead.age %}
+                            {{ lead.age }} years
+                            {% if lead.is_minor %}
+                            <span class="text-yellow-600">(Minor)</span>
+                            {% endif %}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-500">
+                            {{ lead.consent_date|date:"d M Y"|default:"-" }}
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if lead.status == 'NEW' %}bg-blue-100 text-blue-800
+                                {% elif lead.status == 'ENROLLED' %}bg-green-100 text-green-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ lead.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                            No leads with messaging consent found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+</div>
+
+<script>
+document.getElementById('select-all').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.lead-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+</script>
+{% endblock %}

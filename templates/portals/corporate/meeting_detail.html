@@ -1,0 +1,164 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Meeting Details - Corporate Portal{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <nav class="flex items-center text-sm text-gray-500 mb-2">
+            <a href="{% url 'portals:corporate_dashboard' %}" class="hover:text-primary-600">Dashboard</a>
+            <i class="fas fa-chevron-right mx-2 text-xs"></i>
+            <a href="{% url 'portals:corporate_meetings' %}" class="hover:text-primary-600">Meetings</a>
+            <i class="fas fa-chevron-right mx-2 text-xs"></i>
+            <span class="text-gray-900">{{ meeting.meeting_date|date:"d M Y" }}</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">{{ committee.name }}</h1>
+        <p class="mt-1 text-sm text-gray-500">{{ meeting.meeting_date|date:"l, d F Y" }} {% if meeting.meeting_time %}at {{ meeting.meeting_time|time:"H:i" }}{% endif %}</p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+        <a href="{% url 'portals:corporate_meetings' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Meetings
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if no_client %}
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+    <i class="fas fa-exclamation-triangle text-amber-500 text-4xl mb-3"></i>
+    <h3 class="text-lg font-semibold text-amber-800">No Corporate Account Linked</h3>
+</div>
+{% else %}
+
+<div class="space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Agenda -->
+            {% if meeting.agenda %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">
+                        <i class="fas fa-list text-primary-600 mr-2"></i>Agenda
+                    </h3>
+                </div>
+                <div class="p-6 prose prose-sm max-w-none">
+                    {{ meeting.agenda|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Minutes -->
+            {% if meeting.minutes %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900">
+                        <i class="fas fa-file-alt text-green-600 mr-2"></i>Meeting Minutes
+                    </h3>
+                    {% if meeting.minutes_file %}
+                    <a href="{{ meeting.minutes_file.url }}" target="_blank" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded transition">
+                        <i class="fas fa-download mr-2"></i>Download PDF
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="p-6 prose prose-sm max-w-none">
+                    {{ meeting.minutes|linebreaks }}
+                </div>
+            </div>
+            {% elif meeting.minutes_file %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">
+                        <i class="fas fa-file-alt text-green-600 mr-2"></i>Meeting Minutes
+                    </h3>
+                </div>
+                <div class="p-6 text-center">
+                    <i class="fas fa-file-pdf text-red-500 text-4xl mb-3"></i>
+                    <p class="text-gray-600 mb-4">Minutes are available as a PDF document.</p>
+                    <a href="{{ meeting.minutes_file.url }}" target="_blank" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition">
+                        <i class="fas fa-download mr-2"></i>Download Minutes
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">
+                        <i class="fas fa-file-alt text-gray-400 mr-2"></i>Meeting Minutes
+                    </h3>
+                </div>
+                <div class="p-8 text-center text-gray-500">
+                    <i class="fas fa-clock text-3xl text-gray-300 mb-3"></i>
+                    <p>Minutes have not been captured yet.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Meeting Info -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">Meeting Details</h3>
+                </div>
+                <div class="p-5">
+                    <dl class="space-y-4">
+                        <div>
+                            <dt class="text-xs text-gray-500">Committee</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ committee.name }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-gray-500">Date</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ meeting.meeting_date|date:"d F Y" }}</dd>
+                        </div>
+                        {% if meeting.meeting_time %}
+                        <div>
+                            <dt class="text-xs text-gray-500">Time</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ meeting.meeting_time|time:"H:i" }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if meeting.venue %}
+                        <div>
+                            <dt class="text-xs text-gray-500">Venue</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ meeting.venue }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if meeting.next_meeting_date %}
+                        <div>
+                            <dt class="text-xs text-gray-500">Next Meeting</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ meeting.next_meeting_date|date:"d F Y" }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Attendees -->
+            {% if attendees %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-900">Attendees</h3>
+                </div>
+                <div class="p-5 space-y-3">
+                    {% for attendee in attendees %}
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-medium text-sm">
+                            {{ attendee.get_member_name|slice:":2"|upper }}
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">{{ attendee.get_member_name }}</p>
+                            <p class="text-xs text-gray-500">{{ attendee.get_role_display }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

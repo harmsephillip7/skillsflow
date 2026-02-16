@@ -1,0 +1,128 @@
+{% extends 'crm/portal/portal_base.html' %}
+
+{% block title %}Application Started{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-2xl card-shadow overflow-hidden">
+    <!-- Success Header -->
+    <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-8 text-center">
+        <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <h2 class="text-3xl font-bold mb-2">🎉 Application Started!</h2>
+        <p class="text-white/90">Your enrollment journey has begun</p>
+    </div>
+    
+    <div class="p-6">
+        <!-- Summary -->
+        <div class="text-center mb-8">
+            <p class="text-gray-600 text-lg">
+                Congratulations <strong class="text-gray-900">{{ lead.first_name }}</strong>! 
+                Your application for enrollment has been successfully started.
+            </p>
+        </div>
+        
+        <!-- Application Details -->
+        <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 mb-8">
+            <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-gray-500 text-sm">Qualification</p>
+                    <p class="font-bold text-gray-900">{{ qualification.name }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm">Pre-Approval Reference</p>
+                    <p class="font-bold text-gray-900">{{ letter.letter_number }}</p>
+                </div>
+                {% if application %}
+                <div>
+                    <p class="text-gray-500 text-sm">Application Status</p>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                        {{ application.get_status_display }}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- What Happens Next -->
+        <div class="border-t border-gray-200 pt-6">
+            <h4 class="font-bold text-gray-900 text-xl mb-6 text-center">What Happens Next?</h4>
+            
+            <div class="space-y-4">
+                <div class="flex items-start p-4 bg-gray-50 rounded-xl">
+                    <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">1</div>
+                    <div class="ml-4">
+                        <h5 class="font-semibold text-gray-900">Our Team Will Contact You</h5>
+                        <p class="text-gray-600 text-sm mt-1">A dedicated admissions advisor will reach out to you shortly to guide you through the next steps.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start p-4 bg-gray-50 rounded-xl">
+                    <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">2</div>
+                    <div class="ml-4">
+                        <h5 class="font-semibold text-gray-900">Document Submission</h5>
+                        <p class="text-gray-600 text-sm mt-1">You'll be asked to submit required documents such as ID, proof of residence, and previous qualifications.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start p-4 bg-gray-50 rounded-xl">
+                    <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">3</div>
+                    <div class="ml-4">
+                        <h5 class="font-semibold text-gray-900">Application Review</h5>
+                        <p class="text-gray-600 text-sm mt-1">Once your documents are submitted, our team will review your application.</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start p-4 bg-gray-50 rounded-xl">
+                    <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">4</div>
+                    <div class="ml-4">
+                        <h5 class="font-semibold text-gray-900">Enrollment Confirmation</h5>
+                        <p class="text-gray-600 text-sm mt-1">Upon approval, you'll receive your enrollment confirmation and welcome pack!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Expected Timeline -->
+        <div class="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div class="flex items-start">
+                <svg class="w-5 h-5 text-amber-600 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div>
+                    <p class="text-amber-800 font-medium">Expected Timeline</p>
+                    <p class="text-amber-700 text-sm mt-1">Expect to hear from us within 1-2 business days. Please ensure your contact details are up to date.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="mt-8 flex flex-col sm:flex-row gap-4">
+            <a href="{% url 'crm:pre_approval_download' token=letter.id %}" 
+               class="flex-1 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-xl transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Download Pre-Approval (PDF)
+            </a>
+            <a href="{% url 'crm:pre_approval_portal' token=letter.id %}" 
+               class="flex-1 flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-xl transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                View Pre-Approval Details
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Need Help -->
+<div class="mt-8 bg-white rounded-2xl card-shadow p-6 text-center">
+    <h4 class="font-bold text-gray-900 mb-2">Questions?</h4>
+    <p class="text-gray-600 mb-4">Our admissions team is here to help you every step of the way.</p>
+    <p class="text-gray-500 text-sm">Keep this reference handy: <strong class="text-gray-700">{{ letter.letter_number }}</strong></p>
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "portals/mentor/base.html" %}
+{% load static %}
+
+{% block page_title %}Messages - Mentor Portal{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="welcome-section">
+            <h1><i class="fas fa-comments me-2"></i>Messages</h1>
+            <p class="text-muted">View and manage your conversations</p>
+        </div>
+        <div class="quick-actions">
+            <a href="{% url 'portals:mentor_dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <button class="btn btn-primary" id="newMessageBtn" onclick="alert('New message feature coming soon!'); return false;">
+                <i class="fas fa-plus me-1"></i>New Message
+            </button>
+        </div>
+    </div>
+
+    <!-- Messages List -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <h2><i class="fas fa-inbox"></i> Inbox</h2>
+        </div>
+        <div class="card-body">
+            {% if threads %}
+            <div class="thread-list">
+                {% for thread in threads %}
+                <a href="{% url 'portals:mentor_message_thread' thread.id %}" class="thread-item-link text-decoration-none">
+                    <div class="thread-item d-flex align-items-center p-3 border-bottom {% if thread.unread_count %}bg-light{% endif %}">
+                        <!-- Avatar -->
+                        <div class="thread-avatar me-3" style="width: 50px; height: 50px; min-width: 50px;">
+                            <div class="avatar-placeholder" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; color: white; font-weight: 600;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- Thread Info -->
+                        <div class="thread-info flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h5 class="mb-1 {% if thread.unread_count %}fw-bold{% endif %}">
+                                    {{ thread.subject|default:"No Subject"|truncatewords:8 }}
+                                </h5>
+                                <small class="text-muted">{{ thread.updated_at|timesince }} ago</small>
+                            </div>
+                            <p class="mb-0 text-muted small">
+                                {% if thread.last_message %}
+                                {{ thread.last_message.content|truncatewords:15 }}
+                                {% else %}
+                                No messages yet
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <!-- Unread Badge -->
+                        {% if thread.unread_count %}
+                        <div class="ms-3">
+                            <span class="badge bg-primary rounded-pill">{{ thread.unread_count }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h4>No Messages Yet</h4>
+                <p class="text-muted mb-4">You don't have any conversations yet.</p>
+                <button class="btn btn-primary" onclick="alert('New message feature coming soon!'); return false;">
+                    <i class="fas fa-plus me-1"></i>Start a Conversation
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .thread-item-link:hover .thread-item {
+        background-color: #f8f9fa;
+    }
+    .thread-item {
+        transition: background-color 0.15s ease;
+    }
+</style>
+{% endblock %}

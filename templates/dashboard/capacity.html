@@ -1,0 +1,459 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Campus Capacity & Utilization Dashboard{% endblock %}
+
+{% block page_title %}Capacity Dashboard{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'core:organization_dashboard' %}" class="text-gray-500 hover:text-primary-600">Organization</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Capacity & Utilization</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Campus Capacity & Utilization</h1>
+                <p class="text-sm text-gray-500 mt-1">
+                    {% if selected_campus %}
+                        Showing data for {{ selected_campus.name }}
+                    {% else %}
+                        Showing data for all campuses
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <!-- Date Range Selector -->
+                <select id="dateRange" class="rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="30">Last 30 Days</option>
+                    <option value="90" selected>Last 90 Days</option>
+                    <option value="180">Last 6 Months</option>
+                    <option value="365">Last Year</option>
+                </select>
+                
+                <!-- Export Button -->
+                <button class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Export Report
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="p-6">
+        <!-- Capacity Alerts -->
+        {% if capacity_alerts %}
+        <div class="mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    Capacity Alerts
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                    {% for alert in capacity_alerts %}
+                    <div class="inline-flex items-center px-3 py-1.5 rounded-full text-sm 
+                        {% if alert.type == 'danger' %}bg-red-100 text-red-800
+                        {% elif alert.type == 'warning' %}bg-amber-100 text-amber-800
+                        {% else %}bg-blue-100 text-blue-800{% endif %}">
+                        <span class="font-medium">{{ alert.campus.name }}:</span>
+                        <span class="ml-1">{{ alert.message }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <!-- Total Capacity Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Total Capacity</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-1">{{ summary.total_learners }}</p>
+                        <p class="text-sm text-gray-500">of {{ summary.total_max_capacity }} max</p>
+                    </div>
+                    <div class="w-16 h-16 relative">
+                        <svg class="w-16 h-16 transform -rotate-90">
+                            <circle cx="32" cy="32" r="28" fill="none" stroke="#e5e7eb" stroke-width="6"></circle>
+                            <circle cx="32" cy="32" r="28" fill="none" 
+                                stroke="{% if summary.utilization_status == 'success' %}#10b981{% elif summary.utilization_status == 'warning' %}#f59e0b{% else %}#ef4444{% endif %}" 
+                                stroke-width="6" 
+                                stroke-dasharray="{% widthratio summary.total_utilization 100 176 %} 176"
+                                stroke-linecap="round"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-sm font-bold text-gray-700">{{ summary.total_utilization }}%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="text-gray-500">Available:</span>
+                    <span class="ml-1 font-medium text-green-600">{{ summary.available_total }} spots</span>
+                </div>
+            </div>
+            
+            <!-- On-Campus Capacity Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">On-Campus</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-1">{{ summary.on_campus_learners }}</p>
+                        <p class="text-sm text-gray-500">of {{ summary.total_on_campus_capacity }} seats</p>
+                    </div>
+                    <div class="w-16 h-16 relative">
+                        <svg class="w-16 h-16 transform -rotate-90">
+                            <circle cx="32" cy="32" r="28" fill="none" stroke="#e5e7eb" stroke-width="6"></circle>
+                            <circle cx="32" cy="32" r="28" fill="none" 
+                                stroke="{% if summary.on_campus_status == 'success' %}#10b981{% elif summary.on_campus_status == 'warning' %}#f59e0b{% else %}#ef4444{% endif %}" 
+                                stroke-width="6" 
+                                stroke-dasharray="{% widthratio summary.on_campus_utilization 100 176 %} 176"
+                                stroke-linecap="round"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-sm font-bold text-gray-700">{{ summary.on_campus_utilization }}%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="text-gray-500">Available:</span>
+                    <span class="ml-1 font-medium text-green-600">{{ summary.available_on_campus }} seats</span>
+                </div>
+            </div>
+            
+            <!-- Off-Site Learners Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Off-Site / Workplace</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-1">{{ summary.off_site_learners }}</p>
+                        <p class="text-sm text-gray-500">learners</p>
+                    </div>
+                    <div class="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center">
+                        <svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-4 text-sm text-gray-500">
+                    Must visit campus at least once/year
+                </div>
+            </div>
+            
+            <!-- Target vs Actual Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Target Utilization</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-1">{{ summary.target_utilization }}%</p>
+                        <p class="text-sm text-gray-500">target</p>
+                    </div>
+                    <div class="w-14 h-14 bg-indigo-100 rounded-full flex items-center justify-center">
+                        <svg class="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="{% if summary.total_utilization >= summary.target_utilization %}text-green-600{% else %}text-red-600{% endif %} font-medium">
+                        {% if summary.total_utilization >= summary.target_utilization %}
+                            ✓ On target
+                        {% else %}
+                            {{ summary.target_utilization|add:"-"|add:summary.total_utilization }}% below target
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- Utilization Trend Chart -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Capacity Utilization Trend</h3>
+                <div class="h-80">
+                    <canvas id="utilizationTrendChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Delivery Mode Distribution -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Learner Distribution</h3>
+                <div class="h-64">
+                    <canvas id="deliveryDistributionChart"></canvas>
+                </div>
+                <div class="mt-4 space-y-2">
+                    {% for item in delivery_distribution %}
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full mr-2" style="background-color: {{ item.color }}"></div>
+                            <span class="text-gray-600">{{ item.label }}</span>
+                        </div>
+                        <span class="font-medium text-gray-900">{{ item.count }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-gray-500">No active learners</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Campus Breakdown Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Campus Breakdown</h3>
+                <p class="text-sm text-gray-500">Detailed capacity metrics per campus</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campus</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Utilization</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">On-Campus</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Off-Site</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Online</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Active Intakes</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Available</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for data in campus_data %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
+                                        <span class="text-sm font-bold text-indigo-600">{{ data.campus.code|slice:":2"|upper }}</span>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">{{ data.campus.name }}</div>
+                                        <div class="text-xs text-gray-500">{{ data.campus.brand.name }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="w-full max-w-[120px] bg-gray-200 rounded-full h-2.5 mb-1">
+                                        <div class="h-2.5 rounded-full {% if data.total_status == 'success' %}bg-green-500{% elif data.total_status == 'warning' %}bg-amber-500{% else %}bg-red-500{% endif %}" 
+                                            style="width: {% if data.total_utilization > 100 %}100{% else %}{{ data.total_utilization }}{% endif %}%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-900">{{ data.total_learners }}/{{ data.max_capacity }}</span>
+                                    <span class="text-xs text-gray-500">{{ data.total_utilization }}%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="w-full max-w-[120px] bg-gray-200 rounded-full h-2.5 mb-1">
+                                        <div class="h-2.5 rounded-full {% if data.on_campus_status == 'success' %}bg-green-500{% elif data.on_campus_status == 'warning' %}bg-amber-500{% else %}bg-red-500{% endif %}" 
+                                            style="width: {% if data.on_campus_utilization > 100 %}100{% else %}{{ data.on_campus_utilization }}{% endif %}%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-900">{{ data.on_campus_learners }}/{{ data.on_campus_capacity }}</span>
+                                    <span class="text-xs text-gray-500">{{ data.on_campus_utilization }}%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="text-sm font-medium text-gray-900">{{ data.off_site_learners }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="text-sm font-medium text-gray-900">{{ data.online_learners }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                    {{ data.active_intakes }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="text-sm font-medium text-green-600">{{ data.available_total }}</span>
+                                <span class="text-xs text-gray-500">({{ data.available_on_campus }} on-campus)</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <a href="{% url 'core:capacity_detail' pk=data.campus.pk %}" 
+                                   class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                                    Details →
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                                No campus data available
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Recommendations Section -->
+        <div class="mt-6 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+            <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                </svg>
+                Capacity Planning Recommendations
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {% if summary.total_utilization < 70 %}
+                <div class="bg-white/10 rounded-lg p-4">
+                    <h4 class="font-medium mb-2">📈 Increase Sales Focus</h4>
+                    <p class="text-sm text-white/80">Campus utilization is at {{ summary.total_utilization }}%. Consider launching marketing campaigns to increase enrollments.</p>
+                </div>
+                {% endif %}
+                
+                {% if summary.off_site_learners > 0 %}
+                <div class="bg-white/10 rounded-lg p-4">
+                    <h4 class="font-medium mb-2">🏫 Schedule Campus Visits</h4>
+                    <p class="text-sm text-white/80">{{ summary.off_site_learners }} off-site learners need to visit campus at least once per year. Plan assessment or practical sessions.</p>
+                </div>
+                {% endif %}
+                
+                {% if summary.on_campus_utilization > 85 %}
+                <div class="bg-white/10 rounded-lg p-4">
+                    <h4 class="font-medium mb-2">⚠️ On-Campus Capacity</h4>
+                    <p class="text-sm text-white/80">On-campus capacity at {{ summary.on_campus_utilization }}%. Consider staggered schedules or workplace-based alternatives.</p>
+                </div>
+                {% else %}
+                <div class="bg-white/10 rounded-lg p-4">
+                    <h4 class="font-medium mb-2">✅ Healthy On-Campus</h4>
+                    <p class="text-sm text-white/80">On-campus utilization is manageable at {{ summary.on_campus_utilization }}%. Good balance maintained.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Utilization Trend Chart
+    const trendCtx = document.getElementById('utilizationTrendChart').getContext('2d');
+    const trendData = {{ trend_data|safe }};
+    
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: trendData.labels || [],
+            datasets: [
+                {
+                    label: 'Capacity',
+                    data: trendData.capacity || [],
+                    borderColor: '#e5e7eb',
+                    backgroundColor: 'rgba(229, 231, 235, 0.1)',
+                    borderDash: [5, 5],
+                    fill: true,
+                    tension: 0.3,
+                },
+                {
+                    label: 'Enrolled',
+                    data: trendData.enrolled || [],
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                },
+                {
+                    label: 'Utilization %',
+                    data: trendData.utilization || [],
+                    borderColor: '#10b981',
+                    backgroundColor: 'transparent',
+                    yAxisID: 'y1',
+                    tension: 0.3,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Learners'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    min: 0,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Utilization %'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            }
+        }
+    });
+    
+    // Delivery Distribution Chart
+    const distCtx = document.getElementById('deliveryDistributionChart').getContext('2d');
+    const distData = [
+        {% for item in delivery_distribution %}
+        { label: '{{ item.label }}', value: {{ item.count }}, color: '{{ item.color }}' },
+        {% endfor %}
+    ];
+    
+    if (distData.length > 0) {
+        new Chart(distCtx, {
+            type: 'doughnut',
+            data: {
+                labels: distData.map(d => d.label),
+                datasets: [{
+                    data: distData.map(d => d.value),
+                    backgroundColor: distData.map(d => d.color),
+                    borderWidth: 0,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        display: false,
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock main_content %}

@@ -1,0 +1,141 @@
+{% extends 'base/app_layout.html' %}
+
+{% block title %}Add Employee - {{ client.company_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:dashboard' %}" class="text-gray-700 hover:text-blue-600">Corporate</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:employee_database' client.pk %}" class="text-gray-700 hover:text-blue-600">Employee Database</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">Add Employee</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-900">Add New Employee</h2>
+            <p class="text-sm text-gray-500 mt-1">Register a new employee for {{ client.company_name }}</p>
+        </div>
+        
+        <form method="post" class="p-6 space-y-8">
+            {% csrf_token %}
+            
+            <!-- Personal Information -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2">Personal Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">First Name(s)</label>
+                        <input type="text" name="first_name" required class="w-full border-gray-300 rounded-lg shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Surname</label>
+                        <input type="text" name="surname" required class="w-full border-gray-300 rounded-lg shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ID / Passport Number</label>
+                        <input type="text" name="id_number" required class="w-full border-gray-300 rounded-lg shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                        <input type="email" name="email" class="w-full border-gray-300 rounded-lg shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <input type="text" name="phone" class="w-full border-gray-300 rounded-lg shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                        <select name="gender" required class="w-full border-gray-300 rounded-lg shadow-sm">
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Race (Population Group)</label>
+                        <select name="race" required class="w-full border-gray-300 rounded-lg shadow-sm">
+                            <option value="A">African</option>
+                            <option value="C">Coloured</option>
+                            <option value="I">Indian</option>
+                            <option value="W">White</option>
+                            <option value="O">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="has_disability" id="has_disability" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <label for="has_disability" class="text-sm text-gray-700">Employee has a disability</label>
+                </div>
+            </div>
+
+            <!-- Employment Details -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-800 border-b pb-2">Employment Details</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Employee Number</label>
+                        <input type="text" name="employee_number" class="w-full border-gray-300 rounded-lg shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                        <input type="text" name="job_title" required class="w-full border-gray-300 rounded-lg shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                        <input type="text" name="department" class="w-full border-gray-300 rounded-lg shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">OFO Code</label>
+                        <input type="text" name="ofo_code" class="w-full border-gray-300 rounded-lg shadow-sm" placeholder="e.g. 2021-121101">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Occupational Level</label>
+                        <select name="occupational_level" required class="w-full border-gray-300 rounded-lg shadow-sm">
+                            <option value="TM">Top Management</option>
+                            <option value="SM">Senior Management</option>
+                            <option value="PM">Professional/Middle Management</option>
+                            <option value="SS">Skilled/Supervisory</option>
+                            <option value="SD">Semi-skilled/Discretionary</option>
+                            <option value="US">Unskilled/Defined</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
+                        <select name="employment_type" required class="w-full border-gray-300 rounded-lg shadow-sm">
+                            <option value="PERM">Permanent</option>
+                            <option value="TEMP">Temporary</option>
+                            <option value="CONT">Contract</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <input type="date" name="start_date" required class="w-full border-gray-300 rounded-lg shadow-sm">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-100">
+                <a href="{% url 'corporate:employee_database' client.pk %}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Save Employee
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

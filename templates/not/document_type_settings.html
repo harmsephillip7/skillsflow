@@ -1,0 +1,299 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Document Type Settings{% endblock %}
+
+{% block page_title %}Document Type Settings{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'not_dashboard' %}" class="text-primary-600 hover:text-primary-800">NOT</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Document Type Settings</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'not_dashboard' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Back to Dashboard
+    </a>
+    <button type="button" onclick="document.getElementById('createModal').classList.remove('hidden')"
+        class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 transition-all">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add Document Type
+    </button>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    
+    <!-- Info Card -->
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex">
+            <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <div class="ml-3">
+                <p class="text-sm text-blue-700">
+                    Configure the document types that learners need to submit for projects. You can set requirements based on project type or funder, enable expiry tracking, and archive types that are no longer needed.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Active Document Types -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">Active Document Types</h3>
+            <span class="text-sm text-gray-500">{{ active_types.count }} types</span>
+        </div>
+        
+        {% if active_types %}
+        <div class="divide-y divide-gray-100">
+            {% for doc_type in active_types %}
+            <div class="p-4 hover:bg-gray-50 transition-colors" x-data="{ expanded: false }">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center flex-1">
+                        <div class="p-2 rounded-lg bg-primary-100">
+                            <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <div class="flex items-center">
+                                <h4 class="text-sm font-medium text-gray-900">{{ doc_type.name }}</h4>
+                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">{{ doc_type.code }}</span>
+                                {% if doc_type.is_required %}
+                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Required</span>
+                                {% endif %}
+                                {% if doc_type.has_expiry %}
+                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">Has Expiry</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-xs text-gray-500">{{ doc_type.get_category_display }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button @click="expanded = !expanded" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all">
+                            <svg class="w-5 h-5 transform transition-transform" :class="expanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <form method="post" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="archive">
+                            <input type="hidden" name="document_type_id" value="{{ doc_type.pk }}">
+                            <button type="submit" class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Archive">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Expanded Details -->
+                <div x-show="expanded" x-collapse class="mt-4 pl-12">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-500">Description:</span>
+                            <p class="text-gray-700">{{ doc_type.description|default:"No description" }}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Accepted File Types:</span>
+                            <p class="text-gray-700">{{ doc_type.accepted_file_types }}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Max File Size:</span>
+                            <p class="text-gray-700">{{ doc_type.max_file_size_mb }} MB</p>
+                        </div>
+                        {% if doc_type.has_expiry %}
+                        <div>
+                            <span class="text-gray-500">Default Validity:</span>
+                            <p class="text-gray-700">{{ doc_type.default_validity_days|default:"Not set" }} days</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Expiry Warning:</span>
+                            <p class="text-gray-700">{{ doc_type.expiry_warning_days }} days before</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-12 text-center text-gray-500">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No document types</h3>
+            <p class="mt-1 text-sm text-gray-500">Get started by creating your first document type.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Archived Document Types -->
+    {% if archived_types %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+            <h3 class="text-lg font-semibold text-gray-700">Archived Document Types</h3>
+            <span class="text-sm text-gray-500">{{ archived_types.count }} archived</span>
+        </div>
+        
+        <div class="divide-y divide-gray-100">
+            {% for doc_type in archived_types %}
+            <div class="p-4 bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="p-2 rounded-lg bg-gray-200">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h4 class="text-sm font-medium text-gray-600">{{ doc_type.name }}</h4>
+                            <p class="text-xs text-gray-400">Archived {{ doc_type.archived_at|date:"d M Y" }}</p>
+                        </div>
+                    </div>
+                    <form method="post" class="inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="restore">
+                        <input type="hidden" name="document_type_id" value="{{ doc_type.pk }}">
+                        <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Restore
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+</div>
+
+<!-- Create Modal -->
+<div id="createModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="document.getElementById('createModal').classList.add('hidden')"></div>
+        
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        
+        <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                
+                <div class="bg-white px-6 pt-6 pb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Add Document Type</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Code</label>
+                                <input type="text" name="code" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
+                                    placeholder="SETA_REG">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                <input type="text" name="name" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
+                                    placeholder="SETA Registration">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                            <select name="category" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                                {% for code, name in categories %}
+                                <option value="{{ code }}">{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea name="description" rows="2"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="is_required" 
+                                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Required Document</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="has_expiry" 
+                                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Has Expiry Date</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Default Validity (days)</label>
+                                <input type="number" name="default_validity_days" min="1"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
+                                    placeholder="365">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Expiry Warning (days)</label>
+                                <input type="number" name="expiry_warning_days" value="30" min="1"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Accepted File Types</label>
+                            <input type="text" name="accepted_file_types" value=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Max File Size (MB)</label>
+                            <input type="number" name="max_file_size_mb" value="10" min="1"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                    <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')" 
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                        class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-all">
+                        Create Document Type
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,228 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}{{ instance.definition.name }}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'workflows:instance_list' %}" class="text-gray-500 hover:text-gray-700">Workflow Instances</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ instance.definition.name|truncatewords:5 }}</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'workflows:instance_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Back to List
+    </a>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Workflow Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-start justify-between">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if instance.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% elif instance.status == 'in_progress' %}bg-blue-100 text-blue-800
+                            {% elif instance.status == 'completed' %}bg-green-100 text-green-800
+                            {% elif instance.status == 'cancelled' %}bg-gray-100 text-gray-600
+                            {% else %}bg-gray-100 text-gray-600{% endif %}">
+                            {{ instance.get_status_display }}
+                        </span>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ instance.definition.name }}</h1>
+                    {% if instance.definition.description %}
+                    <p class="text-gray-600 mt-2">{{ instance.definition.description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Progress -->
+            <div class="mt-6">
+                <div class="flex items-center justify-between text-sm mb-2">
+                    <span class="text-gray-500">Overall Progress</span>
+                    <span class="text-gray-900 font-medium">{{ instance.progress_percentage|default:0 }}%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="bg-primary-600 h-3 rounded-full transition-all duration-500" 
+                         style="width: {{ instance.progress_percentage|default:0 }}%"></div>
+                </div>
+            </div>
+            
+            <!-- Meta Info -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
+                <div>
+                    <p class="text-xs text-gray-500">Assigned To</p>
+                    <p class="text-sm font-medium text-gray-900">
+                        {% if instance.user %}{{ instance.user.get_full_name|default:instance.user.email }}{% else %}Unassigned{% endif %}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Started</p>
+                    <p class="text-sm font-medium text-gray-900">{{ instance.started_at|date:"M d, Y" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Current Stage</p>
+                    <p class="text-sm font-medium text-gray-900">{{ instance.current_stage|default:"Not started" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Completed</p>
+                    <p class="text-sm font-medium text-gray-900">
+                        {% if instance.completed_at %}{{ instance.completed_at|date:"M d, Y" }}{% else %}—{% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stage History / Timeline -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="border-b border-gray-100 px-6 py-4">
+            <h2 class="text-lg font-semibold text-gray-900">Workflow Timeline</h2>
+        </div>
+        
+        <div class="p-6">
+            {% if stage_history %}
+            <div class="relative">
+                <!-- Timeline line -->
+                <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                
+                <div class="space-y-6">
+                    {% for stage in stage_history %}
+                    <div class="relative flex items-start">
+                        <!-- Status icon -->
+                        <div class="absolute left-0 w-8 h-8 rounded-full flex items-center justify-center
+                            {% if stage.completed_at %}bg-green-500 text-white
+                            {% elif stage.is_current %}bg-primary-500 text-white ring-4 ring-primary-100
+                            {% else %}bg-gray-200 text-gray-400{% endif %}">
+                            {% if stage.completed_at %}
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            {% elif stage.is_current %}
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            {% else %}
+                            <span class="text-xs font-medium">{{ forloop.counter }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="ml-12 flex-1">
+                            <div class="bg-gray-50 rounded-lg p-4 {% if stage.is_current %}ring-2 ring-primary-200{% endif %}">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h3 class="font-medium text-gray-900">{{ stage.stage_name }}</h3>
+                                    <span class="text-xs text-gray-500">
+                                        {% if stage.completed_at %}
+                                        {{ stage.completed_at|date:"M d, Y H:i" }}
+                                        {% elif stage.started_at %}
+                                        Started {{ stage.started_at|date:"M d, Y H:i" }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                
+                                {% if stage.notes %}
+                                <p class="text-sm text-gray-600">{{ stage.notes }}</p>
+                                {% endif %}
+                                
+                                {% if stage.completed_by %}
+                                <p class="text-xs text-gray-400 mt-2">
+                                    Completed by {{ stage.completed_by.get_full_name|default:stage.completed_by.email }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h3 class="mt-4 text-lg font-medium text-gray-900">No activity yet</h3>
+                <p class="mt-2 text-gray-500">Workflow activity will be tracked here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Related Tasks -->
+    {% if tasks %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="border-b border-gray-100 px-6 py-4">
+            <h2 class="text-lg font-semibold text-gray-900">Related Tasks</h2>
+        </div>
+        
+        <div class="divide-y divide-gray-100">
+            {% for task in tasks %}
+            <div class="p-4 hover:bg-gray-50 transition-colors">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <!-- Status icon -->
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center
+                            {% if task.status == 'completed' %}bg-green-100 text-green-600
+                            {% elif task.status == 'in_progress' %}bg-blue-100 text-blue-600
+                            {% else %}bg-yellow-100 text-yellow-600{% endif %}">
+                            {% if task.status == 'completed' %}
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            {% else %}
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <a href="{% url 'workflows:task_detail' task.pk %}" class="font-medium text-gray-900 hover:text-primary-600">
+                                {{ task.name }}
+                            </a>
+                            <p class="text-xs text-gray-500">
+                                {% if task.due_date %}Due: {{ task.due_date|date:"M d, Y" }}{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                            {% if task.status == 'completed' %}bg-green-100 text-green-800
+                            {% elif task.status == 'in_progress' %}bg-blue-100 text-blue-800
+                            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {{ task.get_status_display }}
+                        </span>
+                        
+                        <a href="{% url 'workflows:task_detail' task.pk %}" 
+                           class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

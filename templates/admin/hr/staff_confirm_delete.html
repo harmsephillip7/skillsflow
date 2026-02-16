@@ -1,0 +1,81 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}Delete Staff Profile{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div>
+        <nav class="flex items-center text-sm text-gray-500 mb-2">
+            <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a href="{% url 'hr_admin:staff_list' %}" class="hover:text-primary-600">Staff</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="text-gray-700">Delete</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">Delete Staff Profile</h1>
+    </div>
+    
+    <!-- Confirmation Box -->
+    <div class="bg-white rounded-xl shadow-sm border border-red-200 p-6">
+        <div class="flex items-start space-x-4">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-900">Are you sure you want to delete this staff profile?</h3>
+                <p class="text-gray-600 mt-2">You are about to delete the staff profile for:</p>
+                <div class="bg-gray-50 rounded-lg p-4 mt-3">
+                    <p class="font-medium text-gray-900">{{ object.user.get_full_name }}</p>
+                    <p class="text-sm text-gray-500">{{ object.user.email }}</p>
+                    <p class="text-sm text-gray-500">Employee #: {{ object.employee_number }}</p>
+                    {% if object.position %}
+                    <p class="text-sm text-gray-500">Position: {{ object.position.title }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                    <p class="text-blue-800 font-medium">ℹ️ Note: This only deletes the HR staff profile</p>
+                    <p class="text-sm text-blue-700 mt-1">The user account ({{ object.user.email }}) will NOT be deleted.</p>
+                </div>
+                
+                {% if object.position_history.exists %}
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
+                    <p class="text-amber-800 font-medium">⚠️ Warning: {{ object.position_history.count }} position history record(s) will be deleted</p>
+                </div>
+                {% endif %}
+                
+                {% if object.direct_reports.exists %}
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
+                    <p class="text-amber-800 font-medium">⚠️ Warning: {{ object.direct_reports.count }} staff member(s) report to this person</p>
+                    <p class="text-sm text-amber-700 mt-1">Their reporting structure will be cleared.</p>
+                </div>
+                {% endif %}
+                
+                <p class="text-sm text-gray-500 mt-4">This action cannot be undone.</p>
+            </div>
+        </div>
+        
+        <form method="post" class="mt-6 pt-4 border-t border-gray-100">
+            {% csrf_token %}
+            <div class="flex items-center justify-end space-x-4">
+                <a href="{% url 'hr_admin:staff_list' %}" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition shadow-sm">
+                    Yes, Delete Profile
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

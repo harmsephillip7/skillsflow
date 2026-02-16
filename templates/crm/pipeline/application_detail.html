@@ -1,0 +1,358 @@
+{% extends 'crm/crm_base.html' %}
+{% load static %}
+
+{% block title %}{{ application.application_number }} - Application - SkillsFlow{% endblock %}
+
+{% block page_title %}Application {{ application.application_number }}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:dashboard' %}" class="text-gray-500 hover:text-gray-700">CRM</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:application_list' %}" class="text-gray-500 hover:text-gray-700">Applications</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ application.application_number }}</span>
+</li>
+{% endblock %}
+
+{% block crm_content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+        
+        <!-- Status and Actions -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Application Status</h3>
+                    <p class="text-sm text-gray-500">Submitted {{ application.submitted_at|date:"M d, Y" }}</p>
+                </div>
+                <span class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold
+                    {% if application.status == 'pending' %}bg-yellow-100 text-yellow-800
+                    {% elif application.status == 'under_review' %}bg-blue-100 text-blue-800
+                    {% elif application.status == 'documents_required' %}bg-orange-100 text-orange-800
+                    {% elif application.status == 'approved' %}bg-green-100 text-green-800
+                    {% elif application.status == 'rejected' %}bg-red-100 text-red-800
+                    {% elif application.status == 'enrolled' %}bg-purple-100 text-purple-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ application.get_status_display }}
+                </span>
+            </div>
+            
+            <!-- Status Progress -->
+            <div class="relative">
+                <div class="flex items-center justify-between mb-4">
+                    {% for status in status_steps %}
+                    <div class="flex flex-col items-center flex-1 relative z-10">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center
+                            {% if status.complete %}bg-green-500 text-white
+                            {% elif status.current %}bg-primary-600 text-white ring-4 ring-primary-100
+                            {% else %}bg-gray-200 text-gray-500{% endif %}">
+                            {% if status.complete %}
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                            {% else %}
+                                {{ forloop.counter }}
+                            {% endif %}
+                        </div>
+                        <span class="mt-2 text-xs font-medium text-gray-500 text-center">{{ status.label }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            {% if application.status not in 'enrolled,rejected' %}
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <h4 class="text-sm font-medium text-gray-700 mb-3">Update Status</h4>
+                <div class="flex flex-wrap gap-2" x-data="{ updating: false }">
+                    {% if application.status == 'pending' %}
+                    <button onclick="updateStatus('under_review')" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                        Start Review
+                    </button>
+                    {% endif %}
+                    
+                    {% if application.status == 'under_review' %}
+                    <button onclick="updateStatus('documents_required')" class="px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700">
+                        Request Documents
+                    </button>
+                    <button onclick="updateStatus('approved')" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">
+                        Approve
+                    </button>
+                    <button onclick="updateStatus('rejected')" class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700">
+                        Reject
+                    </button>
+                    {% endif %}
+                    
+                    {% if application.status == 'documents_required' %}
+                    <button onclick="updateStatus('under_review')" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                        Documents Received
+                    </button>
+                    {% endif %}
+                    
+                    {% if application.status == 'approved' %}
+                    <button onclick="updateStatus('enrolled')" class="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">
+                        Complete Enrollment
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Programme Details -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Programme Information</h3>
+            
+            <dl class="grid grid-cols-2 gap-4">
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Programme</dt>
+                    <dd class="mt-1 text-gray-900">{{ application.programme.name|default:"Not specified" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Campus</dt>
+                    <dd class="mt-1 text-gray-900">{{ application.campus.name|default:"Not specified" }}</dd>
+                </div>
+                {% if application.intake %}
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Intake</dt>
+                    <dd class="mt-1 text-gray-900">{{ application.intake }}</dd>
+                </div>
+                {% endif %}
+                {% if application.funding_type %}
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Funding Type</dt>
+                    <dd class="mt-1">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if application.funding_type == 'nsfas' %}bg-blue-100 text-blue-800
+                            {% elif application.funding_type == 'bursary' %}bg-purple-100 text-purple-800
+                            {% elif application.funding_type == 'employer' %}bg-green-100 text-green-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ application.get_funding_type_display }}
+                        </span>
+                    </dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+        
+        <!-- Documents Checklist -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Required Documents</h3>
+            
+            <div class="space-y-3">
+                {% for doc in required_documents %}
+                <div class="flex items-center justify-between p-3 rounded-lg border {% if doc.submitted %}border-green-200 bg-green-50{% else %}border-gray-200{% endif %}">
+                    <div class="flex items-center">
+                        {% if doc.submitted %}
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        {% else %}
+                        <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        {% endif %}
+                        <span class="{% if doc.submitted %}text-green-700{% else %}text-gray-700{% endif %}">{{ doc.name }}</span>
+                    </div>
+                    {% if doc.submitted %}
+                    <a href="{{ doc.url }}" target="_blank" class="text-sm text-primary-600 hover:text-primary-700">View</a>
+                    {% else %}
+                    <span class="text-xs text-gray-500">Pending</span>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-sm">No document requirements defined</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Notes -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
+            
+            {% if application.notes %}
+            <p class="text-gray-700 whitespace-pre-wrap">{{ application.notes }}</p>
+            {% else %}
+            <p class="text-gray-500 text-sm">No notes added</p>
+            {% endif %}
+            
+            {% if application.rejection_reason %}
+            <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <h4 class="text-sm font-medium text-red-800 mb-2">Rejection Reason</h4>
+                <p class="text-red-700">{{ application.rejection_reason }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        
+        <!-- Lead Info -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Applicant</h3>
+            
+            <div class="flex items-center mb-4">
+                <div class="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-semibold text-lg">
+                    {{ application.lead.first_name|slice:":1" }}{{ application.lead.last_name|slice:":1" }}
+                </div>
+                <div class="ml-3">
+                    <p class="font-medium text-gray-900">{{ application.lead.full_name }}</p>
+                    <p class="text-sm text-gray-500">{{ application.lead.email }}</p>
+                </div>
+            </div>
+            
+            <div class="space-y-3">
+                {% if application.lead.phone %}
+                <a href="tel:{{ application.lead.phone }}" class="flex items-center text-sm text-gray-600 hover:text-primary-600">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                    </svg>
+                    {{ application.lead.phone }}
+                </a>
+                {% endif %}
+                
+                {% if application.lead.id_number %}
+                <div class="flex items-center text-sm text-gray-600">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                    </svg>
+                    {{ application.lead.id_number }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <a href="{% url 'crm:lead_detail' application.lead.id %}" class="text-sm text-primary-600 hover:text-primary-700">
+                    View Full Lead Profile →
+                </a>
+            </div>
+        </div>
+        
+        <!-- Opportunity Link -->
+        {% if application.opportunity %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Related Opportunity</h3>
+            
+            <a href="{% url 'crm:opportunity_detail' application.opportunity.id %}" class="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <p class="font-medium text-gray-900">{{ application.opportunity.title }}</p>
+                <div class="mt-2 flex items-center justify-between text-sm">
+                    <span class="text-gray-500">R{{ application.opportunity.value|floatformat:0|intcomma }}</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                        {{ application.opportunity.get_stage_display }}
+                    </span>
+                </div>
+            </a>
+        </div>
+        {% endif %}
+        
+        <!-- Timeline -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Timeline</h3>
+            
+            <div class="flow-root">
+                <ul class="-mb-8">
+                    <li>
+                        <div class="relative pb-8">
+                            <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                            <div class="relative flex space-x-3">
+                                <div class="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center ring-8 ring-white">
+                                    <svg class="h-4 w-4 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="min-w-0 flex-1 pt-1.5">
+                                    <p class="text-sm text-gray-500">Application submitted</p>
+                                    <p class="text-xs text-gray-400">{{ application.submitted_at|date:"M d, Y H:i" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    
+                    {% if application.reviewed_at %}
+                    <li>
+                        <div class="relative pb-8">
+                            <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                            <div class="relative flex space-x-3">
+                                <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center ring-8 ring-white">
+                                    <svg class="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/>
+                                    </svg>
+                                </div>
+                                <div class="min-w-0 flex-1 pt-1.5">
+                                    <p class="text-sm text-gray-500">Review started{% if application.reviewed_by %} by {{ application.reviewed_by.get_full_name }}{% endif %}</p>
+                                    <p class="text-xs text-gray-400">{{ application.reviewed_at|date:"M d, Y H:i" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endif %}
+                    
+                    {% if application.decision_at %}
+                    <li>
+                        <div class="relative">
+                            <div class="relative flex space-x-3">
+                                <div class="h-8 w-8 rounded-full {% if application.status == 'approved' or application.status == 'enrolled' %}bg-green-100{% else %}bg-red-100{% endif %} flex items-center justify-center ring-8 ring-white">
+                                    {% if application.status == 'approved' or application.status == 'enrolled' %}
+                                    <svg class="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    {% else %}
+                                    <svg class="h-4 w-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                    {% endif %}
+                                </div>
+                                <div class="min-w-0 flex-1 pt-1.5">
+                                    <p class="text-sm text-gray-500">Application {{ application.get_status_display|lower }}{% if application.decided_by %} by {{ application.decided_by.get_full_name }}{% endif %}</p>
+                                    <p class="text-xs text-gray-400">{{ application.decision_at|date:"M d, Y H:i" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function updateStatus(newStatus) {
+    try {
+        const response = await fetch('{% url "crm:application_status_update" application.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Failed to update status: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while updating the status.');
+    }
+}
+</script>
+{% endblock %}

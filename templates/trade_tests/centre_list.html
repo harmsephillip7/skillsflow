@@ -1,0 +1,103 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block page_title %}Trade Test Centres{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <nav class="text-sm mb-2">
+                <a href="{% url 'trade_tests:dashboard' %}" class="text-primary-600 hover:text-primary-800">Trade Tests</a>
+                <span class="text-gray-400 mx-2">/</span>
+                <span class="text-gray-500">Test Centres</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">Trade Test Centres</h1>
+        </div>
+        <a href="{% url 'trade_tests:centre_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
+            <svg class="w-5 h-5 mr-2 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Add Centre
+        </a>
+    </div>
+
+    <!-- Centres Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for centre in centres %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+            <div class="p-6">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">{{ centre.name }}</h3>
+                        <p class="text-sm text-gray-500">{{ centre.code }}</p>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if centre.is_active %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {% if centre.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </div>
+                
+                <div class="mt-4 space-y-2">
+                    <div class="flex items-start text-sm">
+                        <svg class="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span class="text-gray-600">{{ centre.city }}, {{ centre.province }}</span>
+                    </div>
+                    {% if centre.accreditation_number %}
+                    <div class="flex items-start text-sm">
+                        <svg class="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        <span class="text-gray-600">Accred: {{ centre.accreditation_number }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex items-start text-sm">
+                        <svg class="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                        </svg>
+                        <span class="text-gray-600">{{ centre.capabilities.count }} trades supported</span>
+                    </div>
+                </div>
+                
+                {% if centre.accreditation_expiry %}
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-500">Accreditation expires:</span>
+                        <span class="{% if centre.accreditation_expiry < today %}text-red-600 font-medium{% elif centre.accreditation_days_left < 90 %}text-yellow-600{% else %}text-gray-600{% endif %}">
+                            {{ centre.accreditation_expiry|date:"d M Y" }}
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mt-4 pt-4 border-t border-gray-100 flex justify-end space-x-3">
+                    <a href="{% url 'trade_tests:centre_detail' centre.pk %}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">View Details</a>
+                    <a href="{% url 'trade_tests:centre_update' centre.pk %}" class="text-sm text-gray-600 hover:text-gray-700 font-medium">Edit</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No test centres</h3>
+                <p class="mt-1 text-sm text-gray-500">Get started by adding a test centre.</p>
+                <div class="mt-6">
+                    <a href="{% url 'trade_tests:centre_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Add Centre
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

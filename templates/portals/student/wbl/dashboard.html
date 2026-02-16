@@ -1,0 +1,1123 @@
+{% extends "portals/student/base.html" %}
+{% load static %}
+
+{% block page_title %}WBL Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .gps-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: .5; }
+    }
+    .clock-btn-gradient {
+        background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+        background-size: 200% 200%;
+        animation: gradient-shift 3s ease infinite;
+    }
+    .clock-out-gradient {
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
+        background-size: 200% 200%;
+        animation: gradient-shift 3s ease infinite;
+    }
+    @keyframes gradient-shift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    .status-option {
+        transition: all 0.2s ease;
+    }
+    .status-option:active {
+        transform: scale(0.95);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 pb-20">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white">
+        <div class="px-4 py-6">
+            <h1 class="text-2xl font-bold">Workplace Learning</h1>
+            <p class="text-emerald-100 text-sm mt-1">{{ today|date:"l, d F Y" }}</p>
+        </div>
+    </header>
+
+    <div class="px-4 -mt-4">
+        {% if no_learner_profile %}
+        <!-- No Learner Profile -->
+        <div class="bg-white rounded-xl shadow-sm p-6 text-center">
+            <div class="text-gray-400 mb-4">
+                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900">No Learner Profile</h3>
+            <p class="text-gray-500 mt-2">Your learner profile hasn't been set up yet. Please contact support.</p>
+        </div>
+        
+        {% elif no_placement %}
+        <!-- No Active Placement -->
+        <div class="bg-white rounded-xl shadow-sm p-6 text-center">
+            <div class="text-gray-400 mb-4">
+                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900">No Active Placement</h3>
+            <p class="text-gray-500 mt-2">You don't have an active workplace placement yet.</p>
+            <p class="text-gray-500 text-sm">Contact your facilitator for more information.</p>
+        </div>
+        
+        {% else %}
+        <!-- Placement Info Card -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h2 class="font-semibold text-gray-900">{{ placement.host.employer.name }}</h2>
+                    <p class="text-sm text-gray-500">{{ placement.position|default:"Learner" }}</p>
+                </div>
+                <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                    Active
+                </span>
+            </div>
+            
+            {% if placement.host.contact %}
+            <div class="mt-3 pt-3 border-t border-gray-100">
+                <p class="text-xs text-gray-500">Mentor</p>
+                <p class="text-sm font-medium text-gray-900">{{ placement.host.contact.get_full_name }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Clock-Out Reminder Banner -->
+        {% if show_clockout_reminder %}
+        <div class="bg-amber-50 border border-amber-300 rounded-xl p-4 mb-4 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h4 class="font-medium text-amber-800">Don't forget to clock out!</h4>
+                    <p class="text-sm text-amber-600">You clocked in at {{ today_attendance.clock_in|time:"H:i" }} but haven't clocked out yet.</p>
+                </div>
+                <button onclick="quickClockOut()" class="px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 transition">
+                    Clock Out
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ⚡ One-Tap Attendance Card -->
+        <div id="quickAttendanceCard" class="bg-white rounded-2xl shadow-lg mb-4 overflow-hidden">
+            <!-- Main Clock-In Button -->
+            <div class="p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="font-bold text-gray-900 text-lg">Quick Attendance</h3>
+                        <p class="text-sm text-gray-500" id="currentDateDisplay">{{ today|date:"l, d M Y" }}</p>
+                    </div>
+                    <!-- GPS Status Indicator -->
+                    <div id="gpsStatusBadge" class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full">
+                        <div id="gpsIndicator" class="w-2.5 h-2.5 rounded-full bg-gray-400 gps-pulse"></div>
+                        <span id="gpsStatusText" class="text-xs font-medium text-gray-500">Locating...</span>
+                    </div>
+                </div>
+                
+                <!-- Live Time Display -->
+                <div class="text-center mb-4">
+                    <div id="liveTime" class="text-4xl font-bold text-gray-900 tabular-nums">--:--</div>
+                    <p class="text-sm text-gray-400 mt-1">Current Time</p>
+                </div>
+                
+                <!-- Clock In/Out Button -->
+                {% if today_attendance and today_attendance.clock_in and today_attendance.clock_out %}
+                <!-- Already fully logged -->
+                <button disabled class="w-full py-5 bg-gray-100 rounded-xl flex flex-col items-center justify-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-2">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <span class="text-lg font-semibold text-gray-700">Attendance Logged</span>
+                    <span class="text-sm text-gray-500 mt-1">{{ today_attendance.clock_in|time:"H:i" }} - {{ today_attendance.clock_out|time:"H:i" }}</span>
+                </button>
+                
+                {% elif today_attendance and today_attendance.clock_in %}
+                <!-- Clocked in, need to clock out -->
+                <button id="clockOutBtn" onclick="quickClockOut()" 
+                        class="w-full py-5 clock-out-gradient rounded-xl flex flex-col items-center justify-center text-white shadow-lg hover:shadow-xl transition-all active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-2">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xl font-bold">Tap to Clock Out</span>
+                    <span class="text-sm text-red-100 mt-1">Clocked in at {{ today_attendance.clock_in|time:"H:i" }}</span>
+                </button>
+                
+                {% elif today_attendance %}
+                <!-- Has attendance record but no clock in (e.g. marked leave) -->
+                <button disabled class="w-full py-5 bg-blue-50 rounded-xl flex flex-col items-center justify-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-lg font-semibold text-blue-700">{{ today_attendance.get_attendance_type_display }}</span>
+                    <span class="text-sm text-blue-500 mt-1">Recorded for today</span>
+                </button>
+                
+                {% else %}
+                <!-- No attendance yet - show clock in -->
+                <button id="clockInBtn" onclick="quickClockIn()" 
+                        class="w-full py-5 clock-btn-gradient rounded-xl flex flex-col items-center justify-center text-white shadow-lg hover:shadow-xl transition-all active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-2">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xl font-bold">Tap to Clock In</span>
+                    <span class="text-sm text-emerald-100 mt-1" id="clockInSubtext">Location will be captured automatically</span>
+                </button>
+                {% endif %}
+                
+                <!-- GPS Warning (shown when accuracy > 100m) -->
+                <div id="gpsWarning" class="hidden mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div class="flex items-center gap-2 text-amber-700 text-sm">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <span>Low GPS accuracy (<span id="gpsAccuracyValue">-</span>m). Attendance will still be recorded.</span>
+                    </div>
+                </div>
+                
+                <!-- Optional Photo Toggle -->
+                <div class="mt-4 flex items-center justify-center">
+                    <label class="flex items-center gap-2 text-sm text-gray-500 cursor-pointer">
+                        <input type="checkbox" id="includePhotoToggle" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span>Include selfie (optional)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Other Status Options -->
+            <div class="border-t border-gray-100">
+                <button onclick="toggleOtherStatus()" class="w-full px-5 py-3 flex items-center justify-between text-gray-600 hover:bg-gray-50 transition">
+                    <span class="text-sm font-medium">Not coming in today?</span>
+                    <svg id="otherStatusArrow" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                
+                <div id="otherStatusOptions" class="hidden px-5 pb-5">
+                    <p class="text-xs text-gray-500 mb-3">Select your status for today:</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="submitOtherStatus('SICK')" class="status-option p-3 bg-amber-50 border border-amber-200 rounded-xl text-center hover:bg-amber-100">
+                            <span class="text-2xl">🤒</span>
+                            <p class="text-sm font-medium text-amber-700 mt-1">Sick Leave</p>
+                        </button>
+                        <button onclick="submitOtherStatus('ANNUAL')" class="status-option p-3 bg-blue-50 border border-blue-200 rounded-xl text-center hover:bg-blue-100">
+                            <span class="text-2xl">🏖️</span>
+                            <p class="text-sm font-medium text-blue-700 mt-1">Annual Leave</p>
+                        </button>
+                        <button onclick="submitOtherStatus('FAMILY')" class="status-option p-3 bg-purple-50 border border-purple-200 rounded-xl text-center hover:bg-purple-100">
+                            <span class="text-2xl">👨‍👩‍👧</span>
+                            <p class="text-sm font-medium text-purple-700 mt-1">Family Leave</p>
+                        </button>
+                        <button onclick="submitOtherStatus('UNPAID')" class="status-option p-3 bg-gray-50 border border-gray-200 rounded-xl text-center hover:bg-gray-100">
+                            <span class="text-2xl">📝</span>
+                            <p class="text-sm font-medium text-gray-700 mt-1">Unpaid Leave</p>
+                        </button>
+                    </div>
+                    
+                    <!-- Evidence Upload for Other Status -->
+                    <div id="evidenceSection" class="hidden mt-4 p-4 bg-gray-50 rounded-xl">
+                        <p class="text-sm font-medium text-gray-700 mb-2">Upload evidence (optional)</p>
+                        <div class="flex gap-2">
+                            <button onclick="openCamera()" class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                </svg>
+                                Camera
+                            </button>
+                            <label class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-2 cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                Upload
+                                <input type="file" id="evidenceUpload" accept="image/*" class="hidden" onchange="handleEvidenceUpload(this)">
+                            </label>
+                        </div>
+                        <div id="evidencePreview" class="hidden mt-3">
+                            <img id="evidenceImg" class="w-full h-32 object-cover rounded-lg">
+                            <button onclick="removeEvidence()" class="mt-2 text-sm text-red-600 hover:text-red-700">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Offline Queue Indicator -->
+        <div id="offlineQueueBadge" class="hidden mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-medium text-blue-800"><span id="pendingCount">0</span> pending sync</p>
+                        <p class="text-sm text-blue-600">Will sync when online</p>
+                    </div>
+                </div>
+                <button onclick="syncOfflineQueue()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+                    Sync Now
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-2xl font-bold text-emerald-600">{{ days_present_this_month|default:0 }}</span>
+                    <div class="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Days Present This Month</p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-2xl font-bold text-blue-600">{{ total_modules_completed|default:0 }}</span>
+                    <div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Modules Completed</p>
+            </div>
+        </div>
+
+        <!-- Alerts Section -->
+        {% if has_active_disciplinary %}
+        <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="font-medium text-red-800">Active Disciplinary Matter</h4>
+                    <p class="text-sm text-red-600">You have a disciplinary case open. Please contact your workplace officer.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if pending_logbooks %}
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="font-medium text-amber-800">Logbooks Pending</h4>
+                    <p class="text-sm text-amber-600">You have {{ pending_logbooks.count }} logbook{{ pending_logbooks.count|pluralize }} requiring attention.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Calendar Feature Card -->
+        <a href="{% url 'portals:student_calendar' %}" class="block bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 mb-4 text-white shadow-lg hover:shadow-xl transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">My Calendar</h3>
+                            <p class="text-indigo-100 text-sm">View your complete schedule</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-indigo-50 mt-2">
+                        📅 Track attendance, tasks, and important dates all in one place
+                    </p>
+                </div>
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <h3 class="font-semibold text-gray-900 mb-3">Quick Actions</h3>
+            <div class="grid grid-cols-3 gap-2">
+                <a href="{% url 'portals:student_calendar' %}" class="flex flex-col items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition">
+                    <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mb-2">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-600 text-center">Calendar</span>
+                </a>
+                
+                <a href="{% url 'portals:student_attendance' %}" class="flex flex-col items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition">
+                    <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center mb-2">
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-600 text-center">Attendance</span>
+                </a>
+                
+                <a href="{% url 'portals:student_daily_entries' %}" class="flex flex-col items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition">
+                    <div class="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center mb-2">
+                        <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-600 text-center">Daily Tasks</span>
+                </a>
+                
+                <a href="{% url 'portals:student_logbook' %}" class="flex flex-col items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-600 text-center">Logbooks</span>
+                </a>
+                
+                <a href="{% url 'portals:student_stipend_history' %}" class="flex flex-col items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition">
+                    <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mb-2">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-600 text-center">Stipends</span>
+                </a>
+                
+                <a href="{% url 'portals:student_dispute_list' %}" class="flex flex-col items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition">
+                    <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mb-2 relative">
+                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        {% if pending_disputes %}
+                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                            {{ pending_disputes }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <span class="text-xs text-gray-600 text-center">Disputes</span>
+                </a>
+                
+                <a href="{% url 'portals:student_messages' %}" class="flex flex-col items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition">
+                    <div class="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center mb-2 relative">
+                        <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                        {% if unread_messages %}
+                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                            {{ unread_messages }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <span class="text-xs text-gray-600 text-center">Messages</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Daily Task Entry Feature Card -->
+        <a href="{% url 'portals:student_daily_entries' %}" class="block bg-gradient-to-r from-teal-500 to-emerald-600 rounded-xl p-6 mb-4 text-white shadow-lg hover:shadow-xl transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">Daily Task Evidence</h3>
+                            <p class="text-teal-100 text-sm">Capture your practical work</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-teal-50 mt-2">
+                        📸 Record tasks, upload photos & link to SAQA outcomes
+                    </p>
+                </div>
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Attendance Summary -->
+        {% if attendance_summary %}
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <h3 class="font-semibold text-gray-900 mb-3">This Month's Attendance</h3>
+            <div class="space-y-2">
+                {% for type, count in attendance_summary.items %}
+                <div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                    <span class="text-sm text-gray-600">{{ type }}</span>
+                    <span class="font-medium text-gray-900">{{ count }} day{{ count|pluralize }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recent Attendance -->
+        {% if recent_attendance %}
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-gray-900">Recent Attendance</h3>
+                <a href="{% url 'portals:student_attendance' %}" class="text-emerald-600 text-sm font-medium">View All</a>
+            </div>
+            <div class="space-y-2">
+                {% for record in recent_attendance|slice:":5" %}
+                <div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-600">{{ record.date|date:"d M" }}</span>
+                        <span class="text-xs text-gray-400">{{ record.date|date:"D" }}</span>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full
+                        {% if record.attendance_type == 'PRESENT' %}bg-green-100 text-green-700
+                        {% elif record.attendance_type == 'ABSENT' %}bg-red-100 text-red-700
+                        {% elif record.attendance_type == 'LEAVE' %}bg-blue-100 text-blue-700
+                        {% elif record.attendance_type == 'SICK' %}bg-amber-100 text-amber-700
+                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                        {{ record.get_attendance_type_display }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recent Modules -->
+        {% if recent_modules %}
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <h3 class="font-semibold text-gray-900 mb-3">Recent Module Completions</h3>
+            <div class="space-y-3">
+                {% for module in recent_modules %}
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-gray-900 truncate">{{ module.module.name|default:module.module_name }}</p>
+                        <p class="text-xs text-gray-500">{{ module.completion_date|date:"d M Y" }}</p>
+                    </div>
+                    {% if module.mentor_signed %}
+                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                        Signed
+                    </span>
+                    {% else %}
+                    <span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+                        Pending
+                    </span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recent Stipends -->
+        {% if recent_stipends %}
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-gray-900">Recent Stipends</h3>
+                <a href="{% url 'portals:student_stipend_history' %}" class="text-emerald-600 text-sm font-medium">View All</a>
+            </div>
+            <div class="space-y-3">
+                {% for stipend in recent_stipends %}
+                <div class="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+                    <div>
+                        <p class="font-medium text-gray-900">{{ stipend.get_month_display }} {{ stipend.year }}</p>
+                        <p class="text-xs text-gray-500">{{ stipend.days_worked }} days worked</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-emerald-600">R{{ stipend.final_amount|floatformat:2 }}</p>
+                        <span class="px-2 py-0.5 text-xs rounded-full
+                            {% if stipend.status == 'PAID' %}bg-green-100 text-green-700
+                            {% else %}bg-amber-100 text-amber-700{% endif %}">
+                            {{ stipend.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Notifications -->
+        {% if notifications %}
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <h3 class="font-semibold text-gray-900 mb-3">Notifications</h3>
+            <div class="space-y-3">
+                {% for notification in notifications %}
+                <div class="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm text-gray-900">{{ notification.message }}</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ notification.created_at|timesince }} ago</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Workplace Officer Info -->
+        {% if placement.workplace_officer %}
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <h3 class="font-semibold text-gray-900 mb-3">Your Workplace Officer</h3>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <span class="text-indigo-600 font-semibold">
+                        {{ placement.workplace_officer.first_name.0 }}{{ placement.workplace_officer.last_name.0 }}
+                    </span>
+                </div>
+                <div class="flex-1">
+                    <p class="font-medium text-gray-900">{{ placement.workplace_officer.get_full_name }}</p>
+                    <p class="text-sm text-gray-500">{{ placement.workplace_officer.email }}</p>
+                </div>
+                <a href="{% url 'portals:student_messages' %}" class="p-2 bg-emerald-50 text-emerald-600 rounded-full hover:bg-emerald-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ============================================
+// IndexedDB Setup for Offline Queue
+// ============================================
+const DB_NAME = 'SkillsFlowOffline';
+const DB_VERSION = 1;
+const STORE_NAME = 'attendanceQueue';
+let db;
+
+function initDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            db = request.result;
+            resolve(db);
+        };
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                store.createIndex('client_uuid', 'client_uuid', { unique: true });
+                store.createIndex('timestamp', 'timestamp', { unique: false });
+            }
+        };
+    });
+}
+
+// ============================================
+// GPS Capture
+// ============================================
+let gpsData = null;
+let gpsAcquired = false;
+
+function captureGPS() {
+    const indicator = document.getElementById('gpsIndicator');
+    const statusText = document.getElementById('gpsStatusText');
+    const statusBadge = document.getElementById('gpsStatusBadge');
+    const warning = document.getElementById('gpsWarning');
+    
+    if (!('geolocation' in navigator)) {
+        indicator.className = 'w-2.5 h-2.5 rounded-full bg-red-500';
+        statusText.textContent = 'Not supported';
+        statusBadge.className = statusBadge.className.replace('bg-gray-100', 'bg-red-50');
+        return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            gpsData = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: new Date().toISOString()
+            };
+            gpsAcquired = true;
+            
+            // Update GPS indicator
+            if (gpsData.accuracy <= 100) {
+                indicator.className = 'w-2.5 h-2.5 rounded-full bg-green-500';
+                statusText.textContent = `${Math.round(gpsData.accuracy)}m`;
+                statusBadge.className = statusBadge.className.replace('bg-gray-100', 'bg-green-50');
+                warning.classList.add('hidden');
+            } else {
+                indicator.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+                statusText.textContent = `${Math.round(gpsData.accuracy)}m`;
+                statusBadge.className = statusBadge.className.replace('bg-gray-100', 'bg-amber-50');
+                warning.classList.remove('hidden');
+                document.getElementById('gpsAccuracyValue').textContent = Math.round(gpsData.accuracy);
+            }
+            
+            // Enable clock buttons
+            const clockInBtn = document.getElementById('clockInBtn');
+            const clockOutBtn = document.getElementById('clockOutBtn');
+            if (clockInBtn) clockInBtn.disabled = false;
+            if (clockOutBtn) clockOutBtn.disabled = false;
+        },
+        (error) => {
+            console.error('GPS error:', error);
+            indicator.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+            statusText.textContent = 'Unavailable';
+            statusBadge.className = statusBadge.className.replace('bg-gray-100', 'bg-amber-50');
+            
+            // Still allow submission without GPS
+            gpsAcquired = true;
+            const clockInBtn = document.getElementById('clockInBtn');
+            const clockOutBtn = document.getElementById('clockOutBtn');
+            if (clockInBtn) clockInBtn.disabled = false;
+            if (clockOutBtn) clockOutBtn.disabled = false;
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+        }
+    );
+}
+
+// ============================================
+// Live Time Display
+// ============================================
+function updateLiveTime() {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+    document.getElementById('liveTime').textContent = `${hours}:${minutes}`;
+}
+
+// ============================================
+// Quick Clock In/Out Functions
+// ============================================
+let capturedPhoto = null;
+let pendingStatusType = null;
+
+async function quickClockIn() {
+    const btn = document.getElementById('clockInBtn');
+    if (!btn || btn.disabled) return;
+    
+    btn.disabled = true;
+    btn.innerHTML = `
+        <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-2">
+            <svg class="w-8 h-8 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+        <span class="text-xl font-bold">Clocking In...</span>
+    `;
+    
+    // Check if photo is needed
+    const includePhoto = document.getElementById('includePhotoToggle')?.checked;
+    if (includePhoto && !capturedPhoto) {
+        await captureQuickPhoto();
+    }
+    
+    await submitAttendance('PRESENT', 'clock_in');
+}
+
+async function quickClockOut() {
+    const btn = document.getElementById('clockOutBtn');
+    if (!btn || btn.disabled) return;
+    
+    btn.disabled = true;
+    btn.innerHTML = `
+        <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-2">
+            <svg class="w-8 h-8 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+        <span class="text-xl font-bold">Clocking Out...</span>
+    `;
+    
+    await submitAttendance('PRESENT', 'clock_out');
+}
+
+async function submitOtherStatus(statusType) {
+    pendingStatusType = statusType;
+    document.getElementById('evidenceSection').classList.remove('hidden');
+    
+    // Show confirmation with option to add evidence or submit directly
+    if (confirm(`Record ${getStatusLabel(statusType)} for today?\n\nYou can optionally add evidence (e.g. doctor's note) before confirming.`)) {
+        await submitAttendance(statusType, null);
+    }
+}
+
+function getStatusLabel(type) {
+    const labels = {
+        'SICK': 'Sick Leave',
+        'ANNUAL': 'Annual Leave', 
+        'FAMILY': 'Family Responsibility Leave',
+        'UNPAID': 'Unpaid Leave'
+    };
+    return labels[type] || type;
+}
+
+async function submitAttendance(attendanceType, timeType) {
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const clientUUID = crypto.randomUUID();
+    
+    const formData = new FormData();
+    formData.append('date', today);
+    formData.append('attendance_type', attendanceType);
+    formData.append('client_uuid', clientUUID);
+    
+    if (timeType === 'clock_in') {
+        formData.append('clock_in', currentTime);
+    } else if (timeType === 'clock_out') {
+        formData.append('clock_out', currentTime);
+    }
+    
+    // Add GPS data
+    if (gpsData) {
+        formData.append('gps_latitude', gpsData.latitude);
+        formData.append('gps_longitude', gpsData.longitude);
+        formData.append('gps_accuracy', gpsData.accuracy);
+        formData.append('gps_timestamp', gpsData.timestamp);
+    }
+    
+    // Add photo if captured
+    if (capturedPhoto) {
+        formData.append('photo', capturedPhoto, 'attendance.jpg');
+    }
+    
+    if (navigator.onLine) {
+        try {
+            const response = await fetch('{% url "portals:student_attendance_submit" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast('✅ Attendance recorded successfully!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                throw new Error(data.error || 'Failed to submit');
+            }
+        } catch (error) {
+            showToast('❌ ' + error.message, 'error');
+            // Restore button
+            location.reload();
+        }
+    } else {
+        // Queue for offline sync
+        await queueAttendance(formData, clientUUID, attendanceType, timeType, currentTime);
+        showToast('📥 Saved offline. Will sync when online.', 'info');
+        updatePendingQueue();
+    }
+}
+
+async function queueAttendance(formData, clientUUID, attendanceType, timeType, currentTime) {
+    const record = {
+        client_uuid: clientUUID,
+        date: formData.get('date'),
+        attendance_type: attendanceType,
+        clock_in: timeType === 'clock_in' ? currentTime : null,
+        clock_out: timeType === 'clock_out' ? currentTime : null,
+        gps_latitude: gpsData?.latitude || null,
+        gps_longitude: gpsData?.longitude || null,
+        gps_accuracy: gpsData?.accuracy || null,
+        gps_timestamp: gpsData?.timestamp || null,
+        offline_created: true,
+        timestamp: Date.now(),
+        photo: capturedPhoto ? await blobToBase64(capturedPhoto) : null
+    };
+    
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    await store.add(record);
+}
+
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+// ============================================
+// Photo Capture
+// ============================================
+let photoStream = null;
+
+async function captureQuickPhoto() {
+    return new Promise(async (resolve) => {
+        try {
+            photoStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'user' },
+                audio: false 
+            });
+            
+            // Create quick capture modal
+            const modal = document.createElement('div');
+            modal.id = 'photoCaptureModal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl max-w-sm w-full overflow-hidden">
+                    <video id="quickVideo" autoplay playsinline class="w-full"></video>
+                    <div class="p-4 flex gap-2">
+                        <button id="capturePhotoBtn" class="flex-1 py-3 bg-emerald-600 text-white rounded-lg font-medium">📸 Capture</button>
+                        <button id="skipPhotoBtn" class="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg">Skip</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            document.getElementById('quickVideo').srcObject = photoStream;
+            
+            document.getElementById('capturePhotoBtn').onclick = () => {
+                const video = document.getElementById('quickVideo');
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                
+                canvas.toBlob((blob) => {
+                    capturedPhoto = blob;
+                    cleanupPhoto();
+                    resolve();
+                }, 'image/jpeg', 0.8);
+            };
+            
+            document.getElementById('skipPhotoBtn').onclick = () => {
+                cleanupPhoto();
+                resolve();
+            };
+        } catch (error) {
+            console.error('Camera error:', error);
+            resolve();
+        }
+    });
+}
+
+function cleanupPhoto() {
+    if (photoStream) {
+        photoStream.getTracks().forEach(track => track.stop());
+    }
+    const modal = document.getElementById('photoCaptureModal');
+    if (modal) modal.remove();
+}
+
+// ============================================
+// Other Status Functions
+// ============================================
+function toggleOtherStatus() {
+    const options = document.getElementById('otherStatusOptions');
+    const arrow = document.getElementById('otherStatusArrow');
+    options.classList.toggle('hidden');
+    arrow.classList.toggle('rotate-180');
+}
+
+function handleEvidenceUpload(input) {
+    const file = input.files[0];
+    if (file) {
+        capturedPhoto = file;
+        const url = URL.createObjectURL(file);
+        document.getElementById('evidenceImg').src = url;
+        document.getElementById('evidencePreview').classList.remove('hidden');
+    }
+}
+
+function removeEvidence() {
+    capturedPhoto = null;
+    document.getElementById('evidencePreview').classList.add('hidden');
+    document.getElementById('evidenceUpload').value = '';
+}
+
+async function openCamera() {
+    await captureQuickPhoto();
+    if (capturedPhoto) {
+        const url = URL.createObjectURL(capturedPhoto);
+        document.getElementById('evidenceImg').src = url;
+        document.getElementById('evidencePreview').classList.remove('hidden');
+    }
+}
+
+// ============================================
+// Offline Queue Management
+// ============================================
+async function updatePendingQueue() {
+    if (!db) return;
+    
+    try {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const request = store.getAll();
+        
+        request.onsuccess = () => {
+            const records = request.result;
+            const badge = document.getElementById('offlineQueueBadge');
+            const count = document.getElementById('pendingCount');
+            
+            if (records.length > 0) {
+                badge.classList.remove('hidden');
+                count.textContent = records.length;
+            } else {
+                badge.classList.add('hidden');
+            }
+        };
+    } catch (error) {
+        console.error('Error checking queue:', error);
+    }
+}
+
+async function syncOfflineQueue() {
+    if (!navigator.onLine) {
+        showToast('📡 Still offline. Please connect to internet.', 'warning');
+        return;
+    }
+    
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.getAll();
+    
+    request.onsuccess = async () => {
+        const records = request.result;
+        let synced = 0;
+        
+        for (const record of records) {
+            try {
+                const formData = new FormData();
+                formData.append('date', record.date);
+                formData.append('attendance_type', record.attendance_type);
+                formData.append('client_uuid', record.client_uuid);
+                formData.append('offline_created', 'true');
+                
+                if (record.clock_in) formData.append('clock_in', record.clock_in);
+                if (record.clock_out) formData.append('clock_out', record.clock_out);
+                if (record.gps_latitude) formData.append('gps_latitude', record.gps_latitude);
+                if (record.gps_longitude) formData.append('gps_longitude', record.gps_longitude);
+                if (record.gps_accuracy) formData.append('gps_accuracy', record.gps_accuracy);
+                if (record.gps_timestamp) formData.append('gps_timestamp', record.gps_timestamp);
+                
+                if (record.photo) {
+                    const response = await fetch(record.photo);
+                    const blob = await response.blob();
+                    formData.append('photo', blob, 'attendance.jpg');
+                }
+                
+                const response = await fetch('{% url "portals:student_attendance_submit" %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                });
+                
+                if (response.ok) {
+                    const deleteTx = db.transaction(STORE_NAME, 'readwrite');
+                    deleteTx.objectStore(STORE_NAME).delete(record.id);
+                    synced++;
+                }
+            } catch (error) {
+                console.error('Sync error:', error);
+            }
+        }
+        
+        updatePendingQueue();
+        showToast(`✅ Synced ${synced} of ${records.length} records`, 'success');
+        if (synced > 0) setTimeout(() => location.reload(), 1500);
+    };
+}
+
+// ============================================
+// Online/Offline Detection
+// ============================================
+window.addEventListener('online', () => {
+    showToast('📡 Back online!', 'success');
+    updatePendingQueue();
+});
+
+window.addEventListener('offline', () => {
+    showToast('📴 You are offline. Records will sync later.', 'warning');
+});
+
+// ============================================
+// Initialize
+// ============================================
+document.addEventListener('DOMContentLoaded', async () => {
+    await initDB();
+    captureGPS();
+    updatePendingQueue();
+    updateLiveTime();
+    setInterval(updateLiveTime, 1000);
+    
+    // Initially disable buttons until GPS is acquired
+    const clockInBtn = document.getElementById('clockInBtn');
+    const clockOutBtn = document.getElementById('clockOutBtn');
+    if (clockInBtn) clockInBtn.disabled = true;
+    if (clockOutBtn) clockOutBtn.disabled = true;
+    
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('{% static "js/sw.js" %}')
+            .catch(err => console.log('SW registration failed:', err));
+    }
+});
+</script>
+{% endblock %}

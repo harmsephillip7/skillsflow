@@ -1,0 +1,367 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}Attendance Capture{% endblock %}
+
+{% block main_content %}
+<div x-data="attendanceCapture()" x-init="init()">
+    <!-- Header -->
+    <div class="mb-6">
+        <a href="{% url 'core:task_hub' %}" class="inline-flex items-center text-gray-500 hover:text-gray-700 mb-4">
+            <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Back to Task Hub
+        </a>
+        
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Attendance Register</h1>
+                <p class="text-gray-500">Mark daily attendance for your learners</p>
+            </div>
+            
+            <!-- Date Navigation -->
+            <div class="flex items-center gap-2">
+                <button @click="previousDay()" class="p-2 hover:bg-gray-100 rounded-lg">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <input type="date" x-model="selectedDate" @change="loadAttendance()"
+                       class="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <button @click="nextDay()" class="p-2 hover:bg-gray-100 rounded-lg">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+                <button @click="goToday()" class="px-3 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-lg font-medium">
+                    Today
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Selection Panel -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Cohort Selection -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Select Cohort</label>
+                <select x-model="selectedCohort" @change="loadLearners()"
+                        class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="">Choose cohort...</option>
+                    {% for cohort in cohorts %}
+                    <option value="{{ cohort.id }}">{{ cohort.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Session Type -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Session Type</label>
+                <select x-model="sessionType"
+                        class="w-full border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="full_day">Full Day</option>
+                    <option value="morning">Morning Session</option>
+                    <option value="afternoon">Afternoon Session</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Attendance Summary -->
+    <div class="grid grid-cols-4 gap-4 mb-6" x-show="learners.length > 0">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold text-gray-900" x-text="stats.present"></p>
+                    <p class="text-xs text-gray-500">Present</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold text-gray-900" x-text="stats.absent"></p>
+                    <p class="text-xs text-gray-500">Absent</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold text-gray-900" x-text="stats.late"></p>
+                    <p class="text-xs text-gray-500">Late</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-2xl font-bold text-gray-900" x-text="stats.excused"></p>
+                    <p class="text-xs text-gray-500">Excused</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="flex items-center gap-3 mb-4" x-show="learners.length > 0">
+        <button @click="markAllPresent()" 
+                class="px-4 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-lg hover:bg-green-200 transition">
+            <svg class="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            All Present
+        </button>
+        <button @click="clearAll()" 
+                class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition">
+            Clear All
+        </button>
+    </div>
+    
+    <!-- Attendance Grid -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" x-show="learners.length > 0">
+        <div class="divide-y divide-gray-100">
+            <template x-for="(learner, index) in learners" :key="learner.id">
+                <div class="p-4 flex items-center gap-4 hover:bg-gray-50 transition">
+                    <!-- Learner Number -->
+                    <span class="text-sm text-gray-400 w-8" x-text="index + 1"></span>
+                    
+                    <!-- Avatar & Name -->
+                    <div class="flex items-center flex-1">
+                        <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-3">
+                            <span class="text-sm font-medium text-primary-700" x-text="learner.initials"></span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900" x-text="learner.name"></p>
+                            <p class="text-xs text-gray-500" x-text="learner.id_number"></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Attendance Status Buttons -->
+                    <div class="flex items-center gap-2">
+                        <button @click="setStatus(learner.id, 'present')"
+                                :class="attendance[learner.id] === 'present' ? 'bg-green-500 text-white' : 'bg-green-100 text-green-700 hover:bg-green-200'"
+                                class="px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                            Present
+                        </button>
+                        <button @click="setStatus(learner.id, 'absent')"
+                                :class="attendance[learner.id] === 'absent' ? 'bg-red-500 text-white' : 'bg-red-100 text-red-700 hover:bg-red-200'"
+                                class="px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                            Absent
+                        </button>
+                        <button @click="setStatus(learner.id, 'late')"
+                                :class="attendance[learner.id] === 'late' ? 'bg-yellow-500 text-white' : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'"
+                                class="px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                            Late
+                        </button>
+                        <button @click="setStatus(learner.id, 'excused')"
+                                :class="attendance[learner.id] === 'excused' ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'"
+                                class="px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                            Excused
+                        </button>
+                    </div>
+                    
+                    <!-- Notes -->
+                    <input type="text" 
+                           x-model="notes[learner.id]"
+                           placeholder="Notes..."
+                           class="w-40 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                </div>
+            </template>
+        </div>
+        
+        <!-- Footer -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-100">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-500">
+                    <span x-text="Object.values(attendance).filter(a => a).length"></span> of 
+                    <span x-text="learners.length"></span> marked
+                </div>
+                
+                <button @click="saveAttendance()" 
+                        class="px-6 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Save Attendance
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Empty State -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center" x-show="!selectedCohort || learners.length === 0">
+        <svg class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-1">No learners to display</h3>
+        <p class="text-gray-500">Select a cohort to begin marking attendance</p>
+    </div>
+</div>
+
+<script>
+function attendanceCapture() {
+    return {
+        selectedCohort: '',
+        selectedDate: new Date().toISOString().split('T')[0],
+        sessionType: 'full_day',
+        learners: [],
+        attendance: {},
+        notes: {},
+        
+        get stats() {
+            const values = Object.values(this.attendance);
+            return {
+                present: values.filter(v => v === 'present').length,
+                absent: values.filter(v => v === 'absent').length,
+                late: values.filter(v => v === 'late').length,
+                excused: values.filter(v => v === 'excused').length
+            };
+        },
+        
+        init() {
+            // Load initial data if needed
+        },
+        
+        previousDay() {
+            const date = new Date(this.selectedDate);
+            date.setDate(date.getDate() - 1);
+            this.selectedDate = date.toISOString().split('T')[0];
+            this.loadAttendance();
+        },
+        
+        nextDay() {
+            const date = new Date(this.selectedDate);
+            date.setDate(date.getDate() + 1);
+            this.selectedDate = date.toISOString().split('T')[0];
+            this.loadAttendance();
+        },
+        
+        goToday() {
+            this.selectedDate = new Date().toISOString().split('T')[0];
+            this.loadAttendance();
+        },
+        
+        async loadLearners() {
+            if (!this.selectedCohort) return;
+            
+            try {
+                const response = await fetch(`/api/cohort/${this.selectedCohort}/learners/`);
+                const data = await response.json();
+                this.learners = data.learners || [];
+                
+                // Initialize attendance object
+                this.attendance = {};
+                this.notes = {};
+                this.learners.forEach(l => {
+                    this.attendance[l.id] = '';
+                    this.notes[l.id] = '';
+                });
+                
+                this.loadAttendance();
+            } catch (error) {
+                console.error('Failed to load learners:', error);
+            }
+        },
+        
+        async loadAttendance() {
+            if (!this.selectedCohort) return;
+            
+            try {
+                const response = await fetch(`/capture/attendance/load/?cohort=${this.selectedCohort}&date=${this.selectedDate}`);
+                const data = await response.json();
+                
+                // Merge existing attendance
+                data.attendance?.forEach(a => {
+                    if (this.attendance.hasOwnProperty(a.learner_id)) {
+                        this.attendance[a.learner_id] = a.status;
+                        this.notes[a.learner_id] = a.notes || '';
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load attendance:', error);
+            }
+        },
+        
+        setStatus(learnerId, status) {
+            if (this.attendance[learnerId] === status) {
+                this.attendance[learnerId] = '';
+            } else {
+                this.attendance[learnerId] = status;
+            }
+        },
+        
+        markAllPresent() {
+            Object.keys(this.attendance).forEach(id => {
+                this.attendance[id] = 'present';
+            });
+        },
+        
+        clearAll() {
+            Object.keys(this.attendance).forEach(id => {
+                this.attendance[id] = '';
+                this.notes[id] = '';
+            });
+        },
+        
+        async saveAttendance() {
+            try {
+                const attendanceData = Object.entries(this.attendance).map(([learnerId, status]) => ({
+                    learner_id: learnerId,
+                    status: status,
+                    notes: this.notes[learnerId] || ''
+                }));
+                
+                const response = await fetch('/capture/attendance/save/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        cohort_id: this.selectedCohort,
+                        date: this.selectedDate,
+                        session_type: this.sessionType,
+                        attendance: attendanceData
+                    })
+                });
+                
+                if (response.ok) {
+                    // Show success notification
+                    alert('Attendance saved successfully!');
+                }
+            } catch (error) {
+                console.error('Failed to save attendance:', error);
+            }
+        }
+    };
+}
+</script>
+
+{% csrf_token %}
+{% endblock %}

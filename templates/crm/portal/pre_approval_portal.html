@@ -1,0 +1,318 @@
+{% extends 'crm/portal/portal_base.html' %}
+
+{% block title %}Pre-Approval Letter{% endblock %}
+
+{% block content %}
+{% if not is_valid %}
+<!-- Expired/Invalid Letter -->
+<div class="bg-white rounded-2xl card-shadow p-8 text-center">
+    <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+    </div>
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">Pre-Approval No Longer Valid</h2>
+    <p class="text-gray-600 mb-6">
+        This pre-approval letter has {% if letter.status == 'EXPIRED' %}expired{% elif letter.status == 'REVOKED' %}been revoked{% else %}expired{% endif %}.
+        Please contact our admissions team for assistance.
+    </p>
+    {% if campus %}
+    <div class="bg-gray-50 rounded-xl p-6 max-w-sm mx-auto">
+        <p class="font-medium text-gray-900">{{ campus.name }}</p>
+        {% if campus.phone %}
+        <p class="text-gray-600 mt-1">📞 {{ campus.phone }}</p>
+        {% endif %}
+        {% if campus.email %}
+        <p class="text-gray-600 mt-1">✉️ {{ campus.email }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{% else %}
+<!-- Valid Letter -->
+
+<!-- Status Banner (if needed) -->
+{% if learner_accepted and not is_minor %}
+<div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+    <div class="flex items-center">
+        <svg class="w-5 h-5 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-green-800 font-medium">You've accepted this pre-approval</span>
+    </div>
+</div>
+{% endif %}
+
+{% if is_minor and not has_parent_consent %}
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+    <div class="flex items-start">
+        <svg class="w-5 h-5 text-amber-600 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <div>
+            <span class="text-amber-800 font-medium">Parent/Guardian Consent Required</span>
+            <p class="text-amber-700 text-sm mt-1">As you are under 18, your parent or guardian needs to provide consent before you can start your application.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if is_minor and has_parent_consent %}
+<div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+    <div class="flex items-center">
+        <svg class="w-5 h-5 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-green-800 font-medium">Parent/Guardian consent received ✓</span>
+    </div>
+</div>
+{% endif %}
+
+<!-- Pre-Approval Card -->
+<div class="bg-white rounded-2xl card-shadow overflow-hidden">
+    <!-- Header -->
+    <div class="gradient-bg text-white p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-white/80 text-sm">Pre-Approval Letter</p>
+                <h2 class="text-2xl font-bold mt-1">🎓 Congratulations, {{ lead.first_name }}!</h2>
+            </div>
+            <div class="text-right">
+                <p class="text-white/80 text-sm">Valid Until</p>
+                <p class="text-xl font-semibold">{{ letter.valid_until|date:"d M Y" }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Content -->
+    <div class="p-6">
+        <p class="text-gray-600 mb-6">
+            We are pleased to inform you that you have been <strong class="text-gray-900">pre-approved</strong> 
+            for enrollment in the following qualification:
+        </p>
+        
+        <!-- Qualification Details -->
+        <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 mb-6">
+            <div class="flex items-start space-x-4">
+                <div class="w-14 h-14 bg-white rounded-xl shadow flex items-center justify-center flex-shrink-0">
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold text-gray-900">{{ qualification.name }}</h3>
+                    {% if qualification.code %}
+                    <p class="text-gray-500 text-sm mt-1">Code: {{ qualification.code }}</p>
+                    {% endif %}
+                    {% if qualification.nqf_level %}
+                    <span class="inline-block mt-2 px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
+                        NQF Level {{ qualification.nqf_level }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if campus %}
+            <div class="mt-4 pt-4 border-t border-purple-100">
+                <div class="flex items-center text-gray-700">
+                    <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    <span class="font-medium">{{ campus.name }}</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if letter.intake %}
+            <div class="mt-3 flex items-center text-gray-700">
+                <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span>Starting: {{ letter.intake.start_date|date:"F Y" }}</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Letter Details -->
+        <div class="grid md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-gray-500 text-sm">Reference Number</p>
+                <p class="font-bold text-gray-900 text-lg">{{ letter.letter_number }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-gray-500 text-sm">Issue Date</p>
+                <p class="font-bold text-gray-900 text-lg">{{ letter.issued_date|date:"d F Y" }}</p>
+            </div>
+        </div>
+        
+        <!-- Download PDF Button -->
+        <a href="{% url 'crm:pre_approval_download' token=letter.id %}" 
+           class="flex items-center justify-center w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-xl transition-colors mb-6">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Download Pre-Approval Letter (PDF)
+        </a>
+        
+        <!-- Next Steps Section -->
+        <div class="border-t border-gray-200 pt-6">
+            <h4 class="font-bold text-gray-900 mb-4">What happens next?</h4>
+            
+            <div class="space-y-3">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-sm">1</div>
+                    <div class="ml-3">
+                        <p class="text-gray-700">Accept this pre-approval by clicking the button below</p>
+                    </div>
+                </div>
+                {% if is_minor %}
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-sm">2</div>
+                    <div class="ml-3">
+                        <p class="text-gray-700">Your parent/guardian provides consent</p>
+                    </div>
+                </div>
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-sm">3</div>
+                    <div class="ml-3">
+                        <p class="text-gray-700">Start your enrollment application</p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-sm">2</div>
+                    <div class="ml-3">
+                        <p class="text-gray-700">Start your enrollment application</p>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-sm">{% if is_minor %}4{% else %}3{% endif %}</div>
+                    <div class="ml-3">
+                        <p class="text-gray-700">Our team will guide you through document submission</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Footer -->
+    <div class="border-t border-gray-200 p-6 bg-gray-50">
+        {% if letter.application %}
+        <!-- Already has application -->
+        <div class="text-center">
+            <p class="text-green-600 font-medium mb-2">
+                <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Application Started
+            </p>
+            <p class="text-gray-600 text-sm">Your application is in progress. Our team will contact you with next steps.</p>
+        </div>
+        
+        {% elif not learner_accepted %}
+        <!-- Need to accept first -->
+        <form action="{% url 'crm:pre_approval_accept' token=letter.id %}" method="post" id="acceptForm">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+                <label class="flex items-start cursor-pointer">
+                    <input type="checkbox" name="terms_accepted" id="termsCheckbox" 
+                           class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500" required>
+                    <span class="ml-3 text-gray-700 text-sm">
+                        I confirm that I have read and understood the pre-approval letter, and I am interested 
+                        in enrolling in <strong>{{ qualification.name }}</strong>.
+                    </span>
+                </label>
+            </div>
+            
+            <input type="hidden" name="start_application" value="{% if can_start_application %}true{% else %}false{% endif %}">
+            
+            <button type="submit" id="acceptBtn"
+                    class="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl transition-colors text-lg"
+                    disabled>
+                {% if is_minor and not has_parent_consent %}
+                    Accept & Request Parent Consent
+                {% else %}
+                    Accept & Start Application
+                {% endif %}
+            </button>
+        </form>
+        
+        <script>
+            const checkbox = document.getElementById('termsCheckbox');
+            const button = document.getElementById('acceptBtn');
+            checkbox.addEventListener('change', function() {
+                button.disabled = !this.checked;
+            });
+        </script>
+        
+        {% elif is_minor and not has_parent_consent %}
+        <!-- Accepted but needs parent consent -->
+        <div class="text-center">
+            <p class="text-amber-600 font-medium mb-3">✓ You've accepted the pre-approval</p>
+            <a href="{% url 'crm:pre_approval_parent_consent' token=letter.id %}" 
+               class="inline-block bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-8 rounded-xl transition-colors">
+                Continue to Parent Consent
+            </a>
+            <p class="text-gray-500 text-sm mt-3">Share this link with your parent/guardian</p>
+        </div>
+        
+        {% elif can_start_application %}
+        <!-- Ready to start application -->
+        <form action="{% url 'crm:pre_approval_accept' token=letter.id %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="terms_accepted" value="true">
+            <input type="hidden" name="start_application" value="true">
+            
+            <button type="submit" 
+                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-xl transition-colors text-lg">
+                🚀 Start My Application
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Help Section -->
+<div class="mt-8 bg-white rounded-2xl card-shadow p-6">
+    <h4 class="font-bold text-gray-900 mb-4">Need Help?</h4>
+    <p class="text-gray-600 mb-4">
+        If you have any questions about your pre-approval or the enrollment process, 
+        please don't hesitate to contact us.
+    </p>
+    {% if campus %}
+    <div class="grid sm:grid-cols-2 gap-4">
+        {% if campus.phone %}
+        <a href="tel:{{ campus.phone }}" class="flex items-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-gray-500 text-sm">Call us</p>
+                <p class="font-medium text-gray-900">{{ campus.phone }}</p>
+            </div>
+        </a>
+        {% endif %}
+        {% if campus.email %}
+        <a href="mailto:{{ campus.email }}" class="flex items-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-gray-500 text-sm">Email us</p>
+                <p class="font-medium text-gray-900">{{ campus.email }}</p>
+            </div>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{% endif %}
+{% endblock %}

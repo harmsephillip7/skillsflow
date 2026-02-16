@@ -1,0 +1,501 @@
+{% extends "portals/mentor/base.html" %}
+{% load static %}
+
+{% block page_title %}Logbooks - Mentor Portal{% endblock %}
+
+{% block content %}
+<div class="logbook-container">
+    <div class="page-header">
+        <h1><i class="fas fa-book"></i> Logbooks</h1>
+        <p class="text-muted">Review and sign off on learner logbooks</p>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <button class="tab-btn active" data-filter="pending">
+            <i class="fas fa-hourglass-half"></i> Pending Review
+            {% if pending_count %}<span class="badge">{{ pending_count }}</span>{% endif %}
+        </button>
+        <button class="tab-btn" data-filter="signed">
+            <i class="fas fa-check"></i> Signed Off
+        </button>
+        <button class="tab-btn" data-filter="all">
+            <i class="fas fa-list"></i> All Logbooks
+        </button>
+    </div>
+
+    <!-- Logbook List -->
+    <div class="logbook-grid">
+        {% for logbook in logbooks %}
+        <div class="logbook-card" data-status="{% if logbook.mentor_signed %}signed{% else %}pending{% endif %}">
+            <div class="logbook-header">
+                <div class="learner-info">
+                    <h3>{{ logbook.placement.learner.get_full_name }}</h3>
+                    <p class="period">{{ logbook.month|date:"F" }} {{ logbook.year }}</p>
+                </div>
+                <div class="status-badge {% if logbook.mentor_signed %}signed{% else %}pending{% endif %}">
+                    {% if logbook.mentor_signed %}
+                    <i class="fas fa-check-circle"></i> Signed
+                    {% else %}
+                    <i class="fas fa-clock"></i> Pending
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="logbook-summary">
+                <div class="summary-row">
+                    <span class="label"><i class="fas fa-calendar-check"></i> Days Present:</span>
+                    <span class="value">{{ logbook.total_days_present|default:"-" }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label"><i class="fas fa-clock"></i> Hours Worked:</span>
+                    <span class="value">{{ logbook.total_hours_worked|default:"-" }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label"><i class="fas fa-tasks"></i> Tasks Completed:</span>
+                    <span class="value">{{ logbook.tasks_completed|length|default:"-" }}</span>
+                </div>
+            </div>
+            
+            <div class="logbook-progress">
+                <div class="progress-item {% if logbook.learner_signed %}completed{% endif %}">
+                    <i class="fas fa-user"></i>
+                    <span>Learner</span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-item {% if logbook.mentor_signed %}completed{% endif %}">
+                    <i class="fas fa-user-tie"></i>
+                    <span>Mentor</span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-item {% if logbook.facilitator_signed %}completed{% endif %}">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <span>Facilitator</span>
+                </div>
+            </div>
+            
+            <div class="logbook-actions">
+                <a href="{% url 'portals:mentor_logbook_detail' logbook.id %}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Details
+                </a>
+                {% if not logbook.mentor_signed and logbook.learner_signed %}
+                <button type="button" class="btn btn-success sign-off-btn" data-logbook="{{ logbook.id }}">
+                    <i class="fas fa-signature"></i> Sign Off
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <i class="fas fa-book-open"></i>
+            <h3>No Logbooks Found</h3>
+            <p>There are no logbooks to display at this time.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Sign Off Modal -->
+<div class="modal" id="signOffModal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-signature"></i> Sign Off Logbook</h2>
+            <button type="button" class="modal-close">&times;</button>
+        </div>
+        <form method="post" id="signOffForm">
+            {% csrf_token %}
+            <input type="hidden" name="logbook_id" id="signOffLogbookId">
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="mentor_rating">Performance Rating (1-5):</label>
+                    <div class="rating-input">
+                        {% for i in "12345" %}
+                        <input type="radio" name="mentor_rating" id="rating{{ i }}" value="{{ i }}">
+                        <label for="rating{{ i }}"><i class="fas fa-star"></i></label>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="mentor_comments">Comments:</label>
+                    <textarea name="mentor_comments" id="mentor_comments" rows="4" 
+                              placeholder="Add your comments about the learner's performance..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="confirm_sign_off" required>
+                        <span>I confirm that I have reviewed this logbook and the information is accurate.</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-check"></i> Confirm Sign Off
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.logbook-container {
+    padding: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+    margin: 0;
+    color: #1e3c72;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    padding: 0.75rem 1.25rem;
+    border: none;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    background: #f0f4f8;
+}
+
+.tab-btn.active {
+    background: #2c5aa0;
+    color: white;
+}
+
+.tab-btn .badge {
+    background: #e74c3c;
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+}
+
+.logbook-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.logbook-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.logbook-card[data-status="signed"]:not(.show-all) {
+    display: none;
+}
+
+.logbook-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+
+.learner-info h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.learner-info .period {
+    margin: 0.25rem 0 0;
+    color: #666;
+    font-size: 0.85rem;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.status-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-badge.signed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.logbook-summary {
+    padding: 1rem;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.summary-row:last-child {
+    border-bottom: none;
+}
+
+.summary-row .label {
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.summary-row .value {
+    font-weight: 600;
+}
+
+.logbook-progress {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: #f8f9fa;
+}
+
+.progress-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    color: #aaa;
+}
+
+.progress-item.completed {
+    color: #27ae60;
+}
+
+.progress-item i {
+    font-size: 1.25rem;
+}
+
+.progress-item span {
+    font-size: 0.75rem;
+}
+
+.progress-line {
+    flex: 1;
+    height: 2px;
+    background: #ddd;
+    margin: 0 0.5rem;
+}
+
+.logbook-actions {
+    padding: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.logbook-actions .btn {
+    flex: 1;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #999;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    resize: vertical;
+}
+
+.rating-input {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 0.25rem;
+}
+
+.rating-input input {
+    display: none;
+}
+
+.rating-input label {
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: #ddd;
+    transition: color 0.2s;
+}
+
+.rating-input label:hover,
+.rating-input label:hover ~ label,
+.rating-input input:checked ~ label {
+    color: #f1c40f;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.checkbox-label input {
+    margin-top: 0.25rem;
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    color: #999;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .logbook-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab filtering
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            const filter = this.dataset.filter;
+            const cards = document.querySelectorAll('.logbook-card');
+            
+            cards.forEach(function(card) {
+                if (filter === 'all') {
+                    card.style.display = '';
+                } else if (filter === 'pending') {
+                    card.style.display = card.dataset.status === 'pending' ? '' : 'none';
+                } else if (filter === 'signed') {
+                    card.style.display = card.dataset.status === 'signed' ? '' : 'none';
+                }
+            });
+        });
+    });
+    
+    // Sign off button
+    document.querySelectorAll('.sign-off-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.getElementById('signOffLogbookId').value = this.dataset.logbook;
+            document.getElementById('signOffModal').style.display = 'flex';
+        });
+    });
+    
+    // Close modal
+    document.querySelector('.modal-close').addEventListener('click', closeModal);
+    document.getElementById('signOffModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+});
+
+function closeModal() {
+    document.getElementById('signOffModal').style.display = 'none';
+}
+</script>
+{% endblock %}

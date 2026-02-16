@@ -1,0 +1,226 @@
+{% extends 'base/app_layout.html' %}
+{% load static admin_tags %}
+
+{% block title %}Upload Evidence - {{ tranche.reference_number }}{% endblock %}
+
+{% block page_title %}Upload Evidence{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'tranches:tranche_list' %}" class="text-primary-600 hover:text-primary-800">Tranches</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="text-primary-600 hover:text-primary-800">{{ tranche.reference_number }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Upload Evidence</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-bold">{{ tranche.name }}</h2>
+                <p class="mt-1 text-purple-200">{{ tranche.reference_number }}</p>
+            </div>
+            <div class="text-right">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-white">
+                    {{ tranche.get_tranche_type_display }}
+                </span>
+                <p class="mt-2 text-sm text-purple-200">Due: {{ tranche.due_date|date:"d M Y" }}</p>
+            </div>
+        </div>
+    </div>
+    
+    {% if requirement %}
+    <!-- Uploading for a specific requirement -->
+    <form method="post" enctype="multipart/form-data" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        <input type="hidden" name="requirement_id" value="{{ requirement.pk }}">
+        
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">Upload {{ requirement.name }}</h3>
+            <p class="text-sm text-gray-500 mt-1">{{ requirement.description }}</p>
+        </div>
+        
+        <div class="p-6 space-y-6">
+            <!-- File Upload -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Select File *</label>
+                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-primary-500 transition-colors"
+                     x-data="{ dragover: false }"
+                     x-on:dragover.prevent="dragover = true"
+                     x-on:dragleave.prevent="dragover = false"
+                     x-on:drop.prevent="dragover = false"
+                     :class="{ 'border-primary-500 bg-primary-50': dragover }">
+                    <div class="space-y-1 text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <div class="flex text-sm text-gray-600">
+                            <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none">
+                                <span>Upload a file</span>
+                                <input id="file-upload" name="file" type="file" class="sr-only" required>
+                            </label>
+                            <p class="pl-1">or drag and drop</p>
+                        </div>
+                        <p class="text-xs text-gray-500">PDF, XLSX, DOCX, ZIP up to 50MB</p>
+                    </div>
+                </div>
+                <p id="file-name" class="mt-2 text-sm text-gray-600"></p>
+            </div>
+            
+            <!-- Notes -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea name="notes" rows="3" placeholder="Add any notes about this evidence..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"></textarea>
+            </div>
+        </div>
+        
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+            <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                Upload Evidence
+            </button>
+        </div>
+    </form>
+    
+    {% else %}
+    <!-- General upload - select requirement -->
+    <form method="post" enctype="multipart/form-data" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">Upload Evidence</h3>
+        </div>
+        
+        <div class="p-6 space-y-6">
+            <!-- Requirement Selection -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Evidence Type *</label>
+                <select name="requirement_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                    <option value="">Select evidence type...</option>
+                    {% for req in requirements %}
+                    <option value="{{ req.pk }}" {% if req.is_collected %}disabled{% endif %}>
+                        {{ req.name }}{% if req.is_collected %} (Already collected){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- File Upload -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Select File *</label>
+                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-primary-500 transition-colors">
+                    <div class="space-y-1 text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <div class="flex text-sm text-gray-600">
+                            <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none">
+                                <span>Upload a file</span>
+                                <input id="file-upload" name="file" type="file" class="sr-only" required>
+                            </label>
+                            <p class="pl-1">or drag and drop</p>
+                        </div>
+                        <p class="text-xs text-gray-500">PDF, XLSX, DOCX, ZIP up to 50MB</p>
+                    </div>
+                </div>
+                <p id="file-name" class="mt-2 text-sm text-gray-600"></p>
+            </div>
+            
+            <!-- Notes -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea name="notes" rows="3" placeholder="Add any notes about this evidence..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"></textarea>
+            </div>
+        </div>
+        
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+            <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                Upload Evidence
+            </button>
+        </div>
+    </form>
+    {% endif %}
+    
+    <!-- Evidence Requirements Checklist -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-sm font-semibold text-gray-900">Evidence Checklist</h3>
+        </div>
+        <ul class="divide-y divide-gray-100">
+            {% for req in requirements %}
+            <li class="px-6 py-3 flex items-center justify-between">
+                <div class="flex items-center">
+                    {% if req.is_collected %}
+                    <span class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                        <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                    </span>
+                    {% elif req.is_required %}
+                    <span class="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 flex items-center justify-center mr-3">
+                        <svg class="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                    </span>
+                    {% else %}
+                    <span class="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </span>
+                    {% endif %}
+                    <div>
+                        <span class="text-sm font-medium text-gray-900">{{ req.name }}</span>
+                        {% if req.is_required %}
+                        <span class="ml-2 text-xs text-red-600">Required</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if not req.is_collected %}
+                <a href="?requirement={{ req.pk }}" class="text-xs text-primary-600 hover:text-primary-800">
+                    Upload
+                </a>
+                {% else %}
+                <span class="text-xs text-green-600">Collected</span>
+                {% endif %}
+            </li>
+            {% empty %}
+            <li class="px-6 py-4 text-center text-sm text-gray-500">
+                No evidence requirements defined for this tranche.
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+</div>
+
+<script>
+    document.getElementById('file-upload').addEventListener('change', function(e) {
+        var fileName = e.target.files[0] ? e.target.files[0].name : '';
+        document.getElementById('file-name').textContent = fileName ? 'Selected: ' + fileName : '';
+    });
+</script>
+{% endblock %}

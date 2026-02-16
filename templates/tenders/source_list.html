@@ -1,0 +1,195 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Tender Sources - SkillsFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'core:dashboard' %}" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100" title="Main Dashboard">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                    </a>
+                    <a href="{% url 'tenders:dashboard' %}" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100" title="Tender Dashboard">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">Tender Sources</h1>
+                        <p class="text-sm text-gray-500">Manage websites to scrape for tenders</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="{% url 'tenders:source_create' %}" class="inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add Source
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-2xl font-bold text-gray-900">{{ sources.count }}</p>
+                        <p class="text-xs text-gray-500">Total Sources</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-2xl font-bold text-green-600">{{ active_count|default:0 }}</p>
+                        <p class="text-xs text-gray-500">Active</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-amber-100 rounded-lg">
+                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-2xl font-bold text-amber-600">{{ paused_count|default:0 }}</p>
+                        <p class="text-xs text-gray-500">Paused</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-2xl font-bold text-purple-600">{{ total_tenders|default:0 }}</p>
+                        <p class="text-xs text-gray-500">Tenders Found</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sources Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for source in sources %}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900">{{ source.name }}</h3>
+                                <p class="text-xs text-gray-500">{{ source.get_scraper_type_display }}</p>
+                            </div>
+                        </div>
+                        {% if source.status == 'ACTIVE' %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                            <span class="w-1.5 h-1.5 mr-1 rounded-full bg-green-500"></span>
+                            Active
+                        </span>
+                        {% elif source.status == 'PAUSED' %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                            <span class="w-1.5 h-1.5 mr-1 rounded-full bg-amber-500"></span>
+                            Paused
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                            <span class="w-1.5 h-1.5 mr-1 rounded-full bg-gray-400"></span>
+                            {{ source.get_status_display }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if source.website %}
+                    <p class="text-xs text-gray-500 truncate mb-4">{{ source.website }}</p>
+                    {% endif %}
+                    
+                    <div class="flex items-center justify-between text-sm">
+                        <div>
+                            <span class="text-gray-500">Tenders:</span>
+                            <span class="font-medium text-gray-900 ml-1">{{ source.total_tenders_found }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Every:</span>
+                            <span class="font-medium text-gray-900 ml-1">{{ source.scrape_frequency_hours }}h</span>
+                        </div>
+                    </div>
+                    
+                    {% if source.last_scraped_at %}
+                    <p class="mt-3 text-xs text-gray-400">Last scraped {{ source.last_scraped_at|timesince }} ago</p>
+                    {% else %}
+                    <p class="mt-3 text-xs text-gray-400">Never scraped</p>
+                    {% endif %}
+                </div>
+                
+                <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                    <a href="{% url 'tenders:source_detail' source.pk %}" class="text-sm text-amber-600 hover:text-amber-700 font-medium">
+                        View Details
+                    </a>
+                    <div class="flex items-center space-x-2">
+                        <form method="post" action="{% url 'tenders:scrape_source' source.pk %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="p-1.5 text-gray-400 hover:text-amber-600 rounded" title="Run Scrape">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                            </button>
+                        </form>
+                        <a href="{% url 'admin:tenders_tendersource_change' source.pk %}" class="p-1.5 text-gray-400 hover:text-gray-600 rounded" title="Edit">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full">
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+                    <svg class="mx-auto w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+                    </svg>
+                    <h3 class="mt-4 text-sm font-medium text-gray-900">No tender sources</h3>
+                    <p class="mt-1 text-sm text-gray-500">Get started by adding a website to scrape for tenders.</p>
+                    <a href="{% url 'tenders:source_create' %}" class="mt-4 inline-flex items-center px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add First Source
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

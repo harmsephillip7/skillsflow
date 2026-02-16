@@ -1,0 +1,150 @@
+{% extends 'base/app_layout.html' %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}Schedule Trade Test{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Header -->
+    <div>
+        <nav class="text-sm mb-2">
+            <a href="{% url 'trade_tests:dashboard' %}" class="text-primary-600 hover:text-primary-800">Trade Tests</a>
+            <span class="text-gray-400 mx-2">/</span>
+            <a href="{% url 'trade_tests:application_list' %}" class="text-primary-600 hover:text-primary-800">Applications</a>
+            <span class="text-gray-400 mx-2">/</span>
+            <a href="{% url 'trade_tests:application_detail' application.pk %}" class="text-primary-600 hover:text-primary-800">{{ application.application_number }}</a>
+            <span class="text-gray-400 mx-2">/</span>
+            <span class="text-gray-500">Schedule</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">Schedule Trade Test</h1>
+        <p class="text-gray-500 mt-1">Enter the NAMB schedule details for this application</p>
+    </div>
+
+    <!-- Application Summary -->
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">Application Details</h3>
+                <div class="mt-2 text-sm text-blue-700">
+                    <p><strong>Learner:</strong> {{ application.learner.get_full_name }}</p>
+                    <p><strong>Trade:</strong> {{ application.trade.name }} ({{ application.trade.namb_code }})</p>
+                    <p><strong>Preferred Centre:</strong> {{ application.preferred_centre.name|default:"Not specified" }}</p>
+                    <p><strong>Attempt:</strong> {{ next_attempt_number }} of 3</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        
+        <!-- NAMB Reference -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">NAMB Reference</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">NAMB Reference Number</label>
+                    {{ form.namb_reference }}
+                    {% if form.namb_reference.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.namb_reference.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500">Reference number from NAMB schedule publication</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Details -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Schedule Details</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Test Centre *</label>
+                    {{ form.centre }}
+                    {% if form.centre.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.centre.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Scheduled Date *</label>
+                    {{ form.scheduled_date }}
+                    {% if form.scheduled_date.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.scheduled_date.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Scheduled Time</label>
+                    {{ form.scheduled_time }}
+                    {% if form.scheduled_time.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.scheduled_time.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Assessor Information -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Assessor Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Assessor Name</label>
+                    {{ form.assessor_name }}
+                    {% if form.assessor_name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.assessor_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Assessor Registration Number</label>
+                    {{ form.assessor_registration_number }}
+                    {% if form.assessor_registration_number.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.assessor_registration_number.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Additional Notes</h2>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                {{ form.notes }}
+                {% if form.notes.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.notes.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Notification Info -->
+        <div class="px-6 py-5 border-b border-gray-100 bg-yellow-50">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-yellow-700">
+                        The learner will automatically receive an email and SMS notification with the schedule details once this form is saved.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+            <a href="{% url 'trade_tests:application_detail' application.pk %}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition-colors">
+                Save Schedule
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

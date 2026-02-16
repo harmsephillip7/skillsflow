@@ -1,0 +1,285 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}CRM Pipeline - Corporate{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:dashboard' %}" class="text-gray-700 hover:text-blue-600">Corporate</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">CRM Pipeline</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'corporate:opportunity_create' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+    </svg>
+    New Opportunity
+</a>
+{% endblock %}
+
+{% block main_content %}
+<!-- KPI Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Pipeline Value -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm text-gray-500">Pipeline Value</p>
+                <p class="text-2xl font-semibold text-gray-900">R{{ total_pipeline_value|floatformat:0|intcomma }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Weighted Value -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 text-green-600">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm text-gray-500">Weighted Value</p>
+                <p class="text-2xl font-semibold text-gray-900">R{{ weighted_value|floatformat:0|intcomma }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Won This Month -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-emerald-100 text-emerald-600">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm text-gray-500">Won This Month</p>
+                <p class="text-2xl font-semibold text-gray-900">{{ won_this_month_count }}</p>
+                <p class="text-sm text-emerald-600">R{{ won_this_month_value|floatformat:0|intcomma }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Projects at Risk -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full {% if projects_at_risk > 0 %}bg-red-100 text-red-600{% else %}bg-gray-100 text-gray-600{% endif %}">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm text-gray-500">Projects at Risk</p>
+                <p class="text-2xl font-semibold text-gray-900">{{ projects_at_risk }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pipeline Stages -->
+<div class="bg-white rounded-lg shadow mb-8">
+    <div class="p-6 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900">Pipeline Overview</h2>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            {% for stage in stage_data %}
+            <a href="{% url 'corporate:opportunity_list' %}?stage={{ stage.code }}" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wider truncate">{{ stage.name }}</p>
+                <p class="text-2xl font-bold text-gray-900 mt-1">{{ stage.count }}</p>
+                <p class="text-sm text-gray-600">R{{ stage.total_value|floatformat:0|intcomma }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Top Opportunities -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-900">Top Opportunities</h2>
+            <a href="{% url 'corporate:opportunity_list' %}" class="text-blue-600 hover:text-blue-800 text-sm">View All →</a>
+        </div>
+        <div class="divide-y divide-gray-200">
+            {% for opp in open_opportunities %}
+            <a href="{% url 'corporate:opportunity_detail' opp.pk %}" class="block p-4 hover:bg-gray-50">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-gray-900 truncate">{{ opp.title }}</p>
+                        <p class="text-sm text-gray-500">{{ opp.client_name }}</p>
+                    </div>
+                    <div class="text-right ml-4">
+                        <p class="font-semibold text-gray-900">R{{ opp.estimated_value|floatformat:0|intcomma }}</p>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                            {% if opp.stage == 'NEGOTIATION' %}bg-purple-100 text-purple-800
+                            {% elif opp.stage == 'PROPOSAL' %}bg-blue-100 text-blue-800
+                            {% elif opp.stage == 'QUALIFIED' %}bg-green-100 text-green-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ opp.get_stage_display }}
+                        </span>
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <div class="p-6 text-center text-gray-500">
+                <p>No open opportunities</p>
+                <a href="{% url 'corporate:opportunity_create' %}" class="text-blue-600 hover:underline mt-2 inline-block">Create your first opportunity</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Pending Follow-ups -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Pending Follow-ups</h2>
+        </div>
+        <div class="divide-y divide-gray-200">
+            {% for activity in pending_followups %}
+            <div class="p-4 hover:bg-gray-50">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-gray-900 truncate">{{ activity.next_action }}</p>
+                        <p class="text-sm text-gray-500">
+                            {% if activity.opportunity %}{{ activity.opportunity.title }}
+                            {% elif activity.client %}{{ activity.client.company_name }}{% endif %}
+                        </p>
+                    </div>
+                    <div class="text-right ml-4">
+                        <span class="text-sm {% if activity.next_action_date < today %}text-red-600{% else %}text-gray-500{% endif %}">
+                            {{ activity.next_action_date|date:"d M Y" }}
+                        </span>
+                        <form action="{% url 'corporate:complete_activity' activity.pk %}" method="post" class="mt-1">
+                            {% csrf_token %}
+                            <button type="submit" class="text-xs text-green-600 hover:text-green-800">✓ Done</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="p-6 text-center text-gray-500">
+                <p>No pending follow-ups</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Recent Activities -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Recent Activity</h2>
+        </div>
+        <div class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+            {% for activity in recent_activities %}
+            <div class="p-4">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full 
+                            {% if activity.activity_type == 'CALL' %}bg-blue-100 text-blue-600
+                            {% elif activity.activity_type == 'MEETING' %}bg-green-100 text-green-600
+                            {% elif activity.activity_type == 'EMAIL' %}bg-gray-100 text-gray-600
+                            {% elif activity.activity_type == 'PROPOSAL_SENT' %}bg-purple-100 text-purple-600
+                            {% else %}bg-gray-100 text-gray-600{% endif %}">
+                            {% if activity.activity_type == 'CALL' %}📞
+                            {% elif activity.activity_type == 'MEETING' %}🤝
+                            {% elif activity.activity_type == 'EMAIL' %}✉️
+                            {% elif activity.activity_type == 'PROPOSAL_SENT' %}📄
+                            {% else %}📝{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900">{{ activity.subject }}</p>
+                        <p class="text-xs text-gray-500">
+                            {{ activity.get_activity_type_display }} • 
+                            {% if activity.client %}{{ activity.client.company_name }}{% endif %}
+                            {% if activity.created_by %} • {{ activity.created_by.get_full_name|default:activity.created_by.username }}{% endif %}
+                        </p>
+                    </div>
+                    <div class="text-xs text-gray-400">
+                        {{ activity.activity_date|date:"d M" }}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="p-6 text-center text-gray-500">
+                <p>No recent activities</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Active Delivery Projects -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-900">Active Projects</h2>
+            <a href="{% url 'corporate:delivery_project_list' %}" class="text-blue-600 hover:text-blue-800 text-sm">View All →</a>
+        </div>
+        <div class="divide-y divide-gray-200">
+            {% for project in active_projects %}
+            <a href="{% url 'corporate:delivery_project_detail' project.pk %}" class="block p-4 hover:bg-gray-50">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-gray-900 truncate">{{ project.name }}</p>
+                        <p class="text-sm text-gray-500">{{ project.client.company_name }}</p>
+                    </div>
+                    <div class="text-right ml-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                {% if project.health == 'GREEN' %}bg-green-100 text-green-800
+                                {% elif project.health == 'AMBER' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ project.progress_percentage }}%
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">{{ project.get_status_display }}</p>
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <div class="p-6 text-center text-gray-500">
+                <p>No active projects</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Upsell Opportunities Section -->
+{% if upsell_candidates %}
+<div class="bg-white rounded-lg shadow mt-8">
+    <div class="p-6 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900">🎯 Upsell Opportunities</h2>
+        <p class="text-sm text-gray-500 mt-1">Clients with fewer than 3 active services</p>
+    </div>
+    <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for client in upsell_candidates %}
+        <a href="{% url 'corporate:client_360' client.pk %}" class="block p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg hover:shadow-md transition-shadow">
+            <p class="font-medium text-gray-900">{{ client.company_name }}</p>
+            <p class="text-sm text-gray-600">{{ client.service_count }} active service{{ client.service_count|pluralize }}</p>
+            <p class="text-xs text-blue-600 mt-2">View 360° profile →</p>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

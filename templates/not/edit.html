@@ -1,0 +1,406 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Edit {{ object.reference_number }}{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 text-sm text-gray-500">
+                <li><a href="{% url 'not_dashboard' %}" class="hover:text-blue-600">NOT Dashboard</a></li>
+                <li class="flex items-center"><svg class="w-4 h-4 mx-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg></li>
+                <li><a href="{% url 'not_detail' object.pk %}" class="hover:text-blue-600">{{ object.reference_number }}</a></li>
+                <li class="flex items-center"><svg class="w-4 h-4 mx-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg></li>
+                <li class="text-gray-700 font-medium">Edit</li>
+            </ol>
+        </nav>
+        <div class="flex items-center gap-3">
+            <div class="p-3 bg-blue-100 rounded-xl">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Edit Notification of Training</h1>
+                <p class="text-gray-500 text-sm">{{ object.title }}</p>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Content -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Basic Information -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Basic Information
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Project Title <span class="text-red-500">*</span></label>
+                                <input type="text" name="title" required value="{{ object.title }}"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Project Type <span class="text-red-500">*</span></label>
+                                <select name="project_type" required
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="OC_APPRENTICESHIP" {% if object.project_type == 'OC_APPRENTICESHIP' %}selected{% endif %}>OC Apprenticeship</option>
+                                    <option value="OC_LEARNERSHIP" {% if object.project_type == 'OC_LEARNERSHIP' %}selected{% endif %}>OC Learnership</option>
+                                    <option value="SKILLS_PROGRAMME" {% if object.project_type == 'SKILLS_PROGRAMME' %}selected{% endif %}>Skills Programme</option>
+                                    <option value="SHORT_COURSE" {% if object.project_type == 'SHORT_COURSE' %}selected{% endif %}>Short Course</option>
+                                    <option value="LEGACY_APPRENTICESHIP" {% if object.project_type == 'LEGACY_APPRENTICESHIP' %}selected{% endif %}>Legacy Apprenticeship</option>
+                                    <option value="LEGACY_LEARNERSHIP" {% if object.project_type == 'LEGACY_LEARNERSHIP' %}selected{% endif %}>Legacy Learnership</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Funder <span class="text-red-500">*</span></label>
+                                <select name="funder" required
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="PRIVATE" {% if object.funder == 'PRIVATE' %}selected{% endif %}>Private</option>
+                                    <option value="CORPORATE_DG" {% if object.funder == 'CORPORATE_DG' %}selected{% endif %}>Corporate DG</option>
+                                    <option value="CORPORATE" {% if object.funder == 'CORPORATE' %}selected{% endif %}>Corporate</option>
+                                    <option value="MUNICIPALITY" {% if object.funder == 'MUNICIPALITY' %}selected{% endif %}>Municipality</option>
+                                    <option value="GOVERNMENT" {% if object.funder == 'GOVERNMENT' %}selected{% endif %}>Government</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Priority <span class="text-red-500">*</span></label>
+                                <select name="priority" required
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="LOW" {% if object.priority == 'LOW' %}selected{% endif %}>Low</option>
+                                    <option value="MEDIUM" {% if object.priority == 'MEDIUM' %}selected{% endif %}>Medium</option>
+                                    <option value="HIGH" {% if object.priority == 'HIGH' %}selected{% endif %}>High</option>
+                                    <option value="CRITICAL" {% if object.priority == 'CRITICAL' %}selected{% endif %}>Critical</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <textarea name="description" rows="3"
+                                          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">{{ object.description }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Client Information -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                            Client Information
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
+                                <input type="text" name="client_name" value="{{ object.client_name }}"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tender/Contract Reference</label>
+                                <input type="text" name="tender_reference" value="{{ object.tender_reference }}"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Contract Value (ZAR)</label>
+                                <div class="flex">
+                                    <span class="inline-flex items-center px-3 bg-gray-100 text-gray-600 border border-r-0 border-gray-300 rounded-l-lg text-sm font-medium">R</span>
+                                    <input type="number" name="contract_value" step="0.01" value="{{ object.contract_value }}"
+                                           class="w-full px-4 py-2.5 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                </div>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Link to Contract</label>
+                                {% if contracts %}
+                                <select name="contract" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">No contract link (standalone NOT)</option>
+                                    {% for contract in contracts %}
+                                    <option value="{{ contract.id }}" {% if object.contract_id == contract.id %}selected{% endif %}>{{ contract.contract_number }} - {{ contract.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">Link this NOT to an existing contract for grouped tracking and dropout monitoring.</p>
+                                {% else %}
+                                <select name="contract" disabled class="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-100 text-gray-500">
+                                    <option value="">No contracts available</option>
+                                </select>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Programme Details -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"></path>
+                            </svg>
+                            Programme Details
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Programme Description</label>
+                                <textarea name="program_description" rows="3"
+                                          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">{{ object.program_description }}</textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Expected Number of Learners</label>
+                                <input type="number" name="expected_learner_count" value="{{ object.expected_learner_count }}"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Learner Source</label>
+                                <input type="text" name="learner_source" value="{{ object.learner_source }}"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Duration (Months)</label>
+                                <input type="number" name="duration_months" value="{{ object.duration_months }}"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Recruitment Notes</label>
+                                <textarea name="recruitment_notes" rows="2"
+                                          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">{{ object.recruitment_notes }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline & Delivery -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            Timeline & Delivery
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Planned Start Date</label>
+                                <input type="date" name="planned_start_date" value="{{ object.planned_start_date|date:'Y-m-d' }}"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Planned End Date</label>
+                                <input type="date" name="planned_end_date" value="{{ object.planned_end_date|date:'Y-m-d' }}"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Mode</label>
+                                <select name="delivery_mode" 
+                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select delivery mode...</option>
+                                    <option value="CONTACT" {% if object.delivery_mode == 'CONTACT' %}selected{% endif %}>Contact (In-Person)</option>
+                                    <option value="ONLINE" {% if object.delivery_mode == 'ONLINE' %}selected{% endif %}>Online</option>
+                                    <option value="BLENDED" {% if object.delivery_mode == 'BLENDED' %}selected{% endif %}>Blended</option>
+                                    <option value="WORKPLACE" {% if object.delivery_mode == 'WORKPLACE' %}selected{% endif %}>Workplace</option>
+                                    <option value="DISTANCE" {% if object.delivery_mode == 'DISTANCE' %}selected{% endif %}>Distance</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Address / Notes</label>
+                                <textarea name="delivery_address" rows="2"
+                                          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">{{ object.delivery_address }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Delivery Team -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            Delivery Team
+                        </h2>
+                        <p class="text-sm text-gray-500 mt-1">Assign primary delivery staff for this project.</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Facilitator</label>
+                                <select name="facilitator" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select facilitator...</option>
+                                    {% for user in facilitators %}
+                                    <option value="{{ user.id }}" {% if object.facilitator_id == user.id %}selected{% endif %}>{{ user.get_full_name|default:user.email }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assessor</label>
+                                <select name="assessor" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select assessor...</option>
+                                    {% for user in assessors %}
+                                    <option value="{{ user.id }}" {% if object.assessor_id == user.id %}selected{% endif %}>{{ user.get_full_name|default:user.email }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Moderator</label>
+                                <select name="moderator" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white">
+                                    <option value="">Select moderator...</option>
+                                    {% for user in moderators %}
+                                    <option value="{{ user.id }}" {% if object.moderator_id == user.id %}selected{% endif %}>{{ user.get_full_name|default:user.email }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Planning Meeting (if applicable) -->
+                {% if object.status != 'DRAFT' %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            Planning Meeting
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Meeting Date & Time</label>
+                                <input type="datetime-local" name="planning_meeting_date" 
+                                       value="{{ object.planning_meeting_date|date:'Y-m-d\TH:i' }}"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Meeting Venue</label>
+                                <input type="text" name="planning_meeting_venue" value="{{ object.planning_meeting_venue }}"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Status Info -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Status Information
+                        </h3>
+                    </div>
+                    <div class="p-6 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-500">Reference</span>
+                            <code class="text-sm font-mono bg-gray-100 px-2 py-1 rounded">{{ object.reference_number }}</code>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-500">Status</span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if object.status == 'DRAFT' %}bg-gray-100 text-gray-800
+                                {% elif object.status == 'SCHEDULED' %}bg-blue-100 text-blue-800
+                                {% elif object.status == 'PENDING_APPROVAL' %}bg-yellow-100 text-yellow-800
+                                {% elif object.status == 'APPROVED' %}bg-green-100 text-green-800
+                                {% elif object.status == 'REJECTED' %}bg-red-100 text-red-800
+                                {% elif object.status == 'IN_PROGRESS' %}bg-purple-100 text-purple-800
+                                {% elif object.status == 'COMPLETED' %}bg-green-100 text-green-800
+                                {% elif object.status == 'CANCELLED' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ object.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-500">Created</span>
+                            <span class="text-sm text-gray-900">{{ object.created_at|date:"d M Y" }}</span>
+                        </div>
+                        {% if object.approved_date %}
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-500">Approved</span>
+                            <span class="text-sm text-gray-900">{{ object.approved_date|date:"d M Y" }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Related Items -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                            </svg>
+                            Related Items
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <ul class="space-y-3">
+                            <li class="flex items-center gap-3 text-sm">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                                <span class="text-gray-700">{{ object.stakeholders.count }} Stakeholder{{ object.stakeholders.count|pluralize }}</span>
+                            </li>
+                            <li class="flex items-center gap-3 text-sm">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                </svg>
+                                <span class="text-gray-700">{{ object.resource_requirements.count }} Resource{{ object.resource_requirements.count|pluralize }}</span>
+                            </li>
+                            <li class="flex items-center gap-3 text-sm">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                </svg>
+                                <span class="text-gray-700">{{ object.deliverables.count }} Deliverable{{ object.deliverables.count|pluralize }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 space-y-3">
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Save Changes
+                        </button>
+                        <a href="{% url 'not_detail' object.pk %}" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-700 font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

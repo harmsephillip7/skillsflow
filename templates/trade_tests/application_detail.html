@@ -1,0 +1,416 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block page_title %}Application {{ application.application_number }}{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <nav class="text-sm mb-2">
+                <a href="{% url 'trade_tests:dashboard' %}" class="text-primary-600 hover:text-primary-800">Trade Tests</a>
+                <span class="text-gray-400 mx-2">/</span>
+                <a href="{% url 'trade_tests:application_list' %}" class="text-primary-600 hover:text-primary-800">Applications</a>
+                <span class="text-gray-400 mx-2">/</span>
+                <span class="text-gray-500">{{ application.application_number }}</span>
+            </nav>
+            <div class="flex items-center space-x-3">
+                <h1 class="text-2xl font-bold text-gray-900">{{ application.application_number }}</h1>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                    {% if application.status == 'DRAFT' %}bg-gray-100 text-gray-800
+                    {% elif application.status == 'SUBMITTED' %}bg-yellow-100 text-yellow-800
+                    {% elif application.status == 'SCHEDULED' %}bg-blue-100 text-blue-800
+                    {% elif application.status == 'IN_PROGRESS' %}bg-indigo-100 text-indigo-800
+                    {% elif application.status == 'COMPLETED' %}bg-green-100 text-green-800
+                    {% elif application.status == 'FAILED' %}bg-red-100 text-red-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ application.get_status_display }}
+                </span>
+            </div>
+        </div>
+        <div class="flex space-x-3">
+            {% if application.status == 'DRAFT' %}
+            <a href="{% url 'trade_tests:application_update' application.pk %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                <svg class="w-4 h-4 mr-2 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Edit
+            </a>
+            {% endif %}
+            {% if application.status == 'SUBMITTED' and application.bookings.count == 0 %}
+            <a href="{% url 'trade_tests:schedule_entry' application.pk %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700">
+                <svg class="w-4 h-4 mr-2 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                Schedule Test
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Candidate Information -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Candidate Information</h2>
+                </div>
+                <div class="p-6">
+                    <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Full Name</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ application.learner.get_full_name }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">ID Number</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ application.learner.id_number }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Email</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ application.learner.email|default:"-" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Mobile</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ application.learner.mobile|default:"-" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Candidate Source</dt>
+                            <dd class="mt-1">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if application.candidate_source == 'INTERNAL' %}bg-green-100 text-green-800
+                                    {% elif application.candidate_source == 'EXTERNAL' %}bg-purple-100 text-purple-800
+                                    {% else %}bg-orange-100 text-orange-800{% endif %}">
+                                    {{ application.get_candidate_source_display }}
+                                </span>
+                            </dd>
+                        </div>
+                        {% if application.enrollment %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Enrollment</dt>
+                            <dd class="mt-1 text-sm text-gray-900">
+                                {{ application.enrollment.intake.qualification.name }} ({{ application.enrollment.enrollment_date|date:"Y" }})
+                            </dd>
+                        </div>
+                        {% endif %}
+                        {% if application.external_training_centre %}
+                        <div class="md:col-span-2">
+                            <dt class="text-sm font-medium text-gray-500">External Training Centre</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ application.external_training_centre }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Trade Information -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Trade Information</h2>
+                </div>
+                <div class="p-6">
+                    <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Trade</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ application.trade.name }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">NAMB Code</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ application.trade.namb_code }}</dd>
+                        </div>
+                        {% if application.trade.qualification %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Linked Qualification</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ application.trade.qualification.name }}</dd>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Pass Marks</dt>
+                            <dd class="mt-1 text-sm text-gray-900">
+                                Theory: {{ application.trade.theory_pass_mark|default:"N/A" }}% | 
+                                Practical: {{ application.trade.practical_pass_mark|default:"N/A" }}%
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Preferred Test Centre</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ application.preferred_centre.name|default:"Not specified" }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- ARPL Toolkit Assessment (if applicable) -->
+            {% if application.candidate_source == 'ARPL' %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-900">ARPL Toolkit Assessment</h2>
+                    {% if not application.arpl_assessments.exists %}
+                    <a href="#" class="text-sm text-primary-600 hover:text-primary-700 font-medium">Schedule Assessment</a>
+                    {% endif %}
+                </div>
+                <div class="p-6">
+                    {% if application.arpl_assessments.exists %}
+                    {% for assessment in application.arpl_assessments.all %}
+                    <div class="border rounded-lg p-4 {% if not forloop.last %}mb-4{% endif %}">
+                        <dl class="grid grid-cols-2 gap-x-6 gap-y-3">
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Scheduled Date</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ assessment.scheduled_date|date:"d M Y"|default:"Not scheduled" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Status</dt>
+                                <dd class="mt-1">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                        {% if assessment.status == 'PENDING' %}bg-yellow-100 text-yellow-800
+                                        {% elif assessment.status == 'COMPLETED' %}bg-green-100 text-green-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ assessment.get_status_display }}
+                                    </span>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Centre</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ assessment.centre.name|default:application.preferred_centre.name }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Result</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ assessment.get_result_display|default:"Pending" }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-gray-500 text-sm">No ARPL toolkit assessment scheduled yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Trade Test Bookings -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-900">Trade Test Bookings</h2>
+                    {% if application.status == 'SUBMITTED' %}
+                    <a href="{% url 'trade_tests:schedule_entry' application.pk %}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">Add Booking</a>
+                    {% endif %}
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for booking in application.bookings.all %}
+                    <div class="p-6">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900">Attempt {{ booking.attempt_number }}</h3>
+                                <p class="text-xs text-gray-500 mt-1">NAMB Ref: {{ booking.namb_reference|default:"Pending" }}</p>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if booking.status == 'SCHEDULED' %}bg-blue-100 text-blue-800
+                                {% elif booking.status == 'COMPLETED' %}bg-green-100 text-green-800
+                                {% elif booking.status == 'CANCELLED' %}bg-gray-100 text-gray-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ booking.get_status_display }}
+                            </span>
+                        </div>
+                        <dl class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <dt class="text-xs font-medium text-gray-500">Date</dt>
+                                <dd class="text-sm text-gray-900">{{ booking.scheduled_date|date:"d M Y"|default:"Not set" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-medium text-gray-500">Time</dt>
+                                <dd class="text-sm text-gray-900">{{ booking.scheduled_time|time:"H:i"|default:"Not set" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-medium text-gray-500">Centre</dt>
+                                <dd class="text-sm text-gray-900">{{ booking.centre.name }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-medium text-gray-500">Assessor</dt>
+                                <dd class="text-sm text-gray-900">{{ booking.assessor_name|default:"Not assigned" }}</dd>
+                            </div>
+                        </dl>
+                        
+                        <!-- Results for this booking -->
+                        {% if booking.results.exists %}
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">Results</h4>
+                            <div class="space-y-2">
+                                {% for result in booking.results.all %}
+                                <div class="flex justify-between items-center bg-gray-50 rounded-lg px-4 py-2">
+                                    <span class="text-sm text-gray-600">{{ result.get_section_display }}</span>
+                                    <div class="flex items-center space-x-3">
+                                        {% if result.score %}
+                                        <span class="text-sm text-gray-500">{{ result.score }}%</span>
+                                        {% endif %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                            {% if result.result == 'COMPETENT' %}bg-green-100 text-green-800
+                                            {% elif result.result == 'NOT_YET_COMPETENT' %}bg-red-100 text-red-800
+                                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                            {{ result.get_result_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% else %}
+                        {% if booking.status == 'SCHEDULED' or booking.status == 'PENDING' %}
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <a href="{% url 'trade_tests:result_record' booking.pk %}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">Record Results</a>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="p-6 text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <p class="mt-2 text-gray-500 text-sm">No bookings yet</p>
+                        {% if application.status == 'SUBMITTED' %}
+                        <a href="{% url 'trade_tests:schedule_entry' application.pk %}" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                            Schedule First Test
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Notes -->
+            {% if application.notes %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Notes</h2>
+                </div>
+                <div class="p-6">
+                    <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ application.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column -->
+        <div class="space-y-6">
+            <!-- Application Summary -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Summary</h2>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Application Date</p>
+                        <p class="text-sm text-gray-900">{{ application.created_at|date:"d M Y, H:i" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Current Attempt</p>
+                        <p class="text-sm text-gray-900">{{ application.current_attempt }} of 3</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">NAMB Submitted</p>
+                        <p class="text-sm text-gray-900">{{ application.namb_submission_date|date:"d M Y"|default:"Not submitted" }}</p>
+                    </div>
+                    {% if application.namb_reference_number %}
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">NAMB Reference</p>
+                        <p class="text-sm text-gray-900">{{ application.namb_reference_number }}</p>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Last Updated</p>
+                        <p class="text-sm text-gray-900">{{ application.updated_at|date:"d M Y, H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Actions</h2>
+                </div>
+                <div class="p-4 space-y-2">
+                    {% if application.status == 'DRAFT' %}
+                    <form method="post" action="{% url 'trade_tests:application_update' application.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="submit_application" value="true">
+                        <button type="submit" class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700">
+                            Submit to NAMB
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    {% if application.status == 'COMPLETED' %}
+                    {% with latest_result=application.bookings.last.results.last %}
+                    {% if latest_result and not latest_result.assessment_report %}
+                    <a href="{% url 'trade_tests:report_create' latest_result.pk %}" class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700">
+                        Generate Assessment Report
+                    </a>
+                    {% endif %}
+                    {% endwith %}
+                    {% endif %}
+                    
+                    <a href="{% url 'learners:detail' application.learner.pk %}" class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                        View Learner Profile
+                    </a>
+                    
+                    {% if application.bookings.last.results.exists and application.bookings.last.results.last.result == 'NOT_YET_COMPETENT' %}
+                    <a href="{% url 'trade_tests:appeal_create' %}?result={{ application.bookings.last.results.last.pk }}" class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                        Lodge Appeal
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Activity Timeline -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Activity</h2>
+                </div>
+                <div class="p-6">
+                    <div class="flow-root">
+                        <ul class="-mb-8">
+                            <li class="relative pb-8">
+                                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"></span>
+                                <div class="relative flex space-x-3">
+                                    <div>
+                                        <span class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                            <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm text-gray-500">Application created</p>
+                                        <p class="text-xs text-gray-400 mt-0.5">{{ application.created_at|date:"d M Y, H:i" }}</p>
+                                    </div>
+                                </div>
+                            </li>
+                            {% for booking in application.bookings.all %}
+                            <li class="relative pb-8">
+                                {% if not forloop.last %}
+                                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"></span>
+                                {% endif %}
+                                <div class="relative flex space-x-3">
+                                    <div>
+                                        <span class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                                            <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm text-gray-500">Attempt {{ booking.attempt_number }} scheduled</p>
+                                        <p class="text-xs text-gray-400 mt-0.5">{{ booking.created_at|date:"d M Y, H:i" }}</p>
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,258 @@
+{% extends 'base/app_layout.html' %}
+{% load static humanize %}
+
+{% block page_title %}{{ campus.name }} - Campus Details{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="flex items-center text-sm text-gray-500 mb-2">
+                <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <a href="{% url 'admin:campus_list' %}" class="hover:text-primary-600">Campuses</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="text-gray-700">{{ campus.code }}</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">{{ campus.name }}</h1>
+            <p class="text-gray-500 mt-1">{{ campus.brand.name }} • {{ campus.get_campus_type_display }}</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'admin:campus_edit' pk=campus.pk %}" 
+               class="inline-flex items-center px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition shadow-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Edit
+            </a>
+            <a href="{% url 'admin:campus_delete' pk=campus.pk %}" 
+               class="inline-flex items-center px-4 py-2 bg-red-50 border border-red-200 text-red-600 text-sm font-medium rounded-xl hover:bg-red-100 transition">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Delete
+            </a>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Info -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Campus Information -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                    <h2 class="text-lg font-semibold text-gray-900">Campus Information</h2>
+                </div>
+                <div class="p-6">
+                    <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        <div class="py-2">
+                            <dt class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Code</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ campus.code }}</dd>
+                        </div>
+                        <div class="py-2">
+                            <dt class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Name</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ campus.name }}</dd>
+                        </div>
+                        <div class="py-2">
+                            <dt class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Brand</dt>
+                            <dd class="text-sm text-gray-900">{{ campus.brand.name }}</dd>
+                        </div>
+                        <div class="py-2">
+                            <dt class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Type</dt>
+                            <dd class="text-sm text-gray-900">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+                                    {% if campus.campus_type == 'HEAD_OFFICE' %}bg-purple-100 text-purple-800
+                                    {% elif campus.campus_type == 'CAMPUS' %}bg-blue-100 text-blue-800
+                                    {% elif campus.campus_type == 'SATELLITE' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ campus.get_campus_type_display }}
+                                </span>
+                            </dd>
+                        </div>
+                        <div class="py-2">
+                            <dt class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Region</dt>
+                            <dd class="text-sm text-gray-900">{{ campus.region|default:"—" }}</dd>
+                        </div>
+                        <div class="py-2">
+                            <dt class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Status</dt>
+                            <dd class="text-sm text-gray-900">
+                                {% if campus.is_active %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    🟢 Active
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    🔴 Inactive
+                                </span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+            
+            <!-- Address Information -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                    <h2 class="text-lg font-semibold text-gray-900">Address & Contact</h2>
+                </div>
+                <div class="p-6">
+                    <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        <div class="py-2 md:col-span-2">
+                            <dt class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Address</dt>
+                            <dd class="text-sm text-gray-900">
+                                {% if campus.address_line1 %}
+                                {{ campus.address_line1 }}<br>
+                                {% endif %}
+                                {% if campus.address_line2 %}
+                                {{ campus.address_line2 }}<br>
+                                {% endif %}
+                                {% if campus.suburb %}{{ campus.suburb }}, {% endif %}
+                                {{ campus.city|default:"" }}
+                                {% if campus.province %}, {{ campus.province }}{% endif %}
+                                {% if campus.postal_code %}, {{ campus.postal_code }}{% endif %}
+                                <br>{{ campus.country }}
+                            </dd>
+                        </div>
+                        <div class="py-2">
+                            <dt class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Email</dt>
+                            <dd class="text-sm text-gray-900">
+                                {% if campus.email %}
+                                <a href="mailto:{{ campus.email }}" class="text-primary-600 hover:underline">{{ campus.email }}</a>
+                                {% else %}
+                                <span class="text-gray-400 italic">Not set</span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                        <div class="py-2">
+                            <dt class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Phone</dt>
+                            <dd class="text-sm text-gray-900">
+                                {% if campus.phone %}
+                                <a href="tel:{{ campus.phone }}" class="text-primary-600 hover:underline">{{ campus.phone }}</a>
+                                {% else %}
+                                <span class="text-gray-400 italic">Not set</span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                        {% if campus.latitude and campus.longitude %}
+                        <div class="py-2 md:col-span-2">
+                            <dt class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">GPS Coordinates</dt>
+                            <dd class="text-sm text-gray-900">
+                                <a href="https://maps.google.com/?q={{ campus.latitude }},{{ campus.longitude }}" target="_blank" class="text-primary-600 hover:underline">
+                                    {{ campus.latitude }}, {{ campus.longitude }} 📍
+                                </a>
+                            </dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+            
+            <!-- Qualification Accreditations -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                    <h2 class="text-lg font-semibold text-gray-900">Qualification Accreditations</h2>
+                    <p class="text-sm text-gray-500 mt-1">Qualifications this campus is accredited to deliver</p>
+                </div>
+                {% if accreditations %}
+                <div class="divide-y divide-gray-100">
+                    {% for accred in accreditations %}
+                    <div class="px-6 py-4 flex items-center justify-between">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-900">{{ accred.qualification.short_title }}</h4>
+                            <p class="text-xs text-gray-500">{{ accred.qualification.saqa_id }} • {{ accred.letter_reference|default:"No reference" }}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                {% if accred.status == 'ACTIVE' %}bg-green-100 text-green-800
+                                {% elif accred.status == 'SUPERSEDED' %}bg-blue-100 text-blue-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ accred.get_status_display }}
+                            </span>
+                            <p class="text-xs text-gray-400 mt-1">{{ accred.accredited_from|date:"d M Y" }} — {{ accred.accredited_until|date:"d M Y" }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="px-6 py-8 text-center text-gray-500">
+                    <p class="text-sm">No accreditations recorded for this campus</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Quick Stats -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Quick Stats</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Accreditations</span>
+                        <span class="text-lg font-bold text-gray-900">{{ accreditations.count }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Cohorts</span>
+                        <span class="text-lg font-bold text-gray-900">{{ cohorts.count }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Venues</span>
+                        <span class="text-lg font-bold text-gray-900">{{ venues.count }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Cohorts -->
+            {% if cohorts %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                    <h3 class="text-sm font-semibold text-gray-900">Recent Cohorts</h3>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for cohort in cohorts %}
+                    <div class="px-4 py-3">
+                        <p class="text-sm font-medium text-gray-900">{{ cohort.name }}</p>
+                        <p class="text-xs text-gray-500">{{ cohort.qualification.short_title }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Venues -->
+            {% if venues %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                    <h3 class="text-sm font-semibold text-gray-900">Venues</h3>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for venue in venues %}
+                    <div class="px-4 py-3">
+                        <p class="text-sm font-medium text-gray-900">{{ venue.name }}</p>
+                        <p class="text-xs text-gray-500">Capacity: {{ venue.capacity|default:"—" }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Back Button -->
+    <div class="flex justify-start">
+        <a href="{% url 'admin:campus_list' %}" 
+           class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition">
+            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back to Campuses
+        </a>
+    </div>
+</div>
+{% endblock %}

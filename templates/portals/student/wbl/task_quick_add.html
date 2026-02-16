@@ -1,0 +1,1031 @@
+{% extends "portals/student/base.html" %}
+{% load static %}
+
+{% block page_title %}Add Task{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Mobile-first task add page */
+    .task-screen {
+        min-height: 100vh;
+        min-height: 100dvh;
+        background: linear-gradient(180deg, #1e3a5f 0%, #2563eb 100%);
+        padding-bottom: 100px;
+    }
+    
+    /* Header area */
+    .task-header {
+        padding: 1.5rem 1rem 1rem;
+        color: white;
+    }
+    
+    /* Task summary card */
+    .task-summary {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 1rem;
+        margin: 0 1rem 1rem;
+    }
+    
+    .task-stat {
+        text-align: center;
+    }
+    
+    .task-stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: white;
+    }
+    
+    .task-stat-label {
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.8);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Main content area */
+    .task-content {
+        background: white;
+        border-radius: 24px 24px 0 0;
+        min-height: calc(100vh - 200px);
+        padding: 1.5rem 1rem;
+    }
+    
+    /* Module accordion */
+    .module-accordion {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        margin-bottom: 0.75rem;
+        overflow: hidden;
+    }
+    
+    .module-header {
+        background: #f9fafb;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .module-header:hover {
+        background: #f3f4f6;
+    }
+    
+    .module-header.active {
+        background: #eff6ff;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .module-code {
+        font-weight: 600;
+        color: #1f2937;
+    }
+    
+    .module-name {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .module-badge {
+        background: #e5e7eb;
+        color: #4b5563;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .module-content {
+        display: none;
+        padding: 0;
+    }
+    
+    .module-content.active {
+        display: block;
+    }
+    
+    /* Outcome item */
+    .outcome-item {
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .outcome-item:last-child {
+        border-bottom: none;
+    }
+    
+    .outcome-item:hover {
+        background: #f9fafb;
+    }
+    
+    .outcome-item.selected {
+        background: #eff6ff;
+        border-left: 3px solid #2563eb;
+    }
+    
+    .outcome-code {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #1f2937;
+    }
+    
+    .outcome-title {
+        font-size: 0.8125rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+        line-height: 1.4;
+    }
+    
+    /* Task form area */
+    .task-form-area {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-top: 1px solid #e5e7eb;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+        transform: translateY(calc(100% - 60px));
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 100;
+        border-radius: 20px 20px 0 0;
+        max-height: 70vh;
+        overflow: hidden;
+    }
+    
+    .task-form-area.expanded {
+        transform: translateY(0);
+    }
+    
+    .task-form-handle {
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+    
+    .task-form-handle::before {
+        content: '';
+        width: 40px;
+        height: 4px;
+        background: #d1d5db;
+        border-radius: 2px;
+    }
+    
+    .task-form-body {
+        padding: 0 1rem 2rem;
+        max-height: calc(70vh - 60px);
+        overflow-y: auto;
+    }
+    
+    /* Form inputs */
+    .form-input {
+        width: 100%;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .form-label {
+        display: block;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    /* Hours stepper */
+    .hours-stepper {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .hours-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 1px solid #e5e7eb;
+        background: #f9fafb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: #374151;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .hours-btn:hover {
+        background: #e5e7eb;
+    }
+    
+    .hours-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1f2937;
+        min-width: 60px;
+        text-align: center;
+    }
+    
+    /* Submit button */
+    .submit-btn {
+        width: 100%;
+        padding: 1rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        color: white;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        border: none;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        margin-top: 1rem;
+    }
+    
+    .submit-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+    
+    .submit-btn:active {
+        transform: translateY(0);
+    }
+    
+    .submit-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    /* Today's tasks list */
+    .task-list-item {
+        background: #f9fafb;
+        border-radius: 12px;
+        padding: 0.875rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .task-list-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: #dcfce7;
+        color: #16a34a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    .task-list-content {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .task-list-desc {
+        font-size: 0.875rem;
+        color: #1f2937;
+        word-break: break-word;
+    }
+    
+    .task-list-meta {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+    
+    /* Selected outcome badge */
+    .selected-outcome-badge {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .selected-outcome-badge .badge-code {
+        font-weight: 600;
+        color: #1d4ed8;
+        font-size: 0.875rem;
+    }
+    
+    .selected-outcome-badge .badge-title {
+        font-size: 0.8125rem;
+        color: #4b5563;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .selected-outcome-badge .badge-remove {
+        color: #6b7280;
+        cursor: pointer;
+        padding: 0.25rem;
+    }
+    
+    /* Offline indicator */
+    .offline-indicator {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: #f59e0b;
+        color: white;
+        text-align: center;
+        padding: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        z-index: 200;
+        display: none;
+    }
+    
+    .offline-indicator.visible {
+        display: block;
+    }
+    
+    /* Toast notification */
+    .toast {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: #1f2937;
+        color: white;
+        padding: 0.875rem 1.25rem;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        z-index: 150;
+        opacity: 0;
+        transition: transform 0.3s, opacity 0.3s;
+    }
+    
+    .toast.visible {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+    
+    .toast.success {
+        background: #16a34a;
+    }
+    
+    .toast.error {
+        background: #dc2626;
+    }
+    
+    /* Custom icon for add */
+    .add-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #2563eb;
+        color: white;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        margin-right: 0.5rem;
+    }
+    
+    /* No tasks state */
+    .no-tasks-state {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: #6b7280;
+    }
+    
+    .no-tasks-state svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 1rem;
+        color: #d1d5db;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="offline-indicator" id="offlineIndicator">
+    <svg class="inline-block w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3"></path>
+    </svg>
+    Offline - Tasks will sync when back online
+</div>
+
+<div class="task-screen">
+    <!-- Header -->
+    <div class="task-header">
+        <div class="flex items-center justify-between mb-4">
+            <a href="{% url 'portals:student_attendance_home' %}" class="text-white/90 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </a>
+            <h1 class="text-xl font-bold text-white">Add Task</h1>
+            <div class="w-6"></div>
+        </div>
+        
+        <div class="text-center text-white/80 text-sm">
+            {{ today|date:"l, d F Y" }}
+        </div>
+    </div>
+    
+    <!-- Task Summary -->
+    <div class="task-summary">
+        <div class="grid grid-cols-3 gap-4">
+            <div class="task-stat">
+                <div class="task-stat-value" id="taskCount">{{ task_count }}</div>
+                <div class="task-stat-label">Tasks</div>
+            </div>
+            <div class="task-stat">
+                <div class="task-stat-value" id="totalHours">{{ total_hours|floatformat:1 }}</div>
+                <div class="task-stat-label">Hours</div>
+            </div>
+            <div class="task-stat">
+                <div class="task-stat-value">{{ total_outcomes|default:0 }}</div>
+                <div class="task-stat-label">Outcomes</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="task-content">
+        {% if no_learner_profile or no_placement %}
+        <div class="text-center py-8">
+            <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">No Active Placement</h3>
+            <p class="text-gray-500">You need an active workplace placement to add tasks.</p>
+        </div>
+        {% elif not daily_entry %}
+        <div class="text-center py-8">
+            <svg class="w-16 h-16 mx-auto text-amber-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Clock In First</h3>
+            <p class="text-gray-500 mb-4">Please clock in before adding tasks for today.</p>
+            <a href="{% url 'portals:student_attendance_home' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Clock In Now
+            </a>
+        </div>
+        {% else %}
+        
+        <!-- Today's Tasks -->
+        {% if today_tasks %}
+        <div class="mb-6">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Today's Tasks</h2>
+            <div id="tasksList">
+                {% for task in today_tasks %}
+                <div class="task-list-item">
+                    <div class="task-list-icon">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <div class="task-list-content">
+                        <div class="task-list-desc">{{ task.task_description|truncatewords:20 }}</div>
+                        <div class="task-list-meta">
+                            {{ task.outcome_code }} • {{ task.hours_spent }}h
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="no-tasks-state" id="noTasksState">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+            </svg>
+            <p>No tasks yet today. Select an outcome below to add your first task.</p>
+        </div>
+        {% endif %}
+        
+        <!-- WM Outcomes Accordion -->
+        <div class="mb-6">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Select Outcome</h2>
+            
+            {% if grouped_outcomes %}
+            <div id="outcomesAccordion">
+                {% for module_code, data in grouped_outcomes.items %}
+                <div class="module-accordion">
+                    <div class="module-header" data-module="{{ module_code }}">
+                        <div>
+                            <div class="module-code">{{ data.module.code }}</div>
+                            <div class="module-name">{{ data.module.name }}</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="module-badge">{{ data.outcomes|length }}</span>
+                            <svg class="w-5 h-5 text-gray-400 transition-transform module-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="module-content" data-module-content="{{ module_code }}">
+                        {% for outcome in data.outcomes %}
+                        <div class="outcome-item" 
+                             data-outcome-id="{{ outcome.id }}"
+                             data-outcome-code="{{ outcome.outcome_code }}"
+                             data-outcome-title="{{ outcome.title }}"
+                             data-module-code="{{ data.module.code }}">
+                            <div class="outcome-code">{{ outcome.outcome_code }}</div>
+                            <div class="outcome-title">{{ outcome.title }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-6 text-gray-500">
+                <p>No workplace outcomes available for your qualification.</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        {% endif %}
+    </div>
+</div>
+
+<!-- Task Form Slide-up -->
+{% if daily_entry and can_add_tasks %}
+<div class="task-form-area" id="taskFormArea">
+    <div class="task-form-handle" id="taskFormHandle">
+        <span class="sr-only">Drag to expand</span>
+    </div>
+    
+    <div class="task-form-body">
+        <!-- Selected outcome badge (shown when outcome is selected) -->
+        <div class="selected-outcome-badge" id="selectedOutcomeBadge" style="display: none;">
+            <span class="badge-code" id="selectedOutcomeCode"></span>
+            <span class="badge-title" id="selectedOutcomeTitle"></span>
+            <span class="badge-remove" id="clearOutcome">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </span>
+        </div>
+        
+        <form id="taskForm">
+            <input type="hidden" id="outcomeId" name="outcome_id" value="">
+            
+            <div class="mb-4">
+                <label class="form-label" for="taskDescription">What did you work on?</label>
+                <textarea 
+                    id="taskDescription" 
+                    name="task_description" 
+                    class="form-input form-textarea" 
+                    placeholder="Describe the task or activity you completed..."
+                    required></textarea>
+            </div>
+            
+            <div class="mb-4">
+                <label class="form-label">Time Spent</label>
+                <div class="hours-stepper">
+                    <button type="button" class="hours-btn" id="hoursDecrease">−</button>
+                    <div class="hours-value"><span id="hoursValue">1.0</span>h</div>
+                    <button type="button" class="hours-btn" id="hoursIncrease">+</button>
+                </div>
+                <input type="hidden" id="hoursSpent" name="hours_spent" value="1.0">
+            </div>
+            
+            <div class="mb-4">
+                <label class="form-label" for="evidenceNotes">Evidence/Notes (optional)</label>
+                <textarea 
+                    id="evidenceNotes" 
+                    name="evidence_notes" 
+                    class="form-input" 
+                    rows="2"
+                    placeholder="Any evidence or additional notes..."></textarea>
+            </div>
+            
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span class="add-icon">+</span>
+                Add Task
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // State
+    let selectedOutcome = null;
+    let hoursValue = 1.0;
+    let isOffline = !navigator.onLine;
+    let offlineQueue = [];
+    
+    // Elements
+    const taskFormArea = document.getElementById('taskFormArea');
+    const taskFormHandle = document.getElementById('taskFormHandle');
+    const taskForm = document.getElementById('taskForm');
+    const outcomeId = document.getElementById('outcomeId');
+    const selectedOutcomeBadge = document.getElementById('selectedOutcomeBadge');
+    const selectedOutcomeCode = document.getElementById('selectedOutcomeCode');
+    const selectedOutcomeTitle = document.getElementById('selectedOutcomeTitle');
+    const clearOutcome = document.getElementById('clearOutcome');
+    const hoursDecrease = document.getElementById('hoursDecrease');
+    const hoursIncrease = document.getElementById('hoursIncrease');
+    const hoursValueEl = document.getElementById('hoursValue');
+    const hoursSpentInput = document.getElementById('hoursSpent');
+    const submitBtn = document.getElementById('submitBtn');
+    const toast = document.getElementById('toast');
+    const offlineIndicator = document.getElementById('offlineIndicator');
+    const taskCount = document.getElementById('taskCount');
+    const totalHours = document.getElementById('totalHours');
+    const tasksList = document.getElementById('tasksList');
+    const noTasksState = document.getElementById('noTasksState');
+    
+    // IndexedDB for offline queue
+    const DB_NAME = 'skillsflow_tasks';
+    const DB_VERSION = 1;
+    let db = null;
+    
+    function initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                db = request.result;
+                resolve(db);
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('tasks')) {
+                    db.createObjectStore('tasks', { keyPath: 'client_uuid' });
+                }
+            };
+        });
+    }
+    
+    async function saveToOfflineQueue(taskData) {
+        if (!db) await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('tasks', 'readwrite');
+            const store = tx.objectStore('tasks');
+            store.put(taskData);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+    
+    async function getOfflineQueue() {
+        if (!db) await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('tasks', 'readonly');
+            const store = tx.objectStore('tasks');
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+    
+    async function removeFromOfflineQueue(clientUuid) {
+        if (!db) await initDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('tasks', 'readwrite');
+            const store = tx.objectStore('tasks');
+            store.delete(clientUuid);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+    
+    // Accordion functionality
+    document.querySelectorAll('.module-header').forEach(header => {
+        header.addEventListener('click', function() {
+            const moduleCode = this.dataset.module;
+            const content = document.querySelector(`[data-module-content="${moduleCode}"]`);
+            const chevron = this.querySelector('.module-chevron');
+            
+            // Close other accordions
+            document.querySelectorAll('.module-header.active').forEach(h => {
+                if (h !== this) {
+                    h.classList.remove('active');
+                    h.querySelector('.module-chevron').style.transform = '';
+                }
+            });
+            document.querySelectorAll('.module-content.active').forEach(c => {
+                if (c !== content) c.classList.remove('active');
+            });
+            
+            // Toggle current
+            this.classList.toggle('active');
+            content.classList.toggle('active');
+            chevron.style.transform = this.classList.contains('active') ? 'rotate(180deg)' : '';
+        });
+    });
+    
+    // Outcome selection
+    document.querySelectorAll('.outcome-item').forEach(item => {
+        item.addEventListener('click', function() {
+            // Remove previous selection
+            document.querySelectorAll('.outcome-item.selected').forEach(i => i.classList.remove('selected'));
+            
+            // Select this one
+            this.classList.add('selected');
+            
+            selectedOutcome = {
+                id: this.dataset.outcomeId,
+                code: this.dataset.outcomeCode,
+                title: this.dataset.outcomeTitle,
+                moduleCode: this.dataset.moduleCode
+            };
+            
+            outcomeId.value = selectedOutcome.id;
+            selectedOutcomeCode.textContent = selectedOutcome.code;
+            selectedOutcomeTitle.textContent = selectedOutcome.title;
+            selectedOutcomeBadge.style.display = 'flex';
+            
+            // Expand form
+            if (taskFormArea) {
+                taskFormArea.classList.add('expanded');
+            }
+        });
+    });
+    
+    // Clear outcome selection
+    if (clearOutcome) {
+        clearOutcome.addEventListener('click', function() {
+            selectedOutcome = null;
+            outcomeId.value = '';
+            selectedOutcomeBadge.style.display = 'none';
+            document.querySelectorAll('.outcome-item.selected').forEach(i => i.classList.remove('selected'));
+        });
+    }
+    
+    // Form handle toggle
+    if (taskFormHandle) {
+        taskFormHandle.addEventListener('click', function() {
+            taskFormArea.classList.toggle('expanded');
+        });
+    }
+    
+    // Hours stepper
+    function updateHours(delta) {
+        hoursValue = Math.max(0.5, Math.min(8, hoursValue + delta));
+        hoursValue = Math.round(hoursValue * 2) / 2; // Round to 0.5
+        hoursValueEl.textContent = hoursValue.toFixed(1);
+        hoursSpentInput.value = hoursValue.toFixed(1);
+    }
+    
+    if (hoursDecrease) hoursDecrease.addEventListener('click', () => updateHours(-0.5));
+    if (hoursIncrease) hoursIncrease.addEventListener('click', () => updateHours(0.5));
+    
+    // Show toast
+    function showToast(message, type = 'info') {
+        toast.textContent = message;
+        toast.className = 'toast visible ' + type;
+        setTimeout(() => {
+            toast.className = 'toast';
+        }, 3000);
+    }
+    
+    // Update UI after adding task
+    function updateTaskUI(task, totals) {
+        // Update counts
+        if (taskCount) taskCount.textContent = totals.task_count;
+        if (totalHours) totalHours.textContent = parseFloat(totals.total_hours).toFixed(1);
+        
+        // Hide no tasks state
+        if (noTasksState) noTasksState.style.display = 'none';
+        
+        // Add task to list
+        if (tasksList) {
+            const taskEl = document.createElement('div');
+            taskEl.className = 'task-list-item';
+            taskEl.innerHTML = `
+                <div class="task-list-icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <div class="task-list-content">
+                    <div class="task-list-desc">${task.description}</div>
+                    <div class="task-list-meta">${task.outcome_code || '-'} • ${task.hours_spent}h</div>
+                </div>
+            `;
+            tasksList.insertBefore(taskEl, tasksList.firstChild);
+        } else {
+            // Create tasks list if it doesn't exist
+            const container = document.querySelector('.task-content .mb-6:first-child') || document.querySelector('.task-content');
+            if (container && !document.getElementById('tasksList')) {
+                const listHtml = `
+                    <div class="mb-6">
+                        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Today's Tasks</h2>
+                        <div id="tasksList">
+                            <div class="task-list-item">
+                                <div class="task-list-icon">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <div class="task-list-content">
+                                    <div class="task-list-desc">${task.description}</div>
+                                    <div class="task-list-meta">${task.outcome_code || '-'} • ${task.hours_spent}h</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('afterbegin', listHtml);
+            }
+        }
+    }
+    
+    // Generate UUID
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+    
+    // Submit task
+    if (taskForm) {
+        taskForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const description = document.getElementById('taskDescription').value.trim();
+            if (!description) {
+                showToast('Please enter a task description', 'error');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="animate-spin inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"></span> Adding...';
+            
+            const taskData = {
+                client_uuid: generateUUID(),
+                outcome_id: outcomeId.value || null,
+                task_description: description,
+                hours_spent: hoursSpentInput.value,
+                evidence_notes: document.getElementById('evidenceNotes').value,
+                entry_date: '{{ today|date:"Y-m-d" }}',
+                offline_created: isOffline
+            };
+            
+            if (isOffline) {
+                // Save to offline queue
+                await saveToOfflineQueue(taskData);
+                
+                // Update UI optimistically
+                const localTask = {
+                    description: taskData.task_description,
+                    outcome_code: selectedOutcome ? selectedOutcome.code : '-',
+                    hours_spent: taskData.hours_spent
+                };
+                const currentCount = parseInt(taskCount?.textContent || 0);
+                const currentHours = parseFloat(totalHours?.textContent || 0);
+                updateTaskUI(localTask, {
+                    task_count: currentCount + 1,
+                    total_hours: (currentHours + parseFloat(taskData.hours_spent)).toFixed(1)
+                });
+                
+                showToast('Task saved offline - will sync when online', 'success');
+                resetForm();
+            } else {
+                try {
+                    const response = await fetch('{% url "portals:student_quick_add_task" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify(taskData)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        updateTaskUI(result.task, result.totals);
+                        showToast('Task added successfully!', 'success');
+                        resetForm();
+                    } else {
+                        showToast(result.error || 'Failed to add task', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error adding task:', error);
+                    // Save offline
+                    await saveToOfflineQueue(taskData);
+                    showToast('Network error - task saved offline', 'error');
+                }
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span class="add-icon">+</span> Add Task';
+        });
+    }
+    
+    function resetForm() {
+        taskForm.reset();
+        hoursValue = 1.0;
+        hoursValueEl.textContent = '1.0';
+        hoursSpentInput.value = '1.0';
+        
+        // Clear outcome selection
+        selectedOutcome = null;
+        outcomeId.value = '';
+        selectedOutcomeBadge.style.display = 'none';
+        document.querySelectorAll('.outcome-item.selected').forEach(i => i.classList.remove('selected'));
+        
+        // Collapse form
+        taskFormArea.classList.remove('expanded');
+    }
+    
+    // Sync offline queue when back online
+    async function syncOfflineQueue() {
+        if (isOffline) return;
+        
+        const queue = await getOfflineQueue();
+        if (queue.length === 0) return;
+        
+        for (const taskData of queue) {
+            try {
+                const response = await fetch('{% url "portals:student_quick_add_task" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(taskData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success || result.duplicate) {
+                    await removeFromOfflineQueue(taskData.client_uuid);
+                }
+            } catch (error) {
+                console.error('Sync error:', error);
+                break; // Stop syncing if we hit an error
+            }
+        }
+        
+        showToast('Offline tasks synced!', 'success');
+    }
+    
+    // Online/offline handling
+    window.addEventListener('online', () => {
+        isOffline = false;
+        offlineIndicator.classList.remove('visible');
+        syncOfflineQueue();
+    });
+    
+    window.addEventListener('offline', () => {
+        isOffline = true;
+        offlineIndicator.classList.add('visible');
+    });
+    
+    // Initial offline check
+    if (isOffline) {
+        offlineIndicator.classList.add('visible');
+    }
+    
+    // Initialize IndexedDB
+    initDB().then(() => {
+        if (!isOffline) syncOfflineQueue();
+    });
+});
+</script>
+{% endblock %}

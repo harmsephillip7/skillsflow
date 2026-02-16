@@ -1,0 +1,256 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Corporate Management - SkillsFlow{% endblock %}
+
+{% block page_title %}Corporate Management{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Corporate</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'corporate:client_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        New Client
+    </a>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    
+    <!-- Quick Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Total Clients -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 p-3 bg-blue-100 rounded-lg">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Clients</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_clients }}</p>
+                    <p class="text-xs text-green-600">{{ active_clients }} active</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active Subscriptions -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 p-3 bg-green-100 rounded-lg">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Active Services</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ active_subscriptions }}</p>
+                    <p class="text-xs text-yellow-600">{{ pending_subscriptions }} pending</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Host Employers -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 p-3 bg-purple-100 rounded-lg">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Host Employers</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ approved_host_employers }}</p>
+                    <p class="text-xs text-gray-500">{{ total_capacity }} capacity</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trade Tests -->
+        <a href="{% url 'trade_tests:dashboard' %}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 p-3 bg-orange-100 rounded-lg">
+                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Trade Tests</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ upcoming_tests }}</p>
+                    <p class="text-xs text-primary-600 hover:underline">Go to Trade Tests →</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    
+    <!-- Quick Navigation Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <a href="{% url 'corporate:client_list' %}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-primary-200 transition-all duration-200 group">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary-600">Clients</h3>
+                    <p class="text-sm text-gray-500">Manage corporate clients</p>
+                </div>
+                <svg class="w-6 h-6 text-gray-400 group-hover:text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+        
+        <a href="{% url 'corporate:service_list' %}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-primary-200 transition-all duration-200 group">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary-600">Services</h3>
+                    <p class="text-sm text-gray-500">View service offerings</p>
+                </div>
+                <svg class="w-6 h-6 text-gray-400 group-hover:text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+        
+        <a href="{% url 'corporate:host_employer_list' %}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-primary-200 transition-all duration-200 group">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary-600">Host Employers</h3>
+                    <p class="text-sm text-gray-500">Workplace management</p>
+                </div>
+                <svg class="w-6 h-6 text-gray-400 group-hover:text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+        
+        <a href="{% url 'trade_tests:dashboard' %}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-primary-200 transition-all duration-200 group">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary-600">Trade Tests</h3>
+                    <p class="text-sm text-gray-500">Applications & bookings</p>
+                </div>
+                <svg class="w-6 h-6 text-gray-400 group-hover:text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+    </div>
+    
+    <!-- Service Categories Stats -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Services by Category</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {% for cat in category_stats %}
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <p class="text-2xl font-bold text-primary-600">{{ cat.count }}</p>
+                <p class="text-sm text-gray-600">{{ cat.name }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Recent Service Subscriptions -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Subscriptions</h3>
+            <div class="space-y-4">
+                {% for sub in recent_subscriptions %}
+                <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="flex-shrink-0 p-2 bg-green-100 rounded">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">{{ sub.client.name }}</p>
+                        <p class="text-xs text-gray-500">{{ sub.service.name }}</p>
+                        <p class="text-xs text-gray-400">{{ sub.created_at|date:"d M Y" }}</p>
+                    </div>
+                    <span class="inline-flex px-2 py-0.5 text-xs rounded-full 
+                        {% if sub.status == 'active' %}bg-green-100 text-green-700
+                        {% elif sub.status == 'pending' %}bg-yellow-100 text-yellow-700
+                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                        {{ sub.get_status_display }}
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500 text-center py-4">No recent subscriptions</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Recent Placements -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Placements</h3>
+            <div class="space-y-4">
+                {% for placement in recent_placements %}
+                <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="flex-shrink-0 p-2 bg-purple-100 rounded">
+                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">{{ placement.learner }}</p>
+                        <p class="text-xs text-gray-500">{{ placement.host_employer.name }}</p>
+                        <p class="text-xs text-gray-400">{{ placement.start_date|date:"d M Y" }}</p>
+                    </div>
+                    <span class="inline-flex px-2 py-0.5 text-xs rounded-full 
+                        {% if placement.status == 'active' %}bg-green-100 text-green-700
+                        {% elif placement.status == 'pending' %}bg-yellow-100 text-yellow-700
+                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                        {{ placement.get_status_display }}
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500 text-center py-4">No recent placements</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Recent Trade Test Bookings -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Recent Trade Tests</h3>
+                <a href="{% url 'trade_tests:dashboard' %}" class="text-sm text-primary-600 hover:text-primary-700">View all →</a>
+            </div>
+            <div class="space-y-4">
+                {% for booking in recent_bookings %}
+                <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="flex-shrink-0 p-2 bg-orange-100 rounded">
+                        <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">{{ booking.learner }}</p>
+                        <p class="text-xs text-gray-500">{{ booking.trade }} @ {{ booking.venue.name }}</p>
+                        <p class="text-xs text-gray-400">{{ booking.test_date|date:"d M Y" }}</p>
+                    </div>
+                    <span class="inline-flex px-2 py-0.5 text-xs rounded-full 
+                        {% if booking.status == 'confirmed' %}bg-green-100 text-green-700
+                        {% elif booking.status == 'pending' %}bg-yellow-100 text-yellow-700
+                        {% elif booking.status == 'completed' %}bg-blue-100 text-blue-700
+                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                        {{ booking.get_status_display }}
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500 text-center py-4">No recent bookings</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

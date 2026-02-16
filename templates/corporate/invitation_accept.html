@@ -1,0 +1,126 @@
+{% extends 'base/simple_layout.html' %}
+
+{% block title %}Accept Invitation - {{ invitation.client.company_name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <!-- Logo -->
+        <div class="flex justify-center">
+            <div class="w-16 h-16 rounded-full bg-primary-600 flex items-center justify-center">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </div>
+        </div>
+        <h2 class="mt-6 text-center text-3xl font-bold text-gray-900">
+            Welcome to SkillsFlow
+        </h2>
+        <p class="mt-2 text-center text-sm text-gray-600">
+            You've been invited to the <span class="font-medium text-primary-600">{{ invitation.client.company_name }}</span> client portal
+        </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow-lg sm:rounded-xl sm:px-10">
+            <!-- Invitation Details -->
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-500">Invited as</span>
+                    <span class="px-2 py-1 text-xs rounded-full bg-primary-100 text-primary-700 font-medium">
+                        {{ invitation.get_role_display }}
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-500">Access Level</span>
+                    <span class="text-sm text-gray-900">{{ invitation.get_permission_template_display }}</span>
+                </div>
+            </div>
+            
+            {% if user_exists %}
+            <!-- Existing User - Just Accept -->
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <p class="text-gray-700">You already have an account. Accept the invitation to access the portal.</p>
+            </div>
+            
+            <form method="post" action="{% url 'corporate:portal_invitation_accept' invitation.token %}">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Accept Invitation
+                </button>
+            </form>
+            
+            {% else %}
+            <!-- New User - Create Account -->
+            <form method="post" action="{% url 'corporate:portal_invitation_accept' invitation.token %}" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
+                        <input type="text" name="first_name" id="first_name" required
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                        <input type="text" name="last_name" id="last_name" required
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" name="email" id="email" value="{{ invitation.email }}" readonly
+                           class="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm bg-gray-50 text-gray-500">
+                </div>
+                
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                    <input type="tel" name="phone" id="phone"
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" name="password" id="password" required minlength="8"
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                    <p class="mt-1 text-xs text-gray-500">Minimum 8 characters</p>
+                </div>
+                
+                <div>
+                    <label for="password_confirm" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+                    <input type="password" name="password_confirm" id="password_confirm" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                
+                <div class="flex items-start">
+                    <input type="checkbox" name="terms" id="terms" required
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded mt-0.5">
+                    <label for="terms" class="ml-2 block text-sm text-gray-700">
+                        I agree to the <a href="#" class="text-primary-600 hover:text-primary-700">Terms of Service</a> 
+                        and <a href="#" class="text-primary-600 hover:text-primary-700">Privacy Policy</a>
+                    </label>
+                </div>
+                
+                <button type="submit" 
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Create Account & Accept
+                </button>
+            </form>
+            {% endif %}
+            
+            <div class="mt-6 text-center">
+                <p class="text-xs text-gray-500">
+                    This invitation expires on {{ invitation.expires_at|date:"d M Y" }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}Billing Schedule - {{ project.reference_number }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6" x-data="billingSchedule()">
+    <!-- Header -->
+    <div class="mb-6">
+        <nav class="flex items-center text-sm text-gray-500 mb-4">
+            <a href="{% url 'core:projects_list' %}" class="hover:text-primary-600">Projects</a>
+            <svg class="w-4 h-4 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/>
+            </svg>
+            <a href="{% url 'core:project_detail' project.pk %}" class="hover:text-primary-600">{{ project.reference_number }}</a>
+            <svg class="w-4 h-4 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/>
+            </svg>
+            <span class="text-gray-900">Billing Schedule</span>
+        </nav>
+        
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Billing Schedule</h1>
+                <p class="text-gray-500">{{ project.title }}</p>
+            </div>
+            <a href="{% url 'core:project_detail' project.pk %}" 
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to Project
+            </a>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div x-show="loading" class="flex items-center justify-center py-12">
+        <svg class="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+    </div>
+
+    <!-- Main Content -->
+    <div x-show="!loading" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column: Schedule Configuration -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Schedule Settings -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Schedule Settings</h2>
+                
+                <form @submit.prevent="saveSchedule" class="space-y-4">
+                    <!-- Schedule Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Schedule Type</label>
+                        <select x-model="schedule.schedule_type" 
+                                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            <template x-for="type in choices.schedule_types" :key="type.value">
+                                <option :value="type.value" x-text="type.label"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Invoice Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Invoice Type</label>
+                        <select x-model="schedule.invoice_type" 
+                                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            <template x-for="type in choices.invoice_types" :key="type.value">
+                                <option :value="type.value" x-text="type.label"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Total Contract Value -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Total Contract Value (R)</label>
+                        <input type="number" x-model="schedule.total_contract_value" step="0.01" min="0"
+                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <p class="text-xs text-gray-500 mt-1" x-show="projectData.contract_value > 0">
+                            From NOT: R<span x-text="projectData.contract_value?.toLocaleString()"></span>
+                        </p>
+                    </div>
+
+                    <!-- Billing Period -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                            <input type="date" x-model="schedule.billing_start_date"
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                            <input type="date" x-model="schedule.billing_end_date"
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        </div>
+                    </div>
+
+                    <!-- Billing Day -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Billing Day</label>
+                            <input type="number" x-model="schedule.billing_day_of_month" min="1" max="28"
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Payment Terms (days)</label>
+                            <input type="number" x-model="schedule.payment_terms_days" min="0" max="90"
+                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        </div>
+                    </div>
+
+                    <!-- Auto Generate -->
+                    <div class="flex items-center">
+                        <input type="checkbox" x-model="schedule.auto_generate" id="auto_generate"
+                               class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                        <label for="auto_generate" class="ml-2 text-sm text-gray-700">Auto-generate invoices</label>
+                    </div>
+
+                    <!-- Amount per Period (calculated) -->
+                    <div class="p-3 bg-gray-50 rounded-lg">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Periods:</span>
+                            <span class="font-medium" x-text="schedule.periods_count || calculatedPeriods"></span>
+                        </div>
+                        <div class="flex justify-between text-sm mt-1">
+                            <span class="text-gray-500">Amount per Period:</span>
+                            <span class="font-medium">R<span x-text="calculatedAmountPerPeriod.toLocaleString(undefined, {minimumFractionDigits: 2})"></span></span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-3 pt-4">
+                        <button type="submit" :disabled="saving"
+                                class="flex-1 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50">
+                            <span x-show="!saving">Save Changes</span>
+                            <span x-show="saving">Saving...</span>
+                        </button>
+                        <button type="button" @click="regenerateInvoices" :disabled="saving"
+                                class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                            Regenerate
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-sm font-semibold text-gray-900 mb-3">Quick Stats</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="text-center p-3 bg-blue-50 rounded-lg">
+                        <p class="text-lg font-bold text-blue-700" x-text="scheduledInvoices.length"></p>
+                        <p class="text-xs text-blue-600">Scheduled</p>
+                    </div>
+                    <div class="text-center p-3 bg-green-50 rounded-lg">
+                        <p class="text-lg font-bold text-green-700" x-text="generatedCount"></p>
+                        <p class="text-xs text-green-600">Generated</p>
+                    </div>
+                    <div class="text-center p-3 bg-yellow-50 rounded-lg">
+                        <p class="text-lg font-bold text-yellow-700">R<span x-text="totalScheduledAmount.toLocaleString()"></span></p>
+                        <p class="text-xs text-yellow-600">Total Value</p>
+                    </div>
+                    <div class="text-center p-3 bg-purple-50 rounded-lg">
+                        <p class="text-lg font-bold text-purple-700" x-text="schedule.next_invoice_date || 'N/A'"></p>
+                        <p class="text-xs text-purple-600">Next Invoice</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Scheduled Invoices -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900">Scheduled Invoices</h2>
+                    <span class="text-sm text-gray-500" x-text="`${scheduledInvoices.length} invoices`"></span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Scheduled</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="invoice in scheduledInvoices" :key="invoice.id">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="text-sm font-medium text-gray-900" x-text="`Period ${invoice.period_number}`"></span>
+                                        <template x-if="invoice.deliverable_title">
+                                            <p class="text-xs text-gray-500" x-text="invoice.deliverable_title"></p>
+                                        </template>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" x-text="formatDate(invoice.scheduled_date)"></td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" x-text="formatDate(invoice.due_date)"></td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                                        R<span x-text="invoice.amount.toLocaleString(undefined, {minimumFractionDigits: 2})"></span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                                        <span class="px-2 py-1 text-xs rounded-full"
+                                              :class="{
+                                                  'bg-gray-100 text-gray-600': invoice.status === 'SCHEDULED',
+                                                  'bg-green-100 text-green-700': invoice.status === 'GENERATED' || invoice.status === 'PAID',
+                                                  'bg-blue-100 text-blue-700': invoice.status === 'SENT',
+                                                  'bg-red-100 text-red-700': invoice.status === 'OVERDUE',
+                                                  'bg-gray-200 text-gray-500': invoice.status === 'CANCELLED',
+                                              }"
+                                              x-text="invoice.status_display">
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-right">
+                                        <template x-if="invoice.status === 'SCHEDULED' && isOverdue(invoice.scheduled_date)">
+                                            <button @click="generateInvoice(invoice.id)" 
+                                                    class="px-3 py-1 text-xs font-medium text-white bg-primary-600 rounded hover:bg-primary-700">
+                                                Generate
+                                            </button>
+                                        </template>
+                                        <template x-if="invoice.invoice_number">
+                                            <a :href="`/admin/finance/invoice/${invoice.invoice_id}/change/`" 
+                                               class="text-xs text-primary-600 hover:text-primary-700" 
+                                               x-text="invoice.invoice_number">
+                                            </a>
+                                        </template>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Empty State -->
+                <div x-show="scheduledInvoices.length === 0" class="px-6 py-12 text-center">
+                    <svg class="w-12 h-12 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-500">No scheduled invoices yet</p>
+                    <p class="text-xs text-gray-400">Configure the billing schedule and save to generate invoices</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div x-show="message" x-transition
+         class="fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg"
+         :class="messageType === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'">
+        <span x-text="message"></span>
+    </div>
+</div>
+
+<script>
+function billingSchedule() {
+    return {
+        loading: true,
+        saving: false,
+        message: '',
+        messageType: 'success',
+        projectData: {},
+        schedule: {},
+        scheduledInvoices: [],
+        choices: {
+            schedule_types: [],
+            invoice_types: []
+        },
+        
+        async init() {
+            await this.loadData();
+        },
+        
+        async loadData() {
+            try {
+                const response = await fetch('{% url "core:project_billing_schedule" project.pk %}', {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.projectData = data.project || {};
+                    this.schedule = data.billing_schedule;
+                    this.scheduledInvoices = data.scheduled_invoices;
+                    this.choices = data.choices || {
+                        schedule_types: [
+                            {value: 'MONTHLY', label: 'Monthly'},
+                            {value: 'QUARTERLY', label: 'Quarterly'},
+                            {value: 'DELIVERABLE', label: 'Based on Deliverables'},
+                            {value: 'ANNUALLY', label: 'Annually'},
+                            {value: 'UPFRONT', label: 'Upfront (Full Payment)'},
+                            {value: 'MANUAL', label: 'Manual Override'},
+                        ],
+                        invoice_types: [
+                            {value: 'PROFORMA', label: 'Pro Forma'},
+                            {value: 'TAX', label: 'Tax Invoice'},
+                        ]
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading billing data:', error);
+                this.showMessage('Failed to load billing data', 'error');
+            }
+            this.loading = false;
+        },
+        
+        async saveSchedule() {
+            this.saving = true;
+            try {
+                const response = await fetch('{% url "core:project_billing_schedule" project.pk %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(this.schedule)
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showMessage('Billing schedule saved successfully', 'success');
+                    await this.loadData();
+                } else {
+                    this.showMessage(data.error || 'Failed to save', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving schedule:', error);
+                this.showMessage('Failed to save billing schedule', 'error');
+            }
+            this.saving = false;
+        },
+        
+        async regenerateInvoices() {
+            this.saving = true;
+            try {
+                const response = await fetch('{% url "core:project_billing_schedule" project.pk %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({...this.schedule, regenerate: true})
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showMessage('Invoices regenerated successfully', 'success');
+                    await this.loadData();
+                } else {
+                    this.showMessage(data.error || 'Failed to regenerate', 'error');
+                }
+            } catch (error) {
+                console.error('Error regenerating invoices:', error);
+                this.showMessage('Failed to regenerate invoices', 'error');
+            }
+            this.saving = false;
+        },
+        
+        async generateInvoice(scheduledId) {
+            try {
+                const response = await fetch(`/projects/{{ project.pk }}/billing/generate/${scheduledId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showMessage(`Invoice ${data.invoice.invoice_number} generated`, 'success');
+                    await this.loadData();
+                } else {
+                    this.showMessage(data.error || 'Failed to generate invoice', 'error');
+                }
+            } catch (error) {
+                console.error('Error generating invoice:', error);
+                this.showMessage('Failed to generate invoice', 'error');
+            }
+        },
+        
+        showMessage(text, type = 'success') {
+            this.message = text;
+            this.messageType = type;
+            setTimeout(() => { this.message = ''; }, 3000);
+        },
+        
+        formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            return new Date(dateStr).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' });
+        },
+        
+        isOverdue(dateStr) {
+            return new Date(dateStr) <= new Date();
+        },
+        
+        get calculatedPeriods() {
+            if (!this.schedule.billing_start_date || !this.schedule.billing_end_date) return 0;
+            const start = new Date(this.schedule.billing_start_date);
+            const end = new Date(this.schedule.billing_end_date);
+            const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+            
+            switch(this.schedule.schedule_type) {
+                case 'MONTHLY': return months + 1;
+                case 'QUARTERLY': return Math.floor(months / 3) + 1;
+                case 'ANNUALLY': return Math.floor(months / 12) + 1;
+                case 'UPFRONT': return 1;
+                default: return months + 1;
+            }
+        },
+        
+        get calculatedAmountPerPeriod() {
+            const periods = this.schedule.periods_count || this.calculatedPeriods;
+            if (periods <= 0 || !this.schedule.total_contract_value) return 0;
+            return this.schedule.total_contract_value / periods;
+        },
+        
+        get generatedCount() {
+            return this.scheduledInvoices.filter(i => i.status !== 'SCHEDULED').length;
+        },
+        
+        get totalScheduledAmount() {
+            return this.scheduledInvoices.reduce((sum, i) => sum + i.amount, 0);
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,289 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Integration Hub" }} - SkillsFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50" x-data="integrationHub()">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">Integration Hub</h1>
+                        <p class="text-sm text-gray-500">Manage your external service connections</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="{% url 'integrations:marketplace' %}" class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add Integration
+                    </a>
+                    <button @click="refreshHealth()" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                        <svg class="w-5 h-5" :class="{ 'animate-spin': refreshing }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Summary Cards -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+            <!-- Total Integrations -->
+            <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-gray-100 rounded-lg">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-2xl font-bold text-gray-900">{{ health_summary.total }}</p>
+                        <p class="text-xs text-gray-500">Total</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Active -->
+            <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-2xl font-bold text-gray-900">{{ health_summary.active }}</p>
+                        <p class="text-xs text-gray-500">Active</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Healthy -->
+            <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-2xl font-bold text-green-600">{{ health_summary.healthy }}</p>
+                        <p class="text-xs text-gray-500">Healthy</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Degraded -->
+            <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-yellow-100 rounded-lg">
+                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-2xl font-bold text-yellow-600">{{ health_summary.degraded }}</p>
+                        <p class="text-xs text-gray-500">Degraded</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Unhealthy -->
+            <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="p-2 bg-red-100 rounded-lg">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-2xl font-bold text-red-600">{{ health_summary.unhealthy }}</p>
+                        <p class="text-xs text-gray-500">Unhealthy</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Connected Integrations -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Connected Integrations</h2>
+                    </div>
+                    <div class="divide-y divide-gray-100">
+                        {% for connection in connections %}
+                        <div class="px-6 py-4 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                                        {% if connection.provider.icon %}
+                                            <img src="{{ connection.provider.icon.url }}" alt="{{ connection.provider.name }}" class="w-8 h-8">
+                                        {% else %}
+                                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                            </svg>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium text-gray-900">{{ connection.provider.name }}</h3>
+                                        <p class="text-sm text-gray-500">{{ connection.provider.get_category_display }}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <!-- Health Status Badge -->
+                                    {% if connection.health_status == 'HEALTHY' %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-green-500"></span>
+                                            Healthy
+                                        </span>
+                                    {% elif connection.health_status == 'DEGRADED' %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-yellow-500"></span>
+                                            Degraded
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-red-500"></span>
+                                            Unhealthy
+                                        </span>
+                                    {% endif %}
+                                    
+                                    <!-- Active Toggle -->
+                                    {% if connection.is_active %}
+                                        <span class="text-xs text-gray-500">Active</span>
+                                    {% else %}
+                                        <span class="text-xs text-gray-400">Inactive</span>
+                                    {% endif %}
+                                    
+                                    <!-- Actions -->
+                                    <a href="{% url 'integrations:connection_detail' connection.id %}" class="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-gray-100">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                            {% if connection.status_message %}
+                            <p class="mt-2 text-sm text-gray-500 ml-16">{{ connection.status_message }}</p>
+                            {% endif %}
+                            {% if connection.last_sync_at %}
+                            <p class="mt-1 text-xs text-gray-400 ml-16">Last sync: {{ connection.last_sync_at|timesince }} ago</p>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <div class="px-6 py-12 text-center">
+                            <svg class="mx-auto w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path>
+                            </svg>
+                            <h3 class="mt-4 text-sm font-medium text-gray-900">No integrations connected</h3>
+                            <p class="mt-1 text-sm text-gray-500">Get started by connecting your first integration.</p>
+                            <a href="{% url 'integrations:marketplace' %}" class="mt-4 inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700">
+                                Browse Marketplace
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Quick Connect -->
+                {% if available_providers %}
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Quick Connect</h2>
+                    </div>
+                    <div class="p-4 space-y-2">
+                        {% for provider in available_providers|slice:":5" %}
+                        <a href="{% url 'integrations:provider_detail' provider.slug %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors group">
+                            <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200">
+                                {% if provider.icon %}
+                                    <img src="{{ provider.icon.url }}" alt="{{ provider.name }}" class="w-5 h-5">
+                                {% else %}
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                    </svg>
+                                {% endif %}
+                            </div>
+                            <span class="ml-3 text-sm font-medium text-gray-700 group-hover:text-primary-600">{{ provider.name }}</span>
+                        </a>
+                        {% endfor %}
+                        <a href="{% url 'integrations:marketplace' %}" class="block text-center text-sm text-primary-600 hover:text-primary-700 font-medium py-2">
+                            View all integrations →
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900">Recent Syncs</h2>
+                        <a href="{% url 'integrations:sync_logs' %}" class="text-sm text-primary-600 hover:text-primary-700">View all</a>
+                    </div>
+                    <div class="divide-y divide-gray-100">
+                        {% for log in recent_syncs %}
+                        <div class="px-6 py-3">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ log.connection.provider.name }}</p>
+                                    <p class="text-xs text-gray-500">{{ log.entity_type }} - {{ log.started_at|timesince }} ago</p>
+                                </div>
+                                {% if log.status == 'SUCCESS' %}
+                                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                {% elif log.status == 'PARTIAL' %}
+                                    <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                                {% else %}
+                                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="px-6 py-8 text-center text-sm text-gray-500">
+                            No sync activity yet
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function integrationHub() {
+    return {
+        refreshing: false,
+        
+        async refreshHealth() {
+            this.refreshing = true;
+            try {
+                await fetch("{% url 'integrations:api_health_check' %}");
+                // Reload after a delay to show results
+                setTimeout(() => window.location.reload(), 2000);
+            } catch (e) {
+                console.error('Health check failed:', e);
+            }
+            this.refreshing = false;
+        }
+    }
+}
+</script>
+{% endblock %}

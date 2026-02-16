@@ -1,0 +1,224 @@
+{% extends 'base/app_layout.html' %}
+{% load static admin_tags %}
+
+{% block title %}Add Evidence Requirement - {{ tranche.reference_number }}{% endblock %}
+
+{% block page_title %}Add Evidence Requirement{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'tranches:tranche_list' %}" class="text-primary-600 hover:text-primary-800">Tranches</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="text-primary-600 hover:text-primary-800">{{ tranche.reference_number }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Add Requirement</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-xl shadow-lg p-6 text-white">
+        <h2 class="text-xl font-bold">{{ tranche.name }}</h2>
+        <p class="mt-1 text-purple-200">{{ tranche.reference_number }} • {{ tranche.get_tranche_type_display }}</p>
+        <p class="mt-2 text-sm text-purple-200">Due: {{ tranche.due_date|date:"d M Y" }}</p>
+    </div>
+    
+    <!-- Form -->
+    <form method="post" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">Evidence Requirement Details</h3>
+            <p class="text-sm text-gray-500 mt-1">Define what evidence needs to be collected</p>
+        </div>
+        
+        <div class="p-6 space-y-6">
+            <!-- Evidence Type -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Evidence Type *</label>
+                <select name="evidence_type" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                    <option value="">Select type...</option>
+                    <optgroup label="Learner Documentation">
+                        <option value="LEARNER_LIST">Learner List/Register</option>
+                        <option value="LEARNER_AGREEMENTS">Learner Agreements</option>
+                        <option value="ID_COPIES">ID Document Copies</option>
+                        <option value="QUALIFICATION_COPIES">Qualification Copies</option>
+                    </optgroup>
+                    <optgroup label="Registration & Enrollment">
+                        <option value="REGISTRATION_FORMS">Registration Forms</option>
+                        <option value="ENROLLMENT_PROOF">Enrollment Confirmation</option>
+                        <option value="NLRD_REGISTRATION">NLRD Registration Proof</option>
+                        <option value="SETA_REGISTRATION">SETA Registration Confirmation</option>
+                    </optgroup>
+                    <optgroup label="PPE & Equipment">
+                        <option value="PPE_ISSUE_REGISTER">PPE Issue Register</option>
+                        <option value="TOOLBOX_ISSUE_REGISTER">Toolbox Issue Register</option>
+                        <option value="EQUIPMENT_PHOTOS">Equipment Issue Photos</option>
+                        <option value="DELIVERY_NOTES">Delivery Notes</option>
+                    </optgroup>
+                    <optgroup label="Learning Materials">
+                        <option value="MATERIAL_ISSUE_REGISTER">Learning Material Issue Register</option>
+                        <option value="TEXTBOOK_LIST">Textbook/Material List</option>
+                    </optgroup>
+                    <optgroup label="Attendance & Training">
+                        <option value="ATTENDANCE_REGISTERS">Attendance Registers</option>
+                        <option value="TRAINING_SCHEDULE">Training Schedule</option>
+                        <option value="FACILITATOR_REPORTS">Facilitator Reports</option>
+                        <option value="LESSON_PLANS">Lesson Plans</option>
+                    </optgroup>
+                    <optgroup label="Assessments">
+                        <option value="ASSESSMENT_SCHEDULE">Assessment Schedule</option>
+                        <option value="ASSESSMENT_RESULTS">Assessment Results</option>
+                        <option value="COMPETENCY_MATRIX">Competency Matrix</option>
+                        <option value="POE_SAMPLES">POE Samples</option>
+                        <option value="ASSESSMENT_TOOLS">Assessment Tools Used</option>
+                    </optgroup>
+                    <optgroup label="Workplace">
+                        <option value="PLACEMENT_LETTERS">Workplace Placement Letters</option>
+                        <option value="WORKPLACE_AGREEMENTS">Workplace Agreements</option>
+                        <option value="MENTOR_ASSIGNMENTS">Mentor Assignment Records</option>
+                        <option value="LOGBOOKS">Learner Logbooks</option>
+                        <option value="WORKPLACE_REPORTS">Workplace Progress Reports</option>
+                    </optgroup>
+                    <optgroup label="Moderation & Verification">
+                        <option value="MODERATION_REPORTS">Moderation Reports</option>
+                        <option value="VERIFICATION_REPORTS">Verification Reports</option>
+                        <option value="EXTERNAL_MODERATION">External Moderation Proof</option>
+                    </optgroup>
+                    <optgroup label="Trade Test & Certification">
+                        <option value="TRADE_TEST_BOOKINGS">Trade Test Bookings</option>
+                        <option value="TRADE_TEST_RESULTS">Trade Test Results</option>
+                        <option value="CERTIFICATES">Certificates Issued</option>
+                        <option value="CERTIFICATE_REGISTER">Certificate Issue Register</option>
+                    </optgroup>
+                    <optgroup label="Financial & Administrative">
+                        <option value="INVOICES">Invoices</option>
+                        <option value="BANK_STATEMENTS">Bank Statements</option>
+                        <option value="FINANCIAL_REPORT">Financial Report</option>
+                        <option value="PROJECT_REPORT">Project Progress Report</option>
+                    </optgroup>
+                    <optgroup label="Photos & Media">
+                        <option value="TRAINING_PHOTOS">Training Session Photos</option>
+                        <option value="CEREMONY_PHOTOS">Ceremony/Event Photos</option>
+                        <option value="SITE_PHOTOS">Training Site Photos</option>
+                    </optgroup>
+                    <optgroup label="Other">
+                        <option value="OTHER">Other Supporting Document</option>
+                    </optgroup>
+                </select>
+            </div>
+            
+            <!-- Name -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Requirement Name *</label>
+                <input type="text" name="name" required placeholder="e.g., Signed Learner Agreements"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+            </div>
+            
+            <!-- Description -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea name="description" rows="3" placeholder="Describe what exactly is required..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"></textarea>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Is Mandatory -->
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_mandatory" value="1" checked
+                               class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                        <span class="ml-2 text-sm text-gray-700">Required for submission</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500 ml-6">Tranche cannot be submitted without this evidence</p>
+                </div>
+                
+                <!-- Requires Verification -->
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="requires_verification" value="1"
+                               class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                        <span class="ml-2 text-sm text-gray-700">Requires verification</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500 ml-6">Evidence must be verified before QC</p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Expected Count -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Expected Count</label>
+                    <input type="number" name="expected_count" min="1" value="1"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                    <p class="mt-1 text-xs text-gray-500">Number of documents expected (e.g., one per learner)</p>
+                </div>
+                
+                <!-- Deadline -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
+                    <input type="date" name="deadline" value="{{ tranche.due_date|date:'Y-m-d' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                    <p class="mt-1 text-xs text-gray-500">Defaults to tranche due date</p>
+                </div>
+            </div>
+            
+            <!-- Verification Notes -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Verification Notes</label>
+                <textarea name="verification_notes" rows="2" placeholder="Notes on how to verify this evidence..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"></textarea>
+            </div>
+        </div>
+        
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+            <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                Add Requirement
+            </button>
+        </div>
+    </form>
+    
+    <!-- Existing Requirements -->
+    {% if tranche.evidence_requirements.count > 0 %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-sm font-semibold text-gray-900">Existing Requirements ({{ tranche.evidence_requirements.count }})</h3>
+        </div>
+        <ul class="divide-y divide-gray-100">
+            {% for req in tranche.evidence_requirements.all %}
+            <li class="px-6 py-3 flex items-center justify-between">
+                <div>
+                    <span class="text-sm font-medium text-gray-900">{{ req.name }}</span>
+                    <span class="text-xs text-gray-500 ml-2">{{ req.get_evidence_type_display }}</span>
+                    {% if req.is_mandatory %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 ml-2">Required</span>
+                    {% endif %}
+                </div>
+                {% if req.is_fulfilled %}
+                <span class="text-xs text-green-600">✓ Fulfilled</span>
+                {% else %}
+                <span class="text-xs text-gray-500">Pending</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+</div>
+{% endblock %}

@@ -1,0 +1,622 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}{{ client.company_name }} - 360° View{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:dashboard' %}" class="text-gray-700 hover:text-blue-600">Corporate</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:client_list' %}" class="text-gray-700 hover:text-blue-600">Clients</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">{{ client.company_name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex space-x-3">
+    {% if onboarding and onboarding.status != 'COMPLETED' %}
+    <a href="{% url 'corporate:client_onboarding' client.pk %}" class="inline-flex items-center px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Continue Onboarding ({{ onboarding.progress_percentage }}%)
+    </a>
+    {% endif %}
+    <a href="{% url 'corporate:add_client_activity' client.pk %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+        </svg>
+        Log Activity
+    </a>
+    <a href="{% url 'corporate:opportunity_create' %}?client={{ client.pk }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        New Opportunity
+    </a>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<!-- Client Header -->
+<div class="bg-white rounded-lg shadow mb-8 p-6">
+    <div class="flex items-start justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ client.company_name }}</h1>
+            {% if client.trading_name %}
+            <p class="text-sm text-gray-500">Trading as: {{ client.trading_name }}</p>
+            {% endif %}
+        </div>
+        <div class="flex items-center space-x-4">
+            <!-- Health Score -->
+            <div class="text-center">
+                <div class="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold
+                    {% if client.health_score >= 70 %}bg-green-100 text-green-800
+                    {% elif client.health_score >= 40 %}bg-yellow-100 text-yellow-800
+                    {% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ client.health_score|default:"?" }}
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Health Score</p>
+            </div>
+            
+            <!-- Client Tier -->
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                {% if client.client_tier == 'STRATEGIC' %}bg-purple-100 text-purple-800
+                {% elif client.client_tier == 'KEY' %}bg-blue-100 text-blue-800
+                {% elif client.client_tier == 'EMERGING' %}bg-green-100 text-green-800
+                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                {{ client.get_client_tier_display }}
+            </span>
+            
+            <!-- Status -->
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                {% if client.status == 'ACTIVE' %}bg-green-100 text-green-800
+                {% elif client.status == 'PROSPECT' %}bg-blue-100 text-blue-800
+                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                {{ client.get_status_display }}
+            </span>
+        </div>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200">
+        <div>
+            <p class="text-sm text-gray-500">Active Services</p>
+            <p class="text-2xl font-bold text-gray-900">{{ active_subscriptions.count }}</p>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500">Open Opportunities</p>
+            <p class="text-2xl font-bold text-gray-900">{{ open_opportunities.count }}</p>
+            {% if open_opportunities %}
+            <p class="text-sm text-blue-600">R{{ client.total_opportunity_value|floatformat:0|intcomma }}</p>
+            {% endif %}
+        </div>
+        <div>
+            <p class="text-sm text-gray-500">Subscription Value</p>
+            <p class="text-2xl font-bold text-gray-900">R{{ total_subscription_value|floatformat:0|intcomma }}</p>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500">Active Projects</p>
+            <p class="text-2xl font-bold text-gray-900">{{ active_projects.count }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+        
+        <!-- WSP/ATR Service Card (if client has WSP/ATR subscription) -->
+        {% if wspatr_data %}
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg overflow-hidden">
+            <div class="p-6 text-white">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <h2 class="text-xl font-bold">WSP/ATR Service</h2>
+                        </div>
+                        <p class="text-indigo-200 text-sm mt-1">Workplace Skills Plan & Annual Training Report</p>
+                    </div>
+                    <a href="{% url 'corporate:wspatr_management' client.pk %}" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors">
+                        Manage →
+                    </a>
+                </div>
+                
+                <!-- Stats Row -->
+                <div class="grid grid-cols-3 gap-4 mt-6">
+                    <div class="bg-white/10 rounded-lg p-3 text-center">
+                        <p class="text-2xl font-bold">{{ wspatr_data.committee_members_count }}</p>
+                        <p class="text-xs text-indigo-200">Committee Members</p>
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-3 text-center">
+                        {% if wspatr_data.service_year %}
+                        <p class="text-2xl font-bold">{{ wspatr_data.service_year.progress_percentage }}%</p>
+                        <p class="text-xs text-indigo-200">FY{{ wspatr_data.service_year.financial_year }} Progress</p>
+                        {% else %}
+                        <p class="text-2xl font-bold">-</p>
+                        <p class="text-xs text-indigo-200">No Active Year</p>
+                        {% endif %}
+                    </div>
+                                        <div class="bg-white/10 rounded-lg p-3 text-center">
+                        <p class="text-2xl font-bold">{{ wspatr_data.upcoming_meetings|length }}</p>
+                        <p class="text-xs text-indigo-200">Upcoming Meetings</p>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex gap-3">
+                    <a href="{% url 'corporate:employee_database' client.pk %}" class="flex-1 bg-white/10 hover:bg-white/20 py-2 rounded-lg text-center text-sm font-medium transition-colors">
+                        Employee Database & IDPs
+                    </a>
+                    <a href="{% url 'corporate:committee_meetings' client.pk %}" class="flex-1 bg-white/10 hover:bg-white/20 py-2 rounded-lg text-center text-sm font-medium transition-colors">
+                        Committee Meetings
+                    </a>
+                </div>
+                
+                <!-- Status & Next Meeting -->
+                <div class="mt-4 pt-4 border-t border-white/20">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            {% if wspatr_data.service_year %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/20">
+                                {{ wspatr_data.service_year.get_status_display }}
+                            </span>
+                            {% if wspatr_data.service_year.submission_deadline %}
+                            <span class="text-xs text-indigo-200 ml-2">
+                                Deadline: {{ wspatr_data.service_year.submission_deadline|date:"d M Y" }}
+                            </span>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-xs text-indigo-200">No service year configured</span>
+                            {% endif %}
+                        </div>
+                        {% if wspatr_data.next_meeting %}
+                        <div class="text-right">
+                            <p class="text-xs text-indigo-200">Next Meeting</p>
+                            <p class="text-sm font-medium">{{ wspatr_data.next_meeting.scheduled_date|date:"d M Y" }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                {% if not wspatr_data.committee or wspatr_data.committee_members_count == 0 %}
+                <div class="mt-4 p-3 bg-yellow-500/20 rounded-lg border border-yellow-400/30">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-yellow-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <span class="text-sm">Training Committee needs to be set up</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- EE Service Card (if client has EE subscription or service years) -->
+        {% if ee_data %}
+        <div class="bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-xl shadow-lg overflow-hidden">
+            <div class="p-6 text-white">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            <h2 class="text-xl font-bold">Employment Equity</h2>
+                        </div>
+                        <p class="text-purple-200 text-sm mt-1">EE Plan & Compliance Reporting</p>
+                    </div>
+                    <a href="{% url 'corporate:ee_service_management' client.pk %}" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors">
+                        Manage →
+                    </a>
+                </div>
+                
+                <!-- Stats Row -->
+                <div class="grid grid-cols-3 gap-4 mt-6">
+                    <div class="bg-white/10 rounded-lg p-3 text-center">
+                        {% if ee_data.active_plan %}
+                        <p class="text-2xl font-bold">{{ ee_data.active_plan.duration_years }}yr</p>
+                        <p class="text-xs text-purple-200">Active Plan</p>
+                        {% else %}
+                        <p class="text-2xl font-bold">-</p>
+                        <p class="text-xs text-purple-200">No Plan</p>
+                        {% endif %}
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-3 text-center">
+                        {% if ee_data.service_year %}
+                        <p class="text-2xl font-bold">{{ ee_data.service_year.reporting_year }}</p>
+                        <p class="text-xs text-purple-200">Reporting Year</p>
+                        {% else %}
+                        <p class="text-2xl font-bold">-</p>
+                        <p class="text-xs text-purple-200">No Active Year</p>
+                        {% endif %}
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-3 text-center">
+                        {% if ee_data.service_year %}
+                        <p class="text-2xl font-bold">{{ ee_data.service_year.get_status_display }}</p>
+                        <p class="text-xs text-purple-200">Status</p>
+                        {% else %}
+                        <p class="text-2xl font-bold">-</p>
+                        <p class="text-xs text-purple-200">Status</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Status & Subscription -->
+                <div class="mt-4 pt-4 border-t border-white/20">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            {% if ee_data.subscription %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/20">
+                                Subscription Active
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/30 text-amber-200">
+                                No Subscription
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% if ee_data.service_year.submission_deadline %}
+                        <div class="text-right">
+                            <p class="text-xs text-purple-200">Deadline</p>
+                            <p class="text-sm font-medium">{{ ee_data.service_year.submission_deadline|date:"d M Y" }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- B-BBEE Service Card (if client has B-BBEE subscription or service years) -->
+        {% if bbbee_data %}
+        <div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl shadow-lg overflow-hidden">
+            <div class="p-6 text-white">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            <h2 class="text-xl font-bold">B-BBEE Verification</h2>
+                        </div>
+                        <p class="text-emerald-200 text-sm mt-1">Broad-Based Black Economic Empowerment</p>
+                    </div>
+                    <a href="{% url 'corporate:bbbee_service_management' client.pk %}" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors">
+                        Manage →
+                    </a>
+                </div>
+                
+                <!-- Stats Row -->
+                <div class="grid grid-cols-3 gap-4 mt-6">
+                    <div class="bg-white/10 rounded-lg p-3 text-center">
+                        {% if bbbee_data.service_year %}
+                        <p class="text-2xl font-bold">FY{{ bbbee_data.service_year.financial_year }}</p>
+                        <p class="text-xs text-emerald-200">Financial Year</p>
+                        {% else %}
+                        <p class="text-2xl font-bold">-</p>
+                        <p class="text-xs text-emerald-200">No Active Year</p>
+                        {% endif %}
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-3 text-center">
+                        {% if bbbee_data.service_year %}
+                        <p class="text-2xl font-bold">{{ bbbee_data.service_year.get_status_display }}</p>
+                        <p class="text-xs text-emerald-200">Status</p>
+                        {% else %}
+                        <p class="text-2xl font-bold">-</p>
+                        <p class="text-xs text-emerald-200">Status</p>
+                        {% endif %}
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-3 text-center">
+                        {% if bbbee_data.service_year.target_level %}
+                        <p class="text-2xl font-bold">Level {{ bbbee_data.service_year.target_level }}</p>
+                        <p class="text-xs text-emerald-200">Target</p>
+                        {% else %}
+                        <p class="text-2xl font-bold">-</p>
+                        <p class="text-xs text-emerald-200">Target</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Status & Subscription -->
+                <div class="mt-4 pt-4 border-t border-white/20">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            {% if bbbee_data.subscription %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/20">
+                                Subscription Active
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/30 text-amber-200">
+                                No Subscription
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% if bbbee_data.service_year.verification_deadline %}
+                        <div class="text-right">
+                            <p class="text-xs text-emerald-200">Verification Deadline</p>
+                            <p class="text-sm font-medium">{{ bbbee_data.service_year.verification_deadline|date:"d M Y" }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Active Services -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900">Active Services</h2>
+                <a href="{% url 'corporate:add_subscription' client.pk %}" class="text-blue-600 hover:text-blue-800 text-sm">+ Add Service</a>
+            </div>
+            <div class="divide-y divide-gray-200">
+                {% for sub in active_subscriptions %}
+                <div class="p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-medium text-gray-900">{{ sub.service.name }}</p>
+                            <p class="text-sm text-gray-500">{{ sub.service.category.name }}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                            {% if sub.renewal_date %}
+                            <p class="text-xs text-gray-500 mt-1">Renews: {{ sub.renewal_date|date:"d M Y" }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if sub.service.service_type == 'WSP_ATR' %}
+                    <div class="mt-2">
+                        <a href="{% url 'corporate:wspatr_management' client.pk %}" class="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 font-medium">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            Manage WSP/ATR →
+                        </a>
+                    </div>
+                    {% elif not sub.delivery_project %}
+                    <div class="mt-2">
+                        <a href="{% url 'corporate:create_delivery_project' sub.pk %}" class="text-xs text-blue-600 hover:text-blue-800">Create delivery project →</a>
+                    </div>
+                    {% else %}
+                    <div class="mt-2 flex items-center text-xs text-gray-500">
+                        <span class="w-2 h-2 rounded-full mr-2
+                            {% if sub.delivery_project.health == 'GREEN' %}bg-green-500
+                            {% elif sub.delivery_project.health == 'AMBER' %}bg-yellow-500
+                            {% else %}bg-red-500{% endif %}"></span>
+                        Project: {{ sub.delivery_project.progress_percentage }}% complete
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="p-6 text-center text-gray-500">
+                    <p>No active services</p>
+                    <a href="{% url 'corporate:add_subscription' client.pk %}" class="text-blue-600 hover:underline mt-2 inline-block">Add first service</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Upsell Opportunities -->
+        {% if available_services %}
+        <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200">
+            <h2 class="text-lg font-semibold text-blue-900 mb-4">🎯 Upsell Opportunities</h2>
+            <p class="text-sm text-blue-700 mb-4">Services this client doesn't have yet:</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {% for service in available_services|slice:":6" %}
+                <div class="bg-white rounded-lg p-3 shadow-sm">
+                    <p class="font-medium text-gray-900 text-sm">{{ service.name }}</p>
+                    <p class="text-xs text-gray-500">{{ service.category.name }}</p>
+                    {% if service.base_price %}
+                    <p class="text-sm text-blue-600 font-semibold mt-1">R{{ service.base_price|floatformat:0|intcomma }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <a href="{% url 'corporate:opportunity_create' %}?client={{ client.pk }}" class="mt-4 inline-flex items-center text-blue-700 hover:text-blue-900 text-sm font-medium">
+                Create opportunity for these services →
+            </a>
+        </div>
+        {% endif %}
+        
+        <!-- Open Opportunities -->
+        {% if open_opportunities %}
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Open Opportunities</h2>
+            </div>
+            <div class="divide-y divide-gray-200">
+                {% for opp in open_opportunities %}
+                <a href="{% url 'corporate:opportunity_detail' opp.pk %}" class="block p-4 hover:bg-gray-50">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-medium text-gray-900">{{ opp.title }}</p>
+                            <p class="text-xs text-gray-500">{{ opp.reference_number }} • {{ opp.get_opportunity_type_display }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold text-gray-900">R{{ opp.estimated_value|floatformat:0|intcomma|default:"-" }}</p>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if opp.stage == 'NEGOTIATION' %}bg-purple-100 text-purple-800
+                                {% elif opp.stage == 'PROPOSAL' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ opp.get_stage_display }}
+                            </span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Activity Timeline -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900">Recent Activity</h2>
+                <a href="{% url 'corporate:add_client_activity' client.pk %}" class="text-blue-600 hover:text-blue-800 text-sm">+ Log Activity</a>
+            </div>
+            <div class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+                {% for activity in activities %}
+                <div class="p-4">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0">
+                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full 
+                                {% if activity.activity_type == 'CALL' %}bg-blue-100 text-blue-600
+                                {% elif activity.activity_type == 'MEETING' %}bg-green-100 text-green-600
+                                {% elif activity.activity_type == 'EMAIL' %}bg-gray-100 text-gray-600
+                                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {% if activity.activity_type == 'CALL' %}📞
+                                {% elif activity.activity_type == 'MEETING' %}🤝
+                                {% elif activity.activity_type == 'EMAIL' %}✉️
+                                {% else %}📝{% endif %}
+                            </span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm font-medium text-gray-900">{{ activity.subject }}</p>
+                                <span class="text-xs text-gray-500">{{ activity.activity_date|date:"d M Y" }}</span>
+                            </div>
+                            <p class="text-xs text-gray-500">{{ activity.get_activity_type_display }}</p>
+                            {% if activity.description %}
+                            <p class="mt-1 text-sm text-gray-600">{{ activity.description|truncatewords:20 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-6 text-center text-gray-500">
+                    <p>No activities recorded yet</p>
+                    <a href="{% url 'corporate:add_client_activity' client.pk %}" class="text-blue-600 hover:underline mt-2 inline-block">Log first activity</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        <!-- Company Info -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Company Info</h3>
+            <dl class="space-y-3">
+                {% if client.registration_number %}
+                <div>
+                    <dt class="text-sm text-gray-500">Registration</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ client.registration_number }}</dd>
+                </div>
+                {% endif %}
+                <div>
+                    <dt class="text-sm text-gray-500">Email</dt>
+                    <dd class="text-sm font-medium text-blue-600"><a href="mailto:{{ client.email }}">{{ client.email }}</a></dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Phone</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ client.phone }}</dd>
+                </div>
+                {% if client.industry %}
+                <div>
+                    <dt class="text-sm text-gray-500">Industry</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ client.industry }}</dd>
+                </div>
+                {% endif %}
+                {% if client.seta %}
+                <div>
+                    <dt class="text-sm text-gray-500">SETA</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ client.seta.name }}</dd>
+                </div>
+                {% endif %}
+                {% if client.account_manager %}
+                <div>
+                    <dt class="text-sm text-gray-500">Account Manager</dt>
+                    <dd class="text-sm font-medium text-gray-900">{{ client.account_manager.get_full_name|default:client.account_manager.username }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+        
+        <!-- Contacts -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Key Contacts</h3>
+            <div class="space-y-4">
+                {% for contact in contacts %}
+                <div class="{% if contact.is_primary %}border-l-4 border-blue-500 pl-3{% endif %}">
+                    <p class="font-medium text-gray-900">{{ contact.full_name }}</p>
+                    <p class="text-xs text-gray-500">{{ contact.job_title }} • {{ contact.get_role_display }}</p>
+                    {% if contact.influence_level != 'UNKNOWN' %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1
+                        {% if contact.influence_level == 'DECISION_MAKER' %}bg-purple-100 text-purple-800
+                        {% elif contact.influence_level == 'CHAMPION' %}bg-green-100 text-green-800
+                        {% elif contact.influence_level == 'BLOCKER' %}bg-red-100 text-red-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ contact.get_influence_level_display }}
+                    </span>
+                    {% endif %}
+                    <p class="text-xs text-gray-500 mt-1">
+                        <a href="mailto:{{ contact.email }}" class="text-blue-600 hover:underline">{{ contact.email }}</a>
+                    </p>
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500">No contacts added</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Delivery Projects -->
+        {% if active_projects %}
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Active Projects</h3>
+            <div class="space-y-3">
+                {% for project in active_projects %}
+                <a href="{% url 'corporate:delivery_project_detail' project.pk %}" class="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">{{ project.name }}</p>
+                            <p class="text-xs text-gray-500">{{ project.subscription.service.name }}</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full
+                                {% if project.health == 'GREEN' %}bg-green-500
+                                {% elif project.health == 'AMBER' %}bg-yellow-500
+                                {% else %}bg-red-500{% endif %}"></span>
+                            <span class="text-xs text-gray-600">{{ project.progress_percentage }}%</span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            <div class="space-y-2">
+                <a href="{% url 'corporate:client_update' client.pk %}" class="block w-full px-4 py-2 text-center border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Edit Client
+                </a>
+                <a href="{% url 'corporate:add_subscription' client.pk %}" class="block w-full px-4 py-2 text-center border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Add Service
+                </a>
+                <a href="{% url 'corporate:opportunity_create' %}?client={{ client.pk }}" class="block w-full px-4 py-2 text-center bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Create Opportunity
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

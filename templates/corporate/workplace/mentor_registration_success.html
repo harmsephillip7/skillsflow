@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Complete - SkillsFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div class="sm:mx-auto sm:w-full sm:max-w-md">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-primary-600">SkillsFlow</h1>
+            </div>
+        </div>
+
+        <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+            <div class="bg-white py-8 px-4 shadow-lg sm:rounded-xl sm:px-10 border border-gray-100">
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
+                        <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    
+                    <h2 class="mt-6 text-2xl font-bold text-gray-900">Registration Complete!</h2>
+                    
+                    <div class="mt-4 text-sm text-gray-600">
+                        <p>Thank you, <span class="font-semibold">{{ mentor.full_name }}</span>!</p>
+                        <p class="mt-2">Your mentor profile for <span class="font-semibold">{{ host.company_name }}</span> has been submitted successfully.</p>
+                    </div>
+                    
+                    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                        <h3 class="text-sm font-medium text-blue-800">What happens next?</h3>
+                        <ol class="mt-2 text-sm text-blue-700 list-decimal list-inside space-y-1">
+                            <li>HR will review your application</li>
+                            <li>Once approved, you'll receive login access</li>
+                            <li>You can then access the mentor portal</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-600">Your login email:</p>
+                        <p class="text-sm font-semibold text-gray-900">{{ mentor.email }}</p>
+                        <p class="mt-2 text-xs text-gray-500">You will be able to log in once your account has been approved.</p>
+                    </div>
+                    
+                    <div class="mt-8">
+                        <a href="/" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                            ← Return to SkillsFlow
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <p class="mt-8 text-center text-sm text-gray-500">
+            © 2025 SkillsFlow. All rights reserved.
+        </p>
+    </div>
+</body>
+</html>

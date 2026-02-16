@@ -1,0 +1,510 @@
+{% extends "portals/student/base.html" %}
+{% load static %}
+
+{% block page_title %}{{ entry.entry_date|date:"d M Y" }} - Daily Entry{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 pb-24">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-teal-600 to-teal-700 text-white">
+        <div class="px-4 py-6">
+            <div class="flex items-center gap-2 mb-2">
+                <a href="{% url 'portals:student_daily_entries' %}" class="text-teal-100 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <h1 class="text-2xl font-bold">Daily Entry</h1>
+            </div>
+            <p class="text-teal-100 text-sm">{{ entry.entry_date|date:"l, d F Y" }}</p>
+        </div>
+    </header>
+
+    <div class="px-4 -mt-4">
+        <!-- Entry Summary Card -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-14 h-14 rounded-xl flex items-center justify-center
+                        {% if entry.attendance_status == 'PRESENT' %}bg-green-100
+                        {% elif entry.attendance_status == 'ABSENT' %}bg-red-100
+                        {% elif entry.attendance_status == 'SICK_LEAVE' %}bg-amber-100
+                        {% else %}bg-gray-100{% endif %}">
+                        <span class="text-xl font-bold
+                            {% if entry.attendance_status == 'PRESENT' %}text-green-600
+                            {% elif entry.attendance_status == 'ABSENT' %}text-red-600
+                            {% elif entry.attendance_status == 'SICK_LEAVE' %}text-amber-600
+                            {% else %}text-gray-600{% endif %}">
+                            {{ entry.entry_date.day }}
+                        </span>
+                    </div>
+                    <div>
+                        <h2 class="font-semibold text-gray-900">{{ entry.entry_date|date:"l" }}</h2>
+                        <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full mt-1
+                            {% if entry.attendance_status == 'PRESENT' %}bg-green-100 text-green-700
+                            {% elif entry.attendance_status == 'ABSENT' %}bg-red-100 text-red-700
+                            {% elif entry.attendance_status == 'SICK_LEAVE' %}bg-amber-100 text-amber-700
+                            {% else %}bg-gray-100 text-gray-700{% endif %}">
+                            {{ entry.get_attendance_status_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Sign-off Status -->
+                <div class="text-right">
+                    {% if entry.learner_signed %}
+                    <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                        ✓ Signed
+                    </span>
+                    {% else %}
+                    <span class="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+                        Pending Sign-off
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Time & Summary -->
+            <div class="grid grid-cols-3 gap-3 pt-3 border-t border-gray-100">
+                <div class="text-center">
+                    <span class="text-lg font-bold text-teal-600">{{ entry.clock_in|default:"--:--" }}</span>
+                    <p class="text-xs text-gray-500">Clock In</p>
+                </div>
+                <div class="text-center">
+                    <span class="text-lg font-bold text-teal-600">{{ entry.clock_out|default:"--:--" }}</span>
+                    <p class="text-xs text-gray-500">Clock Out</p>
+                </div>
+                <div class="text-center">
+                    <span class="text-lg font-bold text-purple-600">{{ entry.hours_worked|floatformat:1 }}h</span>
+                    <p class="text-xs text-gray-500">Hours</p>
+                </div>
+            </div>
+
+            {% if entry.daily_summary %}
+            <div class="mt-3 pt-3 border-t border-gray-100">
+                <p class="text-xs text-gray-500 mb-1">Daily Summary</p>
+                <p class="text-sm text-gray-700">{{ entry.daily_summary }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Tasks Section -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-4">
+            <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-900">
+                    Tasks Completed
+                    <span class="ml-2 px-2 py-0.5 bg-teal-100 text-teal-700 text-xs font-medium rounded-full">
+                        {{ task_count }}
+                    </span>
+                </h3>
+                <span class="text-sm text-gray-500">{{ total_task_hours|floatformat:1 }}h total</span>
+            </div>
+
+            {% if tasks %}
+            <div class="divide-y divide-gray-100">
+                {% for task in tasks %}
+                <div class="p-4">
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="flex-1">
+                            {% if task.workplace_outcome %}
+                            <span class="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded mb-1">
+                                {{ task.workplace_outcome.outcome_code }}
+                            </span>
+                            {% elif task.module_code %}
+                            <span class="inline-block px-2 py-0.5 bg-gray-100 text-gray-700 text-xs font-medium rounded mb-1">
+                                {{ task.module_code }}
+                            </span>
+                            {% endif %}
+                            <p class="text-sm text-gray-800">{{ task.task_description }}</p>
+                        </div>
+                        <span class="ml-2 px-2 py-0.5 bg-purple-50 text-purple-700 text-xs font-medium rounded flex-shrink-0">
+                            {{ task.hours_spent|floatformat:1 }}h
+                        </span>
+                    </div>
+
+                    {% if task.evidence_notes %}
+                    <p class="text-xs text-gray-500 mt-2">{{ task.evidence_notes }}</p>
+                    {% endif %}
+
+                    {% if task.evidence_file %}
+                    <div class="mt-3">
+                        <a href="{{ task.evidence_file.url }}" target="_blank" 
+                           class="inline-flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition">
+                            {% if 'image' in task.evidence_file.name %}
+                            <img src="{{ task.evidence_file.url }}" alt="Evidence" class="w-12 h-12 object-cover rounded">
+                            {% else %}
+                            <div class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                                <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            {% endif %}
+                            <span class="text-xs text-blue-600 font-medium">View Evidence</span>
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    {% if task.competency_rating %}
+                    <div class="mt-2">
+                        <span class="inline-block px-2 py-0.5 text-xs font-medium rounded
+                            {% if task.competency_rating == 'C' or task.competency_rating == 'E' %}bg-green-100 text-green-700
+                            {% elif task.competency_rating == 'WTC' %}bg-amber-100 text-amber-700
+                            {% else %}bg-red-100 text-red-700{% endif %}">
+                            {{ task.get_competency_rating_display }}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    {% if can_edit %}
+                    <button onclick="deleteTask({{ task.id }})" 
+                            class="mt-2 text-xs text-red-600 hover:text-red-800 transition">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Remove
+                    </button>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-8 text-center">
+                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                </div>
+                <p class="text-sm text-gray-500">No tasks added yet</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Add Task Form (if editable) -->
+        {% if can_add_tasks %}
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-4">
+            <div class="px-4 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 text-white">
+                <h3 class="font-semibold flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Task with Evidence
+                </h3>
+            </div>
+
+            <form id="addTaskForm" method="post" action="{% url 'portals:student_add_task' entry.id %}" enctype="multipart/form-data" class="p-4 space-y-4">
+                {% csrf_token %}
+
+                <!-- Workplace Outcome Selection -->
+                {% if grouped_outcomes %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Link to SAQA Outcome (Optional)</label>
+                    <select name="outcome_id" id="outcomeSelect" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                        <option value="">-- Select Outcome --</option>
+                        {% for module_code, data in grouped_outcomes.items %}
+                        <optgroup label="{{ module_code }} - {{ data.module.name }}">
+                            {% for outcome in data.outcomes %}
+                            <option value="{{ outcome.id }}" data-hours="{{ outcome.estimated_hours|default:1 }}">
+                                {{ outcome.outcome_code }} - {{ outcome.title|truncatechars:50 }}
+                            </option>
+                            {% endfor %}
+                        </optgroup>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Task Description -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Task Description *</label>
+                    <textarea name="task_description" rows="3" required
+                              placeholder="Describe what you did (e.g., Assisted with customer service, performed safety checks...)"
+                              class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"></textarea>
+                </div>
+
+                <!-- Hours Spent -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Hours Spent</label>
+                    <input type="number" name="hours_spent" value="1.0" min="0.25" max="12" step="0.25"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                </div>
+
+                <!-- Evidence Notes -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Evidence Notes</label>
+                    <input type="text" name="evidence_notes" placeholder="Optional notes about the evidence..."
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                </div>
+
+                <!-- Photo Evidence Upload -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Photo Evidence</label>
+                    
+                    <!-- Camera/File Input -->
+                    <div class="relative">
+                        <input type="file" name="evidence_file" id="evidenceInput" accept="image/*,application/pdf"
+                               class="hidden" onchange="previewEvidence(this)">
+                        
+                        <div id="evidencePreview" class="hidden mb-3">
+                            <img id="previewImage" src="" alt="Preview" class="w-full h-48 object-cover rounded-xl">
+                            <button type="button" onclick="clearEvidence()" 
+                                    class="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div id="uploadButtons" class="grid grid-cols-2 gap-3">
+                            <label for="evidenceInput" 
+                                   class="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-teal-500 hover:bg-teal-50 transition">
+                                <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                <span class="text-sm font-medium text-gray-600">Take Photo</span>
+                            </label>
+                            <label for="evidenceInput"
+                                   class="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-teal-500 hover:bg-teal-50 transition">
+                                <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <span class="text-sm font-medium text-gray-600">Upload File</span>
+                            </label>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Capture evidence of your practical work (photos, documents)</p>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" 
+                        class="w-full px-4 py-3 bg-teal-600 text-white font-medium rounded-xl hover:bg-teal-700 transition flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Add Task
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- Sign-off Section (if not signed) -->
+        {% if can_edit and task_count > 0 %}
+        <div class="bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg p-4 mb-4">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="text-white">
+                    <h3 class="font-semibold">Ready to Sign Off?</h3>
+                    <p class="text-sm text-green-100">Confirm your daily entry is complete</p>
+                </div>
+            </div>
+            <button onclick="signEntry()" 
+                    class="w-full px-4 py-3 bg-white text-green-600 font-semibold rounded-xl hover:bg-green-50 transition">
+                Sign & Submit Entry
+            </button>
+        </div>
+        {% endif %}
+
+        <!-- Signed Confirmation -->
+        {% if entry.learner_signed %}
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="font-medium text-green-800">Entry Signed</h4>
+                    <p class="text-sm text-green-600">
+                        {% if entry.learner_signed_at %}
+                        Signed on {{ entry.learner_signed_at|date:"d M Y" }} at {{ entry.learner_signed_at|time:"H:i" }}
+                        {% else %}
+                        Signed by learner
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            
+            {% if not entry.mentor_signed %}
+            <div class="mt-3 pt-3 border-t border-green-200">
+                <p class="text-xs text-green-700">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Awaiting mentor sign-off
+                </p>
+            </div>
+            {% else %}
+            <div class="mt-3 pt-3 border-t border-green-200">
+                <p class="text-xs text-green-700">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Mentor signed on {{ entry.mentor_signed_at|date:"d M Y" }}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-24 left-4 right-4 bg-gray-800 text-white px-4 py-3 rounded-xl shadow-lg transform translate-y-full opacity-0 transition-all duration-300 z-50">
+    <p id="toastMessage" class="text-sm text-center"></p>
+</div>
+
+<script>
+// CSRF Token
+const csrfToken = '{{ csrf_token }}';
+const entryId = {{ entry.id }};
+
+// Preview evidence image
+function previewEvidence(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImage').src = e.target.result;
+                document.getElementById('evidencePreview').classList.remove('hidden');
+                document.getElementById('uploadButtons').classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            // Show file name for non-images
+            document.getElementById('evidencePreview').innerHTML = `
+                <div class="p-4 bg-gray-100 rounded-xl flex items-center gap-3">
+                    <svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700">${file.name}</span>
+                </div>
+            `;
+            document.getElementById('evidencePreview').classList.remove('hidden');
+            document.getElementById('uploadButtons').classList.add('hidden');
+        }
+    }
+}
+
+// Clear evidence preview
+function clearEvidence() {
+    document.getElementById('evidenceInput').value = '';
+    document.getElementById('evidencePreview').classList.add('hidden');
+    document.getElementById('uploadButtons').classList.remove('hidden');
+}
+
+// Delete task
+async function deleteTask(taskId) {
+    if (!confirm('Remove this task?')) return;
+    
+    try {
+        const response = await fetch(`{% url 'portals:student_delete_task' entry.id 0 %}`.replace('/0/', `/${taskId}/`), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('Task removed');
+            location.reload();
+        } else {
+            showToast(data.error || 'Failed to remove task', true);
+        }
+    } catch (error) {
+        showToast('Network error', true);
+    }
+}
+
+// Sign entry
+async function signEntry() {
+    if (!confirm('Sign off this entry? You won\'t be able to add more tasks after signing.')) return;
+    
+    try {
+        const response = await fetch(`{% url 'portals:student_sign_daily_entry' entry.id %}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('Entry signed successfully!');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(data.error || 'Failed to sign entry', true);
+        }
+    } catch (error) {
+        showToast('Network error', true);
+    }
+}
+
+// Auto-fill hours from outcome selection
+document.getElementById('outcomeSelect')?.addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const estimatedHours = selectedOption.dataset.hours;
+    if (estimatedHours) {
+        document.querySelector('input[name="hours_spent"]').value = estimatedHours;
+    }
+});
+
+// Toast notification
+function showToast(message, isError = false) {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastMessage.textContent = message;
+    toast.className = toast.className.replace('bg-gray-800', isError ? 'bg-red-600' : 'bg-green-600');
+    
+    // Show
+    toast.classList.remove('translate-y-full', 'opacity-0');
+    toast.classList.add('translate-y-0', 'opacity-100');
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-full', 'opacity-0');
+    }, 3000);
+}
+
+// Handle form submission
+document.getElementById('addTaskForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('Task added successfully!');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || 'Failed to add task', true);
+        }
+    } catch (error) {
+        showToast('Network error', true);
+    }
+});
+</script>
+{% endblock %}

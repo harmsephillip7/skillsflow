@@ -1,0 +1,304 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ account.get_platform_display }} - {{ brand.name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <nav class="text-sm text-gray-500 mb-2">
+                <a href="{% url 'admin:brand_list' %}" class="hover:text-primary-600">Brands</a>
+                <span class="mx-2">→</span>
+                <a href="{% url 'tenants:brand_integrations' brand.id %}" class="hover:text-primary-600">{{ brand.name }}</a>
+                <span class="mx-2">→</span>
+                <span class="text-gray-700">{{ account.get_platform_display }}</span>
+            </nav>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <!-- Platform Icon -->
+                    <div class="w-14 h-14 rounded-xl flex items-center justify-center
+                        {% if account.platform == 'META' %}bg-blue-100{% elif account.platform == 'TIKTOK' %}bg-gray-100{% else %}bg-orange-100{% endif %}">
+                        {% if account.platform == 'META' %}
+                        <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/></svg>
+                        {% elif account.platform == 'TIKTOK' %}
+                        <svg class="w-8 h-8 text-gray-900" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/></svg>
+                        {% else %}
+                        <svg class="w-8 h-8 text-orange-500" fill="currentColor" viewBox="0 0 24 24"><path d="M22.84 2.998v17.998a3.003 3.003 0 01-3 3.002H4.159a3.003 3.003 0 01-3-3.002V2.998a3.003 3.003 0 013-3h15.681a3.003 3.003 0 013 3z"/></svg>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">{{ account.get_platform_display }}</h1>
+                        <p class="text-gray-600">{{ brand.name }}</p>
+                    </div>
+                </div>
+                
+                <!-- Status Badge -->
+                {% if account.is_active %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                    Connected
+                </span>
+                {% else %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                    <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                    Disconnected
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Messages -->
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+            <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-50 text-green-800 border border-green-200{% elif message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Account Details -->
+        <div class="bg-white rounded-xl border border-gray-200 mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Account Details</h2>
+            </div>
+            
+            <div class="px-6 py-6">
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Account Name -->
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Account Name</dt>
+                        <dd class="mt-1 text-gray-900">{{ account.account_name|default:"Not set" }}</dd>
+                    </div>
+                    
+                    <!-- Account ID -->
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Account ID</dt>
+                        <dd class="mt-1 text-gray-900 font-mono text-sm">{{ account.account_id|default:"Not set" }}</dd>
+                    </div>
+                    
+                    {% if account.platform == 'META' %}
+                    <!-- Facebook Page -->
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Facebook Page ID</dt>
+                        <dd class="mt-1 text-gray-900 font-mono text-sm">{{ account.facebook_page_id|default:"Not connected" }}</dd>
+                    </div>
+                    
+                    <!-- Instagram Business -->
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Instagram Business ID</dt>
+                        <dd class="mt-1 text-gray-900 font-mono text-sm">{{ account.instagram_business_id|default:"Not connected" }}</dd>
+                    </div>
+                    {% elif account.platform == 'TIKTOK' %}
+                    <!-- TikTok Business ID -->
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">TikTok Business ID</dt>
+                        <dd class="mt-1 text-gray-900 font-mono text-sm">{{ account.tiktok_business_id|default:"Not set" }}</dd>
+                    </div>
+                    {% elif account.platform == 'GOOGLE_ANALYTICS' %}
+                    <!-- GA4 Property -->
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">GA4 Property ID</dt>
+                        <dd class="mt-1 text-gray-900 font-mono text-sm">{{ account.ga4_property_id|default:"Not set" }}</dd>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Last Synced -->
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Last Synced</dt>
+                        <dd class="mt-1 text-gray-900">
+                            {% if account.last_sync_at %}
+                            {{ account.last_sync_at|date:"M d, Y H:i" }}
+                            {% else %}
+                            Never synced
+                            {% endif %}
+                        </dd>
+                    </div>
+                    
+                    <!-- Backfill Status -->
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Historical Data</dt>
+                        <dd class="mt-1">
+                            {% if account.backfill_completed_at %}
+                            <span class="inline-flex items-center text-green-700">
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                Backfilled to {{ account.backfill_start_date|date:"M d, Y" }}
+                            </span>
+                            {% else %}
+                            <span class="text-gray-500">Not backfilled</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+        
+        <!-- Permissions -->
+        <div class="bg-white rounded-xl border border-gray-200 mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Permissions</h2>
+            </div>
+            
+            <div class="px-6 py-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Analytics Permission -->
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-gray-200">
+                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-900">Analytics</h4>
+                                <p class="text-sm text-gray-500">Read page/profile insights</p>
+                            </div>
+                        </div>
+                        {% if account.has_analytics_permission %}
+                        <span class="text-green-600 font-medium text-sm">Granted</span>
+                        {% else %}
+                        <span class="text-gray-400 text-sm">Not granted</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Messaging Permission -->
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-gray-200">
+                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-900">Messaging</h4>
+                                <p class="text-sm text-gray-500">Send/receive messages</p>
+                            </div>
+                        </div>
+                        {% if account.has_messaging_permission %}
+                        <span class="text-green-600 font-medium text-sm">Granted</span>
+                        {% else %}
+                        <span class="text-amber-600 text-sm">Pending App Review</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="bg-white rounded-xl border border-gray-200 mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Actions</h2>
+            </div>
+            
+            <div class="px-6 py-6 space-y-4">
+                <!-- Sync Now -->
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div>
+                        <h4 class="font-medium text-gray-900">Sync Now</h4>
+                        <p class="text-sm text-gray-500">Fetch the latest data from {{ account.get_platform_display }}</p>
+                    </div>
+                    <form method="post" action="{% url 'tenants:trigger_sync' brand.id account.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors">
+                            Sync Now
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Backfill Historical Data -->
+                {% if not account.backfill_completed_at %}
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div>
+                        <h4 class="font-medium text-gray-900">Backfill Historical Data</h4>
+                        <p class="text-sm text-gray-500">
+                            Import data from 
+                            {% if account.platform == 'META' %}January 2025{% else %}the last 60 days{% endif %}
+                        </p>
+                    </div>
+                    <form method="post" action="{% url 'tenants:trigger_backfill' brand.id account.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                            Start Backfill
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+                
+                <!-- Reconnect -->
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div>
+                        <h4 class="font-medium text-gray-900">Reconnect Account</h4>
+                        <p class="text-sm text-gray-500">Re-authenticate with {{ account.get_platform_display }} to refresh tokens</p>
+                    </div>
+                    <form method="post" action="{% url 'tenants:connect_social_account' brand.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="platform" value="{{ account.platform }}">
+                        <input type="hidden" name="reconnect" value="true">
+                        <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                            Reconnect
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Disconnect -->
+                <div class="flex items-center justify-between p-4 border border-red-200 bg-red-50 rounded-lg">
+                    <div>
+                        <h4 class="font-medium text-red-900">Disconnect Account</h4>
+                        <p class="text-sm text-red-700">Remove this integration. Historical data will be preserved.</p>
+                    </div>
+                    <form method="post" action="{% url 'tenants:disconnect_social_account' brand.id account.id %}" 
+                          onsubmit="return confirm('Are you sure you want to disconnect this account?');">
+                        {% csrf_token %}
+                        <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
+                            Disconnect
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- GA4 Property Settings (only for Google Analytics) -->
+        {% if account.platform == 'GOOGLE_ANALYTICS' %}
+        <div class="bg-white rounded-xl border border-gray-200 mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">GA4 Property Settings</h2>
+            </div>
+            
+            <div class="px-6 py-6">
+                <form method="post" action="{% url 'tenants:update_ga4_property' brand.id account.id %}">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="ga4_property_id" class="block text-sm font-medium text-gray-700 mb-1">
+                            GA4 Property ID
+                        </label>
+                        <input type="text" 
+                               id="ga4_property_id" 
+                               name="ga4_property_id" 
+                               value="{{ account.ga4_property_id }}"
+                               placeholder="123456789"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <p class="mt-1 text-sm text-gray-500">
+                            Find this in Google Analytics → Admin → Property Settings → Property ID
+                        </p>
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors">
+                        Save Property ID
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Back Link -->
+        <div class="mt-6">
+            <a href="{% url 'tenants:brand_integrations' brand.id %}" 
+               class="inline-flex items-center text-primary-600 hover:text-primary-800 font-medium">
+                ← Back to Integrations
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

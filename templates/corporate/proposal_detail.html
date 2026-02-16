@@ -1,0 +1,272 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}{{ proposal.proposal_number }} - Proposal{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:dashboard' %}" class="text-gray-700 hover:text-blue-600">Corporate</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:proposal_list' %}" class="text-gray-700 hover:text-blue-600">Proposals</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">{{ proposal.proposal_number }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-start justify-between">
+            <div>
+                <p class="text-sm text-gray-500">{{ proposal.proposal_number }}</p>
+                <h1 class="text-2xl font-bold text-gray-900">{{ proposal.title }}</h1>
+                <p class="text-gray-600 mt-1">
+                    {% if proposal.client %}
+                    <a href="{% url 'corporate:client_360' proposal.client.pk %}" class="text-blue-600 hover:text-blue-800">
+                        {{ proposal.client.company_name }}
+                    </a>
+                    {% elif proposal.opportunity.client %}
+                    <a href="{% url 'corporate:client_360' proposal.opportunity.client.pk %}" class="text-blue-600 hover:text-blue-800">
+                        {{ proposal.opportunity.client.company_name }}
+                    </a>
+                    {% elif proposal.opportunity.prospect_company_name %}
+                    {{ proposal.opportunity.prospect_company_name }} (Prospect)
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                    {% if proposal.status == 'DRAFT' %}bg-gray-100 text-gray-800
+                    {% elif proposal.status == 'SENT' %}bg-blue-100 text-blue-800
+                    {% elif proposal.status == 'ACCEPTED' %}bg-green-100 text-green-800
+                    {% elif proposal.status == 'REJECTED' %}bg-red-100 text-red-800
+                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                    {{ proposal.get_status_display }}
+                </span>
+                {% if proposal.status == 'DRAFT' %}
+                <a href="{% url 'corporate:proposal_edit' proposal.pk %}" 
+                    class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    Edit Proposal
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Key Info -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200">
+            <div>
+                <p class="text-sm text-gray-500">Total Value</p>
+                <p class="text-xl font-bold text-gray-900">R{{ proposal.total_value|floatformat:0|intcomma }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Created</p>
+                <p class="text-lg font-medium text-gray-900">{{ proposal.created_at|date:"d M Y" }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Valid Until</p>
+                <p class="text-lg font-medium {% if proposal.is_expired %}text-red-600{% else %}text-gray-900{% endif %}">
+                    {{ proposal.valid_until|date:"d M Y"|default:"-" }}
+                    {% if proposal.is_expired %}<span class="text-xs">(Expired)</span>{% endif %}
+                </p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Prepared By</p>
+                <p class="text-lg font-medium text-gray-900">{{ proposal.created_by.get_full_name|default:proposal.created_by.username }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status Actions -->
+    {% if proposal.status == 'DRAFT' or proposal.status == 'SENT' %}
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
+        <div class="flex flex-wrap gap-3">
+            {% if proposal.status == 'DRAFT' %}
+            <form method="post" action="{% url 'corporate:proposal_status' proposal.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="SENT">
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    Mark as Sent
+                </button>
+            </form>
+            {% endif %}
+            {% if proposal.status == 'SENT' %}
+            <form method="post" action="{% url 'corporate:proposal_status' proposal.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="ACCEPTED">
+                <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+                    Mark as Accepted
+                </button>
+            </form>
+            <form method="post" action="{% url 'corporate:proposal_status' proposal.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="REJECTED">
+                <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                    Mark as Rejected
+                </button>
+            </form>
+            {% endif %}
+            <a href="#" onclick="window.print()" class="border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50">
+                Print / PDF
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Introduction -->
+    {% if proposal.introduction %}
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Introduction</h3>
+        <div class="prose prose-sm text-gray-600">
+            {{ proposal.introduction|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Line Items -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Proposed Services</h3>
+        </div>
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for item in line_items %}
+                <tr>
+                    <td class="px-6 py-4">
+                        <span class="font-medium text-gray-900">
+                            {% if item.service %}{{ item.service.name }}{% else %}{{ item.custom_service_name }}{% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        {{ item.description|truncatewords:20 }}
+                    </td>
+                    <td class="px-6 py-4 text-right text-sm text-gray-900">
+                        {{ item.quantity }}
+                    </td>
+                    <td class="px-6 py-4 text-right text-sm text-gray-900">
+                        R{{ item.unit_price|floatformat:2|intcomma }}
+                    </td>
+                    <td class="px-6 py-4 text-right text-sm font-medium text-gray-900">
+                        R{{ item.total_price|floatformat:2|intcomma }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                        No line items added yet
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="bg-gray-50">
+                <tr>
+                    <td colspan="4" class="px-6 py-3 text-right text-sm font-medium text-gray-500">Subtotal</td>
+                    <td class="px-6 py-3 text-right text-sm font-medium text-gray-900">R{{ proposal.subtotal|floatformat:2|intcomma }}</td>
+                </tr>
+                {% if proposal.discount_percentage %}
+                <tr>
+                    <td colspan="4" class="px-6 py-3 text-right text-sm font-medium text-red-500">
+                        Discount ({{ proposal.discount_percentage }}%)
+                    </td>
+                    <td class="px-6 py-3 text-right text-sm font-medium text-red-600">
+                        -R{{ proposal.discount_amount|floatformat:2|intcomma }}
+                    </td>
+                </tr>
+                {% endif %}
+                {% if proposal.tax_percentage %}
+                <tr>
+                    <td colspan="4" class="px-6 py-3 text-right text-sm font-medium text-gray-500">
+                        VAT ({{ proposal.tax_percentage }}%)
+                    </td>
+                    <td class="px-6 py-3 text-right text-sm font-medium text-gray-900">
+                        R{{ proposal.tax_amount|floatformat:2|intcomma }}
+                    </td>
+                </tr>
+                {% endif %}
+                <tr class="bg-gray-100">
+                    <td colspan="4" class="px-6 py-4 text-right text-lg font-bold text-gray-900">Total</td>
+                    <td class="px-6 py-4 text-right text-lg font-bold text-gray-900">R{{ proposal.total_value|floatformat:2|intcomma }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    
+    <!-- Terms & Conditions -->
+    {% if proposal.terms_conditions %}
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Terms & Conditions</h3>
+        <div class="prose prose-sm text-gray-600">
+            {{ proposal.terms_conditions|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Linked Opportunity -->
+    {% if proposal.opportunity %}
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Linked Opportunity</h3>
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="font-medium text-gray-900">{{ proposal.opportunity.title }}</p>
+                <p class="text-sm text-gray-500">Stage: {{ proposal.opportunity.get_stage_display }}</p>
+            </div>
+            <a href="{% url 'corporate:opportunity_detail' proposal.opportunity.pk %}" 
+                class="text-blue-600 hover:text-blue-800">
+                View Opportunity →
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Metadata -->
+    <div class="bg-gray-50 rounded-lg p-4 text-sm text-gray-500">
+        <div class="flex flex-wrap gap-6">
+            <div>
+                <span class="font-medium">Created:</span> {{ proposal.created_at|date:"d M Y H:i" }}
+            </div>
+            <div>
+                <span class="font-medium">Last Updated:</span> {{ proposal.updated_at|date:"d M Y H:i" }}
+            </div>
+            {% if proposal.sent_date %}
+            <div>
+                <span class="font-medium">Sent:</span> {{ proposal.sent_date|date:"d M Y" }}
+            </div>
+            {% endif %}
+            {% if proposal.response_date %}
+            <div>
+                <span class="font-medium">Response:</span> {{ proposal.response_date|date:"d M Y" }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    .no-print { display: none !important; }
+    .bg-white { box-shadow: none !important; }
+}
+</style>
+{% endblock %}

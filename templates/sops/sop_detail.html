@@ -1,0 +1,243 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="flex items-center text-sm text-gray-500 mb-2">
+                <a href="{% url 'core:dashboard' %}" class="hover:text-primary-600">Dashboard</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <a href="{% url 'workflows:sop_list' %}" class="hover:text-primary-600">SOPs</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <a href="{% url 'workflows:sop_category' category_code=sop.category.code %}" class="hover:text-primary-600">{{ sop.category.name }}</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="text-gray-700">{{ sop.name }}</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">{{ sop.name }}</h1>
+            <div class="flex flex-wrap items-center gap-3 mt-2">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{{ sop.category.color }}-100 text-{{ sop.category.color }}-800">
+                    {{ sop.category.name }}
+                </span>
+                {% if sop.estimated_duration %}
+                <span class="text-sm text-gray-500 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{ sop.estimated_duration }}
+                </span>
+                {% endif %}
+                <span class="text-sm text-gray-500">Version {{ sop.version }}</span>
+            </div>
+        </div>
+        <a href="{% url 'workflows:sop_list' %}" 
+           class="inline-flex items-center px-4 py-2 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-100 transition">
+            <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            All SOPs
+        </a>
+    </div>
+    
+    <div class="grid lg:grid-cols-3 gap-6">
+        <!-- Main Content - Steps -->
+        <div class="lg:col-span-2 space-y-4">
+            <!-- Overview -->
+            {% if sop.description or sop.purpose %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                {% if sop.purpose %}
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Purpose</h2>
+                <p class="text-gray-600 mb-4">{{ sop.purpose }}</p>
+                {% endif %}
+                {% if sop.description %}
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Description</h2>
+                <p class="text-gray-600">{{ sop.description }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- Steps -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Steps</h2>
+                    <p class="text-sm text-gray-500">Follow these steps in order to complete the process</p>
+                </div>
+                
+                <div class="divide-y divide-gray-100">
+                    {% for step in steps %}
+                    <div class="p-6 {% if step.is_optional %}bg-gray-50{% endif %}">
+                        <div class="flex items-start gap-4">
+                            <!-- Step Number -->
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 rounded-full bg-{{ sop.category.color }}-100 text-{{ sop.category.color }}-700 flex items-center justify-center font-bold text-lg">
+                                    {{ step.order }}
+                                </div>
+                            </div>
+                            
+                            <!-- Step Content -->
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h3 class="text-lg font-medium text-gray-900">{{ step.title }}</h3>
+                                    {% if step.is_optional %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-600">
+                                        Optional
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if step.description %}
+                                <p class="text-gray-600 mb-3">{{ step.description }}</p>
+                                {% endif %}
+                                
+                                {% if step.responsible_role %}
+                                <p class="text-sm text-gray-500 mb-3">
+                                    <span class="font-medium">Responsible:</span> {{ step.responsible_role }}
+                                </p>
+                                {% endif %}
+                                
+                                {% if step.tips %}
+                                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+                                    <div class="flex items-start gap-2">
+                                        <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                        </svg>
+                                        <div>
+                                            <p class="text-sm font-medium text-amber-800">Pro Tip</p>
+                                            <p class="text-sm text-amber-700">{{ step.tips }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Action Button -->
+                                {% if step.app_url_name or step.external_url %}
+                                <div class="mt-4">
+                                    {% if step.app_url_name %}
+                                    {% with step.get_app_url as app_url %}
+                                    {% if app_url %}
+                                    <a href="{{ app_url }}" 
+                                       class="inline-flex items-center px-4 py-2 bg-{{ sop.category.color }}-600 text-white text-sm font-medium rounded-lg hover:bg-{{ sop.category.color }}-700 transition shadow-sm">
+                                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        {{ step.app_url_label|default:"Go to this step" }}
+                                    </a>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed">
+                                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        </svg>
+                                        Link unavailable
+                                    </span>
+                                    {% endif %}
+                                    {% endwith %}
+                                    {% elif step.external_url %}
+                                    <a href="{{ step.external_url }}" target="_blank" rel="noopener noreferrer"
+                                       class="inline-flex items-center px-4 py-2 bg-{{ sop.category.color }}-600 text-white text-sm font-medium rounded-lg hover:bg-{{ sop.category.color }}-700 transition shadow-sm">
+                                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                        </svg>
+                                        {{ step.external_url_label|default:"Open External Link" }}
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 text-center">
+                        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                        </div>
+                        <p class="text-gray-500">No steps have been added to this SOP yet.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="space-y-4">
+            <!-- Quick Info -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Details</h3>
+                <dl class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Code</dt>
+                        <dd class="font-mono text-gray-900">{{ sop.code }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Version</dt>
+                        <dd class="text-gray-900">{{ sop.version }}</dd>
+                    </div>
+                    {% if sop.effective_date %}
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Effective</dt>
+                        <dd class="text-gray-900">{{ sop.effective_date|date:"M d, Y" }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if sop.owner %}
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Owner</dt>
+                        <dd class="text-gray-900">{{ sop.owner.get_full_name|default:sop.owner.email }}</dd>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between">
+                        <dt class="text-gray-500">Steps</dt>
+                        <dd class="text-gray-900">{{ steps.count }}</dd>
+                    </div>
+                </dl>
+            </div>
+            
+            <!-- Related SOPs -->
+            {% if related_sops %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Related SOPs</h3>
+                <div class="space-y-3">
+                    {% for related in related_sops %}
+                    <a href="{% url 'workflows:sop_detail' code=related.code %}" 
+                       class="block p-3 bg-gray-50 rounded-lg hover:bg-{{ sop.category.color }}-50 transition">
+                        <p class="font-medium text-gray-900 text-sm">{{ related.name }}</p>
+                        {% if related.estimated_duration %}
+                        <p class="text-xs text-gray-500 mt-1">{{ related.estimated_duration }}</p>
+                        {% endif %}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- All Categories Link -->
+            <a href="{% url 'workflows:sop_list' %}" 
+               class="block bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:bg-gray-50 transition">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-gray-100 rounded-lg">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900">Browse All SOPs</p>
+                        <p class="text-sm text-gray-500">View all categories</p>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-400 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

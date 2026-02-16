@@ -1,0 +1,368 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Import / Export Data - SkillsFlow{% endblock %}
+
+{% block main_content %}
+<div class="flex flex-col h-full" x-data="importExport()">
+    <!-- Page Header -->
+    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Import / Export Data</h1>
+                <p class="mt-1 text-sm text-gray-500">Bulk import learners and export SETA-compliant reports</p>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'learners:list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Back to List
+                </a>
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="mt-4 border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8">
+                <button @click="activeTab = 'import'"
+                        :class="activeTab === 'import' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    Bulk Import
+                </button>
+                <button @click="activeTab = 'export'"
+                        :class="activeTab === 'export' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    SETA Exports
+                </button>
+                <button @click="activeTab = 'templates'"
+                        :class="activeTab === 'templates' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Templates
+                </button>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Content -->
+    <div class="flex-1 overflow-auto p-6 bg-gray-50">
+        <!-- Import Tab -->
+        <template x-if="activeTab === 'import'">
+            <div class="max-w-3xl mx-auto">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Bulk Import Learners</h2>
+                        <p class="mt-1 text-sm text-gray-500">Upload a CSV or Excel file to import multiple learners at once</p>
+                    </div>
+                    
+                    <form method="post" enctype="multipart/form-data" action="{% url 'learners:bulk_import' %}" class="p-6">
+                        {% csrf_token %}
+                        
+                        <!-- Download Template -->
+                        <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <div class="flex items-start">
+                                <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-blue-800">Download the import template first</h3>
+                                    <p class="mt-1 text-sm text-blue-600">Use our template to ensure your data is formatted correctly</p>
+                                    <div class="mt-3 flex space-x-4">
+                                        <a href="{% url 'learners:download_template' 'learner_import' %}" 
+                                           class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200">
+                                            <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            </svg>
+                                            CSV Template
+                                        </a>
+                                        <a href="{% url 'learners:download_template' 'learner_import_excel' %}" 
+                                           class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200">
+                                            <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            </svg>
+                                            Excel Template
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- File Upload -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Upload File</label>
+                            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-primary-400 transition-colors"
+                                 @dragover.prevent="$el.classList.add('border-primary-500')"
+                                 @dragleave.prevent="$el.classList.remove('border-primary-500')"
+                                 @drop.prevent="handleFileDrop($event)">
+                                <div class="space-y-1 text-center">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    <div class="flex text-sm text-gray-600">
+                                        <label class="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500">
+                                            <span>Upload a file</span>
+                                            <input type="file" name="file" class="sr-only" accept=".csv,.xlsx,.xls" @change="handleFileSelect($event)">
+                                        </label>
+                                        <p class="pl-1">or drag and drop</p>
+                                    </div>
+                                    <p class="text-xs text-gray-500">CSV, XLS, or XLSX up to 10MB</p>
+                                </div>
+                            </div>
+                            <div x-show="selectedFile" class="mt-3 flex items-center text-sm text-gray-600">
+                                <svg class="w-5 h-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span x-text="selectedFile"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Import Options -->
+                        <div class="mb-6 space-y-4">
+                            <div class="flex items-center">
+                                <input type="checkbox" name="update_existing" id="update_existing"
+                                       class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                <label for="update_existing" class="ml-2 text-sm text-gray-700">
+                                    Update existing learners (matched by ID number)
+                                </label>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" name="create_users" id="create_users" checked
+                                       class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                <label for="create_users" class="ml-2 text-sm text-gray-700">
+                                    Create user accounts for new learners
+                                </label>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" name="send_welcome" id="send_welcome"
+                                       class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                <label for="send_welcome" class="ml-2 text-sm text-gray-700">
+                                    Send welcome emails to new learners
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-end space-x-3">
+                            <button type="button" @click="selectedFile = null" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700">
+                                Import Learners
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Field Mapping Reference -->
+                <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-md font-semibold text-gray-900">Field Mapping Reference</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Column Name</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Required</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Format</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    <tr><td class="px-4 py-2 font-mono">sa_id_number</td><td class="px-4 py-2"><span class="text-red-600">Yes</span></td><td class="px-4 py-2">13 digits</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono">first_name</td><td class="px-4 py-2"><span class="text-red-600">Yes</span></td><td class="px-4 py-2">Text</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono">last_name</td><td class="px-4 py-2"><span class="text-red-600">Yes</span></td><td class="px-4 py-2">Text</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono">email</td><td class="px-4 py-2">Optional</td><td class="px-4 py-2">Valid email</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono">phone_mobile</td><td class="px-4 py-2">Optional</td><td class="px-4 py-2">10 digits</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono">gender</td><td class="px-4 py-2">Optional</td><td class="px-4 py-2">M/F/O</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono">population_group</td><td class="px-4 py-2">Optional</td><td class="px-4 py-2">AFRICAN/COLOURED/INDIAN/WHITE</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono">citizenship</td><td class="px-4 py-2">Optional</td><td class="px-4 py-2">ZA/OTHER</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+        
+        <!-- Export Tab -->
+        <template x-if="activeTab === 'export'">
+            <div class="max-w-4xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for template in seta_templates %}
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center
+                                    {% if template.category == 'nlrd' %}bg-green-100
+                                    {% elif template.category == 'qcto' %}bg-blue-100
+                                    {% else %}bg-purple-100{% endif %}">
+                                    <svg class="w-5 h-5 {% if template.category == 'nlrd' %}text-green-600{% elif template.category == 'qcto' %}text-blue-600{% else %}text-purple-600{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-semibold text-gray-900">{{ template.name }}</h3>
+                                    <p class="text-xs text-gray-500">{{ template.category|upper }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="px-6 py-4">
+                            <p class="text-sm text-gray-600 mb-4">{{ template.description }}</p>
+                            
+                            <!-- Export Options -->
+                            <form action="{% url 'learners:export_seta_data' template.id %}" method="get" class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Date Range</label>
+                                    <div class="flex space-x-2">
+                                        <input type="date" name="date_from" class="flex-1 border border-gray-300 rounded text-sm py-1.5 px-2">
+                                        <input type="date" name="date_to" class="flex-1 border border-gray-300 rounded text-sm py-1.5 px-2">
+                                    </div>
+                                </div>
+                                
+                                {% if template.has_campus_filter %}
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Campus</label>
+                                    <select name="campus" class="w-full border border-gray-300 rounded text-sm py-1.5 px-2">
+                                        <option value="">All Campuses</option>
+                                        {% for campus in campuses %}
+                                        <option value="{{ campus.id }}">{{ campus.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                {% endif %}
+                                
+                                <button type="submit" class="w-full py-2 px-4 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 flex items-center justify-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                    </svg>
+                                    Export {{ template.format|upper }}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </template>
+        
+        <!-- Templates Tab -->
+        <template x-if="activeTab === 'templates'">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Available Templates</h2>
+                        <p class="mt-1 text-sm text-gray-500">Download blank templates for data import</p>
+                    </div>
+                    
+                    <div class="divide-y divide-gray-200">
+                        <!-- Learner Import -->
+                        <div class="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-sm font-medium text-gray-900">Learner Import Template</h3>
+                                    <p class="text-sm text-gray-500">Import new learners with basic information</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <a href="{% url 'learners:download_template' 'learner_import' %}" 
+                                   class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                                    CSV
+                                </a>
+                                <a href="{% url 'learners:download_template' 'learner_import_excel' %}" 
+                                   class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                                    Excel
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Enrollment Import -->
+                        <div class="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-sm font-medium text-gray-900">Enrollment Import Template</h3>
+                                    <p class="text-sm text-gray-500">Bulk enroll learners into qualifications</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <a href="{% url 'learners:download_template' 'enrollment_import' %}" 
+                                   class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                                    CSV
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Assessment Results Import -->
+                        <div class="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-sm font-medium text-gray-900">Assessment Results Template</h3>
+                                    <p class="text-sm text-gray-500">Bulk upload assessment results</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <a href="{% url 'learners:download_template' 'assessment_import' %}" 
+                                   class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                                    CSV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</div>
+
+<script>
+function importExport() {
+    return {
+        activeTab: 'import',
+        selectedFile: null,
+        
+        handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.selectedFile = file.name;
+            }
+        },
+        
+        handleFileDrop(event) {
+            const file = event.dataTransfer.files[0];
+            if (file) {
+                this.selectedFile = file.name;
+                // Set the file input
+                const input = document.querySelector('input[type="file"]');
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                input.files = dataTransfer.files;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

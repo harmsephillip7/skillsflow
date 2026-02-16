@@ -1,0 +1,93 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load support_extras %}
+
+{% block title %}Training Guides | SkillsFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Training Guides</h1>
+        <p class="text-gray-600 mt-1">Role-based playbooks, onboarding, workflows, and compliance-first operations.</p>
+      </div>
+
+      <form method="get" class="w-full lg:w-[620px]">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <input type="text" name="q" value="{{ query }}" placeholder="Search guides…"
+                 class="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+          <select name="difficulty"
+                  class="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">All levels</option>
+            <option value="beginner" {% if difficulty == 'beginner' %}selected{% endif %}>Beginner</option>
+            <option value="intermediate" {% if difficulty == 'intermediate' %}selected{% endif %}>Intermediate</option>
+            <option value="advanced" {% if difficulty == 'advanced' %}selected{% endif %}>Advanced</option>
+          </select>
+          <button class="px-4 py-3 rounded-2xl bg-gray-900 text-white text-sm font-medium hover:bg-black">Filter</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {% for g in guides %}
+        {% with p=progress_map|get_item:g.id %}
+        <a href="{% url 'support:guide_detail' g.slug %}" class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-semibold px-2 py-1 rounded-full {% if g.difficulty == 'advanced' %}bg-purple-50 text-purple-700{% elif g.difficulty == 'intermediate' %}bg-amber-50 text-amber-700{% else %}bg-emerald-50 text-emerald-700{% endif %}">
+                  {{ g.get_difficulty_display }}
+                </span>
+                <span class="text-xs text-gray-500">~{{ g.estimated_minutes }} min</span>
+                {% if p and p.is_completed %}
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full bg-blue-600 text-white">Completed</span>
+                {% endif %}
+              </div>
+              <h3 class="mt-3 text-base font-semibold text-gray-900">{{ g.title }}</h3>
+              {% if g.summary %}
+                <p class="mt-2 text-sm text-gray-600 line-clamp-3">{{ g.summary }}</p>
+              {% endif %}
+            </div>
+            <div class="text-gray-300">
+              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-4 text-xs text-gray-500">
+            Updated {{ g.updated_at|date:"M d, Y" }}
+          </div>
+        </a>
+        {% endwith %}
+      {% empty %}
+        <div class="col-span-full bg-white rounded-2xl border border-gray-200 shadow-sm p-10 text-center">
+          <h3 class="text-base font-semibold text-gray-900">No guides found</h3>
+          <p class="mt-1 text-sm text-gray-600">Try different keywords or remove filters.</p>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="mt-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl shadow-sm p-6 text-white">
+      <h2 class="text-lg font-semibold">Advanced capability</h2>
+      <p class="mt-2 text-blue-100">Use guides as operational runbooks: pair them with workflows, roles, and evidence capture for audits.</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
+        <div class="bg-white/10 rounded-xl p-4">
+          <div class="font-semibold">Role playbooks</div>
+          <div class="text-sm text-blue-100 mt-1">Facilitator, Admin, Finance, HR, Compliance.</div>
+        </div>
+        <div class="bg-white/10 rounded-xl p-4">
+          <div class="font-semibold">Compliance-ready</div>
+          <div class="text-sm text-blue-100 mt-1">Evidence logging, approvals, traceability.</div>
+        </div>
+        <div class="bg-white/10 rounded-xl p-4">
+          <div class="font-semibold">Operational excellence</div>
+          <div class="text-sm text-blue-100 mt-1">SOPs for CRM, intakes, tranches, LMS sync.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

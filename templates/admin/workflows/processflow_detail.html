@@ -1,0 +1,254 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="flex items-center text-sm text-gray-500 mb-2">
+                <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <a href="{% url 'workflows:processflow_list' %}" class="hover:text-primary-600">Process Flows</a>
+                <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="text-gray-700">{{ process_flow.name }}</span>
+            </nav>
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold text-gray-900">{{ process_flow.name }}</h1>
+                {% if process_flow.is_active %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Active
+                </span>
+                {% else %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                    Inactive
+                </span>
+                {% endif %}
+                <span class="text-sm text-gray-500">v{{ process_flow.version }}</span>
+            </div>
+            {% if process_flow.description %}
+            <p class="mt-1 text-sm text-gray-500">{{ process_flow.description }}</p>
+            {% endif %}
+        </div>
+        <div class="flex items-center gap-2">
+            <form method="post" action="{% url 'workflows:processflow_toggle' process_flow.pk %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="inline-flex items-center px-4 py-2 {% if process_flow.is_active %}bg-gray-100 text-gray-700 hover:bg-gray-200{% else %}bg-green-600 text-white hover:bg-green-700{% endif %} text-sm font-medium rounded-xl transition">
+                    {% if process_flow.is_active %}
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Deactivate
+                    {% else %}
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Activate
+                    {% endif %}
+                </button>
+            </form>
+            <a href="{% url 'workflows:processstage_edit' process_flow.pk %}" 
+               class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition shadow-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Edit Stages
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stage Overview -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Stages ({{ stages|length }})</h2>
+        
+        <div class="flex flex-wrap gap-2">
+            {% for stage in stages %}
+            <div class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium
+                {% if stage.stage_type == 'START' %}bg-blue-100 text-blue-800 border-2 border-blue-300
+                {% elif stage.stage_type == 'END' %}bg-gray-100 text-gray-800 border-2 border-gray-300
+                {% else %}bg-{{ stage.color }}-100 text-{{ stage.color }}-800{% endif %}">
+                {% if stage.stage_type == 'START' %}
+                <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                </svg>
+                {% elif stage.stage_type == 'END' %}
+                <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                {% endif %}
+                {{ stage.name }}
+                {% if stage.requires_reason_on_entry %}
+                <svg class="w-4 h-4 ml-1.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" title="Requires reason">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Transition Matrix -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 overflow-x-auto">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Transition Matrix</h2>
+                <p class="text-sm text-gray-500">Click cells to toggle allowed transitions</p>
+            </div>
+            <div class="flex items-center gap-4 text-sm">
+                <span class="flex items-center">
+                    <span class="w-4 h-4 bg-green-500 rounded mr-2"></span>
+                    Allowed
+                </span>
+                <span class="flex items-center">
+                    <span class="w-4 h-4 bg-red-500 rounded mr-2"></span>
+                    Blocked
+                </span>
+                <span class="flex items-center">
+                    <span class="w-4 h-4 bg-gray-200 rounded mr-2"></span>
+                    Not configured
+                </span>
+            </div>
+        </div>
+        
+        <table class="min-w-full">
+            <thead>
+                <tr>
+                    <th class="p-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-50">
+                        From / To →
+                    </th>
+                    {% for stage in stages %}
+                    <th class="p-2 text-center text-xs font-medium text-gray-600 bg-gray-50 min-w-[80px]">
+                        <span class="writing-mode-vertical rotate-180 inline-block">{{ stage.code }}</span>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in transition_matrix %}
+                <tr class="border-t border-gray-100">
+                    <td class="p-3 text-sm font-medium text-gray-900 bg-gray-50">
+                        {{ row.stage.code }}
+                        <span class="block text-xs text-gray-500 font-normal">{{ row.stage.name }}</span>
+                    </td>
+                    {% for cell in row.transitions %}
+                    <td class="p-1 text-center">
+                        {% if cell.is_same %}
+                        <div class="w-8 h-8 mx-auto bg-gray-100 rounded flex items-center justify-center">
+                            <span class="text-gray-400">-</span>
+                        </div>
+                        {% else %}
+                        <button 
+                            hx-post="{% url 'workflows:transition_toggle' process_flow.pk %}"
+                            hx-vals='{"from_stage": "{{ row.stage.code }}", "to_stage": "{{ cell.to_stage.code }}"}'
+                            hx-swap="none"
+                            hx-on::after-request="this.querySelector('div').classList.toggle('bg-green-500'); this.querySelector('div').classList.toggle('bg-red-500'); this.querySelector('div').classList.remove('bg-gray-200');"
+                            class="w-8 h-8 mx-auto rounded transition cursor-pointer hover:opacity-80"
+                            title="{% if cell.transition %}{% if cell.transition.is_allowed %}Allowed{% else %}Blocked{% endif %}{% else %}Not configured{% endif %}: {{ row.stage.code }} → {{ cell.to_stage.code }}">
+                            <div class="w-8 h-8 rounded flex items-center justify-center
+                                {% if cell.transition %}
+                                    {% if cell.transition.is_allowed %}bg-green-500{% else %}bg-red-500{% endif %}
+                                {% else %}
+                                    bg-gray-200
+                                {% endif %}">
+                                {% if cell.transition %}
+                                    {% if cell.transition.is_allowed %}
+                                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    {% else %}
+                                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </button>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Recent Transition Attempts -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Recent Transition Attempts</h2>
+            <a href="{% url 'workflows:transition_log' %}?entity_type={{ process_flow.entity_type }}" 
+               class="text-sm font-medium text-primary-600 hover:text-primary-700">
+                View All
+            </a>
+        </div>
+        
+        {% if recent_attempts %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead>
+                    <tr>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Time</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Entity ID</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">From → To</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">User</th>
+                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Result</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for attempt in recent_attempts %}
+                    <tr class="{% if attempt.was_blocked %}bg-red-50{% endif %}">
+                        <td class="px-3 py-2 text-sm text-gray-500 whitespace-nowrap">
+                            {{ attempt.attempted_at|timesince }} ago
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-900">
+                            #{{ attempt.entity_id }}
+                        </td>
+                        <td class="px-3 py-2 text-sm">
+                            <span class="font-medium">{{ attempt.from_stage }}</span>
+                            <span class="text-gray-400 mx-1">→</span>
+                            <span class="font-medium">{{ attempt.to_stage }}</span>
+                        </td>
+                        <td class="px-3 py-2 text-sm text-gray-600">
+                            {% if attempt.attempted_by %}
+                            {{ attempt.attempted_by.get_full_name|default:attempt.attempted_by.email }}
+                            {% else %}
+                            <span class="text-gray-400">System</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2">
+                            {% if attempt.was_blocked %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                Blocked
+                            </span>
+                            <p class="text-xs text-red-600 mt-0.5">{{ attempt.block_reason|truncatewords:10 }}</p>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                Allowed
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No transition attempts recorded yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.writing-mode-vertical {
+    writing-mode: vertical-rl;
+}
+</style>
+{% endblock %}

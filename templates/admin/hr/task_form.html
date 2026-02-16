@@ -1,0 +1,152 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}{% if object %}Edit{% else %}Add{% endif %} Position Task{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div>
+        <nav class="flex items-center text-sm text-gray-500 mb-2">
+            <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a href="{% url 'hr_admin:position_list' %}" class="hover:text-primary-600">Positions</a>
+            {% if position %}
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a href="{% url 'hr_admin:position_detail' position.pk %}" class="hover:text-primary-600">{{ position.title }}</a>
+            {% endif %}
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="text-gray-700">{% if object %}Edit{% else %}Add{% endif %} Task</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">{% if object %}Edit Position Task{% else %}Add Position Task{% endif %}</h1>
+        {% if position %}
+        <p class="text-gray-500 mt-1">For position: <span class="font-medium text-gray-700">{{ position.title }}</span></p>
+        {% endif %}
+    </div>
+    
+    <!-- Form -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                <p class="text-red-700 font-medium">Please correct the errors below:</p>
+                <ul class="text-sm text-red-600 mt-2 list-disc list-inside">
+                    {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li>{{ field }}: {{ error }}</li>
+                    {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            {% if not position %}
+            <div>
+                <label for="id_position" class="block text-sm font-medium text-gray-700 mb-1">Position *</label>
+                <select name="position" id="id_position" required
+                        class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                    <option value="">— Select Position —</option>
+                    {% for pos in form.fields.position.queryset %}
+                    <option value="{{ pos.pk }}" {% if form.position.value|stringformat:"s" == pos.pk|stringformat:"s" %}selected{% endif %}>{{ pos.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% else %}
+            <input type="hidden" name="position" value="{{ position.pk }}">
+            {% endif %}
+            
+            <div>
+                <label for="id_title" class="block text-sm font-medium text-gray-700 mb-1">Task Title *</label>
+                <input type="text" name="title" id="id_title" value="{{ form.title.value|default:'' }}"
+                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                       placeholder="e.g., Conduct monthly team meetings" required>
+            </div>
+            
+            <div>
+                <label for="id_description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea name="description" id="id_description" rows="4"
+                          class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                          placeholder="Detailed description of the task or KPI...">{{ form.description.value|default:'' }}</textarea>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="id_priority" class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <select name="priority" id="id_priority"
+                            class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                        {% for value, label in form.fields.priority.choices %}
+                        <option value="{{ value }}" {% if form.priority.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="id_weight" class="block text-sm font-medium text-gray-700 mb-1">Weight (%)</label>
+                    <input type="number" min="0" max="100" name="weight" id="id_weight" value="{{ form.weight.value|default:'0' }}"
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                           placeholder="e.g., 20">
+                    <p class="text-xs text-gray-500 mt-1">Performance weight (0-100%)</p>
+                </div>
+                
+                <div>
+                    <label for="id_frequency" class="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+                    <select name="frequency" id="id_frequency"
+                            class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                        {% for value, label in form.fields.frequency.choices %}
+                        <option value="{{ value }}" {% if form.frequency.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label for="id_success_criteria" class="block text-sm font-medium text-gray-700 mb-1">Success Criteria / Target</label>
+                <textarea name="success_criteria" id="id_success_criteria" rows="3"
+                          class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                          placeholder="How will success be measured? e.g., 95% attendance, no missed meetings...">{{ form.success_criteria.value|default:'' }}</textarea>
+            </div>
+            
+            <div class="flex items-center">
+                <input type="checkbox" name="is_active" id="id_is_active" 
+                       {% if form.is_active.value %}checked{% endif %}
+                       class="w-4 h-4 text-rose-600 border-gray-300 rounded focus:ring-rose-500">
+                <label for="id_is_active" class="ml-2 text-sm text-gray-700">Active Task</label>
+            </div>
+            
+            <div class="flex items-center justify-end space-x-4 pt-4 border-t border-gray-100">
+                {% if position %}
+                <a href="{% url 'hr_admin:position_detail' position.pk %}" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition">
+                    Cancel
+                </a>
+                {% else %}
+                <a href="{% url 'hr_admin:position_list' %}" class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition">
+                    Cancel
+                </a>
+                {% endif %}
+                <button type="submit" class="px-6 py-2.5 bg-rose-600 text-white font-medium rounded-xl hover:bg-rose-700 transition shadow-sm">
+                    {% if object %}Update{% else %}Create{% endif %} Task
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Help Panel -->
+    <div class="bg-rose-50 rounded-xl p-6 border border-rose-100">
+        <h3 class="text-lg font-semibold text-rose-900 mb-3">Task & KPI Guidelines</h3>
+        <div class="text-sm text-rose-800 space-y-2">
+            <p><strong>Title:</strong> Clear, action-oriented description of the task or KPI.</p>
+            <p><strong>Weight:</strong> The percentage this task contributes to overall performance evaluation. All weights for a position should total 100%.</p>
+            <p><strong>Frequency:</strong> How often this task should be completed or measured.</p>
+            <p><strong>Success Criteria:</strong> Specific, measurable targets that define successful completion.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

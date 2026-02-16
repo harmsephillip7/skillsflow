@@ -1,0 +1,270 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}My Profile | SkillsFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'core:dashboard' %}" class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900">SkillsFlow</span>
+                    </a>
+                    <span class="text-gray-300">|</span>
+                    <span class="text-gray-500">My Profile</span>
+                </div>
+                <a href="{% url 'core:dashboard' %}" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    ← Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Profile Header -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-800 h-32"></div>
+            <div class="px-6 pb-6">
+                <div class="flex flex-col sm:flex-row sm:items-end sm:space-x-6 -mt-16">
+                    <div class="w-32 h-32 bg-white rounded-2xl shadow-lg flex items-center justify-center text-4xl font-bold text-blue-600 border-4 border-white">
+                        {{ user.first_name.0|default:user.email.0|upper }}{{ user.last_name.0|default:""|upper }}
+                    </div>
+                    <div class="mt-4 sm:mt-0 sm:pb-2 flex-1">
+                        <h1 class="text-2xl font-bold text-gray-900">{{ user.get_full_name|default:user.email }}</h1>
+                        <p class="text-gray-500">{{ user.email }}</p>
+                        {% if staff_profile %}
+                        <p class="text-blue-600 font-medium mt-1">{{ staff_profile.position.title|default:"No Position Assigned" }}</p>
+                        {% endif %}
+                    </div>
+                    <button class="mt-4 sm:mt-0 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
+                        Edit Profile
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Personal Information -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Personal Information</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">First Name</label>
+                            <p class="text-gray-900">{{ user.first_name|default:"Not set" }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Last Name</label>
+                            <p class="text-gray-900">{{ user.last_name|default:"Not set" }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Email Address</label>
+                            <p class="text-gray-900">{{ user.email }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Phone Number</label>
+                            <p class="text-gray-900">{{ user.phone|default:"Not set" }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Information -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Account Information</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Account Status</label>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if user.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {% if user.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Email Verified</label>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if user.email_verified %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {% if user.email_verified %}Verified{% else %}Pending{% endif %}
+                            </span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Member Since</label>
+                            <p class="text-gray-900">{{ user.date_joined|date:"F j, Y" }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Last Login</label>
+                            <p class="text-gray-900">{{ user.last_login|date:"F j, Y H:i"|default:"Never" }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if staff_profile %}
+                <!-- Employment Information -->
+                <div class="bg-white rounded-2xl shadow-sm border border-rose-100 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-gray-900">Employment Information</h2>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                            {% if staff_profile.employment_status == 'active' %}bg-green-100 text-green-800
+                            {% elif staff_profile.employment_status == 'probation' %}bg-yellow-100 text-yellow-800
+                            {% elif staff_profile.employment_status == 'notice' %}bg-orange-100 text-orange-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ staff_profile.get_employment_status_display }}
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Employee Number</label>
+                            <p class="text-gray-900">{{ staff_profile.employee_number }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Position / Job Title</label>
+                            <p class="text-gray-900">{{ staff_profile.position.title|default:"Not Assigned" }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Department</label>
+                            <p class="text-gray-900">{{ staff_profile.department.name|default:"Not Assigned" }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Reports To</label>
+                            <p class="text-gray-900">{{ staff_profile.reports_to.user.get_full_name|default:"None" }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Employment Type</label>
+                            <p class="text-gray-900">{{ staff_profile.get_employment_type_display }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">Date Joined</label>
+                            <p class="text-gray-900">{{ staff_profile.date_joined|date:"F j, Y" }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if staff_profile.position.job_description %}
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <label class="block text-sm font-medium text-gray-500 mb-2">Job Description</label>
+                        <a href="{{ staff_profile.position.job_description.url }}" target="_blank" 
+                           class="inline-flex items-center px-4 py-2 bg-rose-50 text-rose-700 rounded-lg hover:bg-rose-100 transition text-sm font-medium">
+                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Download Job Description
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if position_tasks %}
+                <!-- Position Tasks & KPIs -->
+                <div class="bg-white rounded-2xl shadow-sm border border-rose-100 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">My Responsibilities & KPIs</h2>
+                    <div class="space-y-4">
+                        {% for task in position_tasks %}
+                        <div class="border border-gray-100 rounded-xl p-4">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-2">
+                                        <h4 class="font-medium text-gray-900">{{ task.title }}</h4>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                            {% if task.priority == 'CRITICAL' %}bg-red-100 text-red-700
+                                            {% elif task.priority == 'HIGH' %}bg-orange-100 text-orange-700
+                                            {% elif task.priority == 'MEDIUM' %}bg-yellow-100 text-yellow-700
+                                            {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                            {{ task.get_priority_display }}
+                                        </span>
+                                    </div>
+                                    {% if task.description %}
+                                    <p class="text-sm text-gray-600 mt-1">{{ task.description }}</p>
+                                    {% endif %}
+                                </div>
+                                {% if task.weight %}
+                                <div class="ml-4 text-right">
+                                    <span class="text-lg font-bold text-rose-600">{{ task.weight }}%</span>
+                                    <p class="text-xs text-gray-500">Weight</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center space-x-4 mt-3 text-xs text-gray-500">
+                                {% if task.frequency %}
+                                <span class="flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    {{ task.get_frequency_display }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+
+            <!-- Side Panel -->
+            <div class="space-y-6">
+                <!-- Security -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Security</h2>
+                    <div class="space-y-3">
+                        <a href="{% url 'password_change' %}" class="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                                    </svg>
+                                </div>
+                                <span class="font-medium text-gray-700">Change Password</span>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Links</h2>
+                    <div class="space-y-2">
+                        <a href="{% url 'core:dashboard' %}" class="flex items-center space-x-3 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                            </svg>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="#" class="flex items-center space-x-3 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <span>Settings</span>
+                        </a>
+                        <a href="#" class="flex items-center space-x-3 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>Help & Support</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="bg-white rounded-2xl shadow-sm border border-red-100 p-6">
+                    <h2 class="text-lg font-semibold text-red-600 mb-4">Danger Zone</h2>
+                    <a href="{% url 'core:logout' %}" class="flex items-center justify-center w-full p-3 border border-red-200 text-red-600 rounded-xl hover:bg-red-50 transition font-medium">
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                        Sign Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

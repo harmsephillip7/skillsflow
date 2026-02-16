@@ -1,0 +1,291 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{{ mentor.full_name }} - SkillsFlow{% endblock %}
+
+{% block page_title %}{{ mentor.full_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:dashboard' %}" class="text-gray-500 hover:text-gray-700">Corporate</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:host_employer_detail' host.pk %}" class="text-gray-500 hover:text-gray-700">{{ host.company_name }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:mentor_list' host.pk %}" class="text-gray-500 hover:text-gray-700">Mentors</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ mentor.full_name }}</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    {% if mentor.status == 'PENDING' %}
+    <a href="{% url 'corporate:mentor_approve' host.pk mentor.pk %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Approve Mentor
+    </a>
+    {% elif mentor.status == 'APPROVED' %}
+    <form method="POST" action="{% url 'corporate:mentor_deactivate' host.pk mentor.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" onclick="return confirm('Are you sure you want to deactivate this mentor?');" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200">
+            <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+            </svg>
+            Deactivate
+        </button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Status Banner -->
+    {% if mentor.status == 'PENDING' %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-yellow-800">Pending Approval</h3>
+                <p class="mt-1 text-sm text-yellow-700">This mentor has completed registration and is awaiting approval. Review their profile and approve to activate their portal access.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Profile Card -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div class="text-center">
+                    <div class="mx-auto h-24 w-24 bg-primary-100 rounded-full flex items-center justify-center">
+                        <span class="text-primary-600 font-bold text-2xl">{{ mentor.first_name.0 }}{{ mentor.last_name.0 }}</span>
+                    </div>
+                    <h3 class="mt-4 text-lg font-semibold text-gray-900">{{ mentor.full_name }}</h3>
+                    <p class="text-sm text-gray-500">{{ mentor.job_title }}</p>
+                    
+                    <div class="mt-4">
+                        {% if mentor.status == 'APPROVED' %}
+                        <span class="px-3 py-1 inline-flex text-sm font-semibold rounded-full bg-green-100 text-green-800">Approved</span>
+                        {% elif mentor.status == 'PENDING' %}
+                        <span class="px-3 py-1 inline-flex text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending Approval</span>
+                        {% else %}
+                        <span class="px-3 py-1 inline-flex text-sm font-semibold rounded-full bg-gray-100 text-gray-800">Inactive</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mt-6 border-t border-gray-100 pt-6 space-y-3">
+                    <div class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        <span class="text-gray-600">{{ mentor.email }}</span>
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                        </svg>
+                        <span class="text-gray-600">{{ mentor.phone }}</span>
+                    </div>
+                    {% if mentor.id_number %}
+                    <div class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                        </svg>
+                        <span class="text-gray-600">{{ mentor.id_number }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if mentor.approved_by %}
+                <div class="mt-6 border-t border-gray-100 pt-6">
+                    <p class="text-xs text-gray-500">Approved by {{ mentor.approved_by.get_full_name }}</p>
+                    <p class="text-xs text-gray-400">{{ mentor.approved_at|date:"d M Y H:i" }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Details -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Position & Trade -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Position & Trade</h3>
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Job Title</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ mentor.job_title }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Department</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ mentor.department|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Years Experience</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ mentor.years_experience|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Trade</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ mentor.trade|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Trade Certificate Number</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ mentor.trade_certificate_number|default:"-" }}</dd>
+                    </div>
+                </dl>
+            </div>
+            
+            <!-- Mentor Training -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Mentor Training</h3>
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Mentor Trained</dt>
+                        <dd class="mt-1">
+                            {% if mentor.mentor_trained %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Yes</span>
+                            {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">No</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    {% if mentor.mentor_trained and mentor.mentor_training_date %}
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Training Date</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ mentor.mentor_training_date|date:"d M Y" }}</dd>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Mentee Capacity</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ mentor.current_mentees }} / {{ mentor.max_mentees }}</dd>
+                    </div>
+                </dl>
+            </div>
+            
+            <!-- Documents -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Documents</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">CV / Resume</p>
+                                {% if mentor.cv_uploaded_at %}
+                                <p class="text-xs text-gray-500">Uploaded {{ mentor.cv_uploaded_at|date:"d M Y" }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if mentor.cv_document %}
+                        <a href="{{ mentor.cv_document.url }}" target="_blank" class="text-primary-600 hover:text-primary-800 text-sm font-medium">View</a>
+                        {% else %}
+                        <span class="text-gray-400 text-sm">Not uploaded</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                            </svg>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">Red Seal Certificate</p>
+                                {% if mentor.red_seal_uploaded_at %}
+                                <p class="text-xs text-gray-500">Uploaded {{ mentor.red_seal_uploaded_at|date:"d M Y" }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if mentor.red_seal_certificate %}
+                        <a href="{{ mentor.red_seal_certificate.url }}" target="_blank" class="text-primary-600 hover:text-primary-800 text-sm font-medium">View</a>
+                        {% else %}
+                        <span class="text-gray-400 text-sm">Not uploaded</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                            </svg>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">ID Copy</p>
+                                {% if mentor.id_copy_uploaded_at %}
+                                <p class="text-xs text-gray-500">Uploaded {{ mentor.id_copy_uploaded_at|date:"d M Y" }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if mentor.id_copy %}
+                        <a href="{{ mentor.id_copy.url }}" target="_blank" class="text-primary-600 hover:text-primary-800 text-sm font-medium">View</a>
+                        {% else %}
+                        <span class="text-gray-400 text-sm">Not uploaded</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if mentor.mentor_certificate %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                            </svg>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">Mentor Training Certificate</p>
+                            </div>
+                        </div>
+                        <a href="{{ mentor.mentor_certificate.url }}" target="_blank" class="text-primary-600 hover:text-primary-800 text-sm font-medium">View</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Assigned Learners -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Assigned Learners</h3>
+                {% if placements %}
+                <div class="space-y-3">
+                    {% for placement in placements %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ placement.learner.full_name }}</p>
+                            <p class="text-xs text-gray-500">{{ placement.enrollment.qualification.title }}</p>
+                        </div>
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            {% if placement.status == 'ACTIVE' %}bg-green-100 text-green-800
+                            {% elif placement.status == 'COMPLETED' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ placement.get_status_display }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500">No learners currently assigned to this mentor.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,214 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Committee Meetings - {{ client.company_name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <a href="{% url 'corporate:wsp_atr_dashboard' %}" class="hover:text-blue-600">WSP/ATR</a>
+                <span>/</span>
+                <span>Committee Meetings</span>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900">Training Committee Meetings</h1>
+            <p class="text-gray-500">{{ client.company_name }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'corporate:meeting_create' client.pk %}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Schedule Meeting
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Total Meetings</p>
+            <p class="text-3xl font-bold text-gray-900">{{ meetings|length }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">This Year</p>
+            <p class="text-3xl font-bold text-blue-600">{{ this_year_count }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Open Action Items</p>
+            <p class="text-3xl font-bold text-yellow-600">{{ open_actions_count }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Avg Attendance</p>
+            <p class="text-3xl font-bold text-green-600">{{ avg_attendance }}%</p>
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+        <!-- Upcoming Meetings -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Upcoming -->
+            <div class="bg-white rounded-xl shadow-sm border">
+                <div class="p-5 border-b">
+                    <h2 class="font-semibold text-gray-900">Upcoming Meetings</h2>
+                </div>
+                <div class="divide-y">
+                    {% for meeting in upcoming_meetings %}
+                    <div class="p-4 hover:bg-gray-50">
+                        <div class="flex items-start gap-4">
+                            <div class="w-14 h-14 bg-blue-100 rounded-lg flex flex-col items-center justify-center">
+                                <span class="text-xl font-bold text-blue-600">{{ meeting.meeting_date|date:"d" }}</span>
+                                <span class="text-xs text-blue-500">{{ meeting.meeting_date|date:"M" }}</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-gray-900">{{ meeting.title }}</h3>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    <svg class="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    {{ meeting.meeting_date|time:"H:i" }} 
+                                    {% if meeting.location %}
+                                    <span class="mx-2">•</span>
+                                    <svg class="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    </svg>
+                                    {{ meeting.location }}
+                                    {% endif %}
+                                </p>
+                                {% if meeting.agenda_items %}
+                                <div class="mt-2 text-sm text-gray-500">
+                                    {{ meeting.agenda_items.count }} agenda items
+                                </div>
+                                {% endif %}
+                            </div>
+                            <a href="{% url 'corporate:meeting_detail' meeting.pk %}" class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50">
+                                View
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 text-center text-gray-500">
+                        No upcoming meetings scheduled.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Past Meetings -->
+            <div class="bg-white rounded-xl shadow-sm border">
+                <div class="p-5 border-b">
+                    <h2 class="font-semibold text-gray-900">Past Meetings</h2>
+                </div>
+                <div class="divide-y">
+                    {% for meeting in past_meetings %}
+                    <div class="p-4 hover:bg-gray-50">
+                        <div class="flex items-start gap-4">
+                            <div class="w-14 h-14 bg-gray-100 rounded-lg flex flex-col items-center justify-center">
+                                <span class="text-xl font-bold text-gray-600">{{ meeting.meeting_date|date:"d" }}</span>
+                                <span class="text-xs text-gray-500">{{ meeting.meeting_date|date:"M" }}</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-gray-900">{{ meeting.title }}</h3>
+                                <div class="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                                    <span>{{ meeting.attendees.count }} attendees</span>
+                                    <span class="text-green-600">{{ meeting.completed_actions }} / {{ meeting.total_actions }} actions completed</span>
+                                </div>
+                                {% if meeting.minutes %}
+                                <span class="mt-2 inline-block px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">Minutes Available</span>
+                                {% endif %}
+                            </div>
+                            <a href="{% url 'corporate:meeting_detail' meeting.pk %}" class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50">
+                                View
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 text-center text-gray-500">
+                        No past meetings recorded.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Committee Members -->
+            <div class="bg-white rounded-xl shadow-sm border p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-900">Committee Members</h3>
+                    <a href="#" class="text-sm text-blue-600 hover:underline">Manage</a>
+                </div>
+                <div class="space-y-3">
+                    {% for member in committee_members %}
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                            <span class="text-sm font-medium text-gray-600">{{ member.employee.first_name|slice:":1" }}{{ member.employee.surname|slice:":1" }}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">{{ member.employee.first_name }} {{ member.employee.surname }}</p>
+                            <p class="text-xs text-gray-500">{{ member.get_role_display }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-gray-500">No members assigned yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Open Action Items -->
+            <div class="bg-white rounded-xl shadow-sm border p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-900">Open Actions</h3>
+                </div>
+                <div class="space-y-3">
+                    {% for action in open_actions|slice:":5" %}
+                    <div class="p-3 border rounded-lg">
+                        <p class="text-sm font-medium text-gray-900">{{ action.description|truncatewords:10 }}</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <span class="text-xs text-gray-500">{{ action.assigned_to.get_full_name|default:"Unassigned" }}</span>
+                            <span class="px-2 py-0.5 text-xs rounded-full 
+                                {% if action.is_overdue %}bg-red-100 text-red-700
+                                {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                                Due {{ action.due_date|date:"d M" }}
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4 text-sm text-green-600">
+                        <svg class="h-8 w-8 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        All actions completed!
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="bg-white rounded-xl shadow-sm border p-5">
+                <h3 class="font-semibold text-gray-900 mb-4">Quick Links</h3>
+                <div class="space-y-2">
+                    <a href="#" class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-gray-700">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Meeting Templates
+                    </a>
+                    <a href="#" class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-gray-700">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Export Calendar
+                    </a>
+                    <a href="#" class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-gray-700">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Attendance Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,440 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}EE Management - {{ client.company_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:ee_clients_dashboard' %}" class="text-gray-700 hover:text-blue-600">EE Clients</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">{{ client.company_name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex space-x-3">
+    <a href="{% url 'corporate:client_360' client.pk %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+        </svg>
+        Client 360
+    </a>
+    <a href="{% url 'corporate:ee_create_meeting' client.pk %}" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        Schedule Meeting
+    </a>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<!-- Header -->
+<div class="mb-8">
+    <div class="flex justify-between items-start">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ client.company_name }}</h1>
+            <p class="text-gray-500 mt-1">Employment Equity Service Management</p>
+        </div>
+        <!-- Service Year Selector -->
+        <div class="flex items-center space-x-2">
+            <label class="text-sm text-gray-600">Reporting Year:</label>
+            <select onchange="window.location.href='?year=' + this.value" class="rounded-lg border-gray-300 text-sm">
+                {% for year in ee_service_years %}
+                <option value="{{ year.reporting_year }}" {% if current_service_year.reporting_year == year.reporting_year %}selected{% endif %}>
+                    {{ year.reporting_year }} (Oct {{ year.reporting_year|add:-1 }} - Sep {{ year.reporting_year }})
+                </option>
+                {% endfor %}
+            </select>
+            <button onclick="document.getElementById('createYearModal').classList.remove('hidden')" 
+                    class="inline-flex items-center px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm" title="Add new year">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Add Year
+            </button>
+        </div>
+    </div>
+    
+    {% if not subscription %}
+    <!-- Billing Reminder Banner -->
+    <div class="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start">
+        <svg class="w-5 h-5 text-amber-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div class="flex-1">
+            <p class="text-sm text-amber-800"><strong>Billing not set up:</strong> Remember to create a subscription for this client to track billing and contracts.</p>
+            <a href="{% url 'corporate:add_subscription' client.pk %}" class="text-sm text-amber-700 hover:text-amber-900 underline mt-1 inline-block">
+                Set up billing subscription →
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if current_service_year %}
+<!-- Status & Progress Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-500">Status</span>
+            <span class="px-2 py-1 text-xs rounded-full 
+                {% if current_service_year.status == 'COMPLETED' %}bg-green-100 text-green-800
+                {% elif current_service_year.status == 'SUBMITTED' %}bg-blue-100 text-blue-800
+                {% elif current_service_year.status == 'IN_PROGRESS' %}bg-yellow-100 text-yellow-800
+                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                {{ current_service_year.get_status_display|default:current_service_year.status }}
+            </span>
+        </div>
+        <p class="text-lg font-semibold text-gray-900">Deadline: {{ current_service_year.submission_deadline|date:"d M Y" }}</p>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-500">Overall Progress</span>
+            <span class="text-lg font-semibold text-purple-600">{{ current_service_year.progress_percentage|default:0 }}%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-purple-600 h-2 rounded-full" style="width: {{ current_service_year.progress_percentage|default:0 }}%"></div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-500">Total Employees</span>
+        </div>
+        <p class="text-lg font-semibold text-gray-900">{{ stats.total_employees|intcomma }}</p>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-500">EE Committee</span>
+        </div>
+        <p class="text-lg font-semibold text-gray-900">{{ stats.committee_members }} Members</p>
+    </div>
+</div>
+
+<!-- Section Progress -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <a href="{% url 'corporate:ee_workforce_profile' client.pk current_service_year.pk %}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Workforce Profile</p>
+                <p class="text-xl font-bold text-gray-900">{{ section_progress.workforce }}%</p>
+            </div>
+            <div class="p-3 bg-purple-100 rounded-lg">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </a>
+    
+    <a href="{% url 'corporate:ee_plan_management' client.pk %}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">EE Plan</p>
+                <p class="text-xl font-bold text-gray-900">{{ section_progress.plan }}%</p>
+            </div>
+            <div class="p-3 bg-blue-100 rounded-lg">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+        </div>
+    </a>
+    
+    <a href="{% url 'corporate:ee_barriers_analysis' client.pk current_service_year.pk %}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Barriers Analysis</p>
+                <p class="text-xl font-bold text-gray-900">{{ stats.barriers_count }}</p>
+            </div>
+            <div class="p-3 bg-yellow-100 rounded-lg">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+        </div>
+    </a>
+    
+    <a href="{% url 'corporate:ee_documents' client.pk current_service_year.pk %}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Submission</p>
+                <p class="text-xl font-bold text-gray-900">{{ section_progress.submission }}%</p>
+            </div>
+            <div class="p-3 bg-green-100 rounded-lg">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+            </div>
+        </div>
+    </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- EE Plan Summary -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900">EE Plan Status</h2>
+                <a href="{% url 'corporate:ee_plan_management' client.pk %}" class="text-purple-600 text-sm hover:underline">Manage Plans</a>
+            </div>
+            <div class="p-4">
+                {% if active_plan %}
+                <div class="flex items-start space-x-4">
+                    <div class="p-3 bg-green-100 rounded-lg">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-medium text-gray-900">Active {{ active_plan.duration_years }}-Year Plan</p>
+                        <p class="text-sm text-gray-500">Valid from {{ active_plan.valid_from|date:"d M Y" }} to {{ active_plan.valid_to|date:"d M Y" }}</p>
+                        <div class="mt-2">
+                            <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">{{ active_plan.get_status_display }}</span>
+                            {% if active_plan.ceo_approved %}<span class="ml-2 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">CEO Approved</span>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="flex items-start space-x-4">
+                    <div class="p-3 bg-red-100 rounded-lg">
+                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-medium text-gray-900">No Active EE Plan</p>
+                        <p class="text-sm text-gray-500">An EE Plan is required for reporting. Please create or activate a plan.</p>
+                        <a href="{% url 'corporate:ee_plan_management' client.pk %}" class="mt-2 inline-flex items-center text-sm text-purple-600 hover:underline">
+                            Create EE Plan
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Numerical Goals Summary -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900">Numerical Goals</h2>
+                <a href="{% url 'corporate:ee_numerical_goals' client.pk current_service_year.pk %}" class="text-purple-600 text-sm hover:underline">View All</a>
+            </div>
+            <div class="p-4">
+                {% if numerical_goals %}
+                <div class="space-y-3">
+                    {% for goal in numerical_goals|slice:":5" %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900 text-sm">{{ goal.get_occupational_level_display }}</p>
+                            <p class="text-xs text-gray-500">{{ goal.get_designated_group_display }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold {% if goal.current_count >= goal.target_count %}text-green-600{% else %}text-gray-900{% endif %}">
+                                {{ goal.current_count }} / {{ goal.target_count }}
+                            </p>
+                            <p class="text-xs text-gray-500">Target: {{ goal.target_year }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-gray-500 text-center py-4">No numerical goals defined yet.</p>
+                <a href="{% url 'corporate:ee_numerical_goals' client.pk current_service_year.pk %}" class="block text-center text-purple-600 hover:underline">Add Numerical Goals</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Barriers Summary -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900">Barriers to Equity</h2>
+                <a href="{% url 'corporate:ee_barriers_analysis' client.pk current_service_year.pk %}" class="text-purple-600 text-sm hover:underline">View All</a>
+            </div>
+            <div class="p-4">
+                {% if barriers %}
+                <div class="space-y-3">
+                    {% for barrier in barriers|slice:":5" %}
+                    <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <span class="px-2 py-1 text-xs rounded-full 
+                            {% if barrier.priority == 'HIGH' %}bg-red-100 text-red-800
+                            {% elif barrier.priority == 'MEDIUM' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ barrier.get_priority_display }}
+                        </span>
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-900">{{ barrier.description|truncatechars:100 }}</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ barrier.get_barrier_category_display }}</p>
+                        </div>
+                        <span class="px-2 py-1 text-xs rounded-full 
+                            {% if barrier.status == 'ADDRESSED' %}bg-green-100 text-green-800
+                            {% elif barrier.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ barrier.get_status_display }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-gray-500 text-center py-4">No barriers identified yet.</p>
+                <a href="{% url 'corporate:ee_barriers_analysis' client.pk current_service_year.pk %}" class="block text-center text-purple-600 hover:underline">Conduct Barrier Analysis</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        <!-- Committee Info -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <h3 class="font-semibold text-gray-900 mb-4">EE Committee</h3>
+            {% if committee %}
+            <div class="space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Type</span>
+                    <span class="font-medium">{{ committee.get_committee_function_display }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Members</span>
+                    <span class="font-medium">{{ stats.committee_members }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Meeting Frequency</span>
+                    <span class="font-medium">{{ committee.get_ee_meeting_frequency_display|default:committee.get_meeting_frequency_display }}</span>
+                </div>
+                {% if committee.ee_constitution_date %}
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Constituted</span>
+                    <span class="font-medium">{{ committee.ee_constitution_date|date:"d M Y" }}</span>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="text-sm text-gray-500">No EE Committee configured.</p>
+            {% endif %}
+        </div>
+        
+        <!-- Upcoming Meetings -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-semibold text-gray-900">EE Meetings</h3>
+                <a href="{% url 'corporate:ee_create_meeting' client.pk %}" class="text-purple-600 text-sm hover:underline">+ Add</a>
+            </div>
+            <div class="space-y-3">
+                {% for meeting in upcoming_meetings %}
+                <a href="{% url 'corporate:ee_meeting_detail' client.pk meeting.pk %}" class="block p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                    <p class="font-medium text-purple-900">{{ meeting.title|truncatechars:30 }}</p>
+                    <p class="text-sm text-purple-700">{{ meeting.scheduled_date|date:"d M Y" }} at {{ meeting.scheduled_time|time:"H:i"|default:"TBC" }}</p>
+                </a>
+                {% empty %}
+                <p class="text-sm text-gray-500 text-center py-4">No upcoming meetings</p>
+                {% endfor %}
+            </div>
+            
+            {% if past_meetings %}
+            <div class="mt-4 pt-4 border-t border-gray-100">
+                <p class="text-xs text-gray-500 uppercase font-medium mb-2">Past Meetings</p>
+                {% for meeting in past_meetings|slice:":3" %}
+                <a href="{% url 'corporate:ee_meeting_detail' client.pk meeting.pk %}" class="block py-2 text-sm text-gray-600 hover:text-purple-600">
+                    {{ meeting.scheduled_date|date:"d M Y" }} - {{ meeting.title|truncatechars:25 }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Quick Links -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <h3 class="font-semibold text-gray-900 mb-4">Quick Links</h3>
+            <div class="space-y-2">
+                <a href="{% url 'corporate:ee_workforce_profile' client.pk current_service_year.pk %}" class="flex items-center text-sm text-gray-600 hover:text-purple-600">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Workforce Profile
+                </a>
+                <a href="{% url 'corporate:ee_numerical_goals' client.pk current_service_year.pk %}" class="flex items-center text-sm text-gray-600 hover:text-purple-600">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                    Numerical Goals
+                </a>
+                <a href="{% url 'corporate:ee_income_differential' client.pk current_service_year.pk %}" class="flex items-center text-sm text-gray-600 hover:text-purple-600">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Income Differential (EEA4)
+                </a>
+                <a href="{% url 'corporate:ee_documents' client.pk current_service_year.pk %}" class="flex items-center text-sm text-gray-600 hover:text-purple-600">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Documents
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- No Service Year -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+    <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+    </svg>
+    <h2 class="text-xl font-semibold text-gray-900 mb-2">No EE Service Year Found</h2>
+    <p class="text-gray-500 mb-4">Create an EE Service Year to start tracking Employment Equity compliance.</p>
+    <button onclick="document.getElementById('createYearModal').classList.remove('hidden')" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        Create Service Year
+    </button>
+</div>
+{% endif %}
+
+<!-- Create Year Modal -->
+<div id="createYearModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-xl bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Create EE Service Year</h3>
+            <form method="post" action="{% url 'corporate:ee_create_service_year' client.pk %}">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Reporting Year</label>
+                    <select name="reporting_year" class="w-full rounded-lg border-gray-300">
+                        {% for year in "2024,2025,2026,2027,2028"|make_list %}
+                        <option value="{{ year }}">{{ year }} (Oct {{ year|add:-1 }} - Sept {{ year }})</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">EE year runs from October to September. Deadline: 15 January.</p>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="document.getElementById('createYearModal').classList.add('hidden')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                        Create
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{% if implementation_plan %}Edit{% else %}Create{% endif %} Implementation Plan - SkillsFlow{% endblock %}
+
+{% block page_title %}{% if implementation_plan %}Edit Implementation Plan{% else %}Create Implementation Plan{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'academics:qualification_list' %}" class="text-primary-600 hover:text-primary-800">Qualifications</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'academics:qualification_detail' qualification.pk %}" class="text-primary-600 hover:text-primary-800">{{ qualification.short_title }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'academics:implementation_plan_list' qualification.pk %}" class="text-primary-600 hover:text-primary-800">Implementation Plans</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{% if implementation_plan %}Edit{% else %}Create{% endif %}</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-3xl mx-auto">
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900">Basic Information</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Template Name *</label>
+                    <input type="text" name="name" id="name" required
+                        value="{{ implementation_plan.name|default:'' }}"
+                        placeholder="e.g., Standard Full-Time Delivery"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    <p class="text-xs text-gray-500 mt-1">A descriptive name for this implementation plan template</p>
+                </div>
+                
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea name="description" id="description" rows="3"
+                        placeholder="Describe when this implementation plan should be used..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">{{ implementation_plan.description|default:'' }}</textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="delivery_mode" class="block text-sm font-medium text-gray-700 mb-1">Delivery Mode *</label>
+                        <select name="delivery_mode" id="delivery_mode" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            <option value="FULL_TIME" {% if implementation_plan.delivery_mode == 'FULL_TIME' %}selected{% endif %}>Full-Time</option>
+                            <option value="PART_TIME" {% if implementation_plan.delivery_mode == 'PART_TIME' %}selected{% endif %}>Part-Time</option>
+                            <option value="BLENDED" {% if implementation_plan.delivery_mode == 'BLENDED' %}selected{% endif %}>Blended</option>
+                            <option value="DISTANCE" {% if implementation_plan.delivery_mode == 'DISTANCE' %}selected{% endif %}>Distance</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="total_weeks" class="block text-sm font-medium text-gray-700 mb-1">Total Weeks *</label>
+                        <input type="number" name="total_weeks" id="total_weeks" required min="1"
+                            value="{{ implementation_plan.total_weeks|default:52 }}"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                        <p class="text-xs text-gray-500 mt-1">Total programme duration in weeks</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Session Configuration -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900">Session Configuration</h3>
+                <p class="text-sm text-gray-500 mt-1">Define the daily session structure for this implementation plan</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label for="days_per_week" class="block text-sm font-medium text-gray-700 mb-1">Days per Week *</label>
+                        <input type="number" name="days_per_week" id="days_per_week" required min="1" max="7"
+                            value="{{ implementation_plan.days_per_week|default:5 }}"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    
+                    <div>
+                        <label for="classroom_hours_per_day" class="block text-sm font-medium text-gray-700 mb-1">Classroom Hours/Day *</label>
+                        <input type="number" name="classroom_hours_per_day" id="classroom_hours_per_day" required min="0" max="12" step="0.5"
+                            value="{{ implementation_plan.classroom_hours_per_day|default:2 }}"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    
+                    <div>
+                        <label for="practical_hours_per_day" class="block text-sm font-medium text-gray-700 mb-1">Practical Hours/Day *</label>
+                        <input type="number" name="practical_hours_per_day" id="practical_hours_per_day" required min="0" max="12" step="0.5"
+                            value="{{ implementation_plan.practical_hours_per_day|default:4 }}"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+                
+                <!-- Calculated Hours -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Calculated Hours</h4>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-gray-900" id="hours-per-day">6</p>
+                            <p class="text-xs text-gray-500">Hours/Day</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-blue-600" id="hours-per-week">30</p>
+                            <p class="text-xs text-gray-500">Hours/Week</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-green-600" id="total-hours">1560</p>
+                            <p class="text-xs text-gray-500">Total Hours</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Options -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900">Options</h3>
+            </div>
+            <div class="p-6">
+                <div class="flex items-center space-x-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_default" value="true"
+                            {% if implementation_plan.is_default %}checked{% endif %}
+                            class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                        <span class="ml-2 text-sm text-gray-700">Set as default template for this qualification</span>
+                    </label>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">The default template will be automatically used when creating new cohort schedules.</p>
+            </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="flex items-center justify-between">
+            <a href="{% if implementation_plan %}{% url 'academics:implementation_plan_detail' implementation_plan.pk %}{% else %}{% url 'academics:implementation_plan_list' qualification.pk %}{% endif %}" 
+               class="text-gray-600 hover:text-gray-800 font-medium">
+                ← Cancel
+            </a>
+            <div class="flex items-center space-x-3">
+                <button type="submit" name="save_and_continue" value="true" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Save & Add Phases
+                </button>
+                <button type="submit" class="px-6 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-sm">
+                    {% if implementation_plan %}Update Implementation Plan{% else %}Create Implementation Plan{% endif %}
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function updateCalculations() {
+    const classroomHours = parseFloat(document.getElementById('classroom_hours_per_day').value) || 0;
+    const practicalHours = parseFloat(document.getElementById('practical_hours_per_day').value) || 0;
+    const daysPerWeek = parseInt(document.getElementById('days_per_week').value) || 0;
+    const totalWeeks = parseInt(document.getElementById('total_weeks').value) || 0;
+    
+    const hoursPerDay = classroomHours + practicalHours;
+    const hoursPerWeek = hoursPerDay * daysPerWeek;
+    const totalHours = hoursPerWeek * totalWeeks;
+    
+    document.getElementById('hours-per-day').textContent = hoursPerDay.toFixed(1).replace(/\.0$/, '');
+    document.getElementById('hours-per-week').textContent = hoursPerWeek.toFixed(1).replace(/\.0$/, '');
+    document.getElementById('total-hours').textContent = totalHours.toFixed(0);
+}
+
+// Add event listeners
+['classroom_hours_per_day', 'practical_hours_per_day', 'days_per_week', 'total_weeks'].forEach(function(id) {
+    document.getElementById(id).addEventListener('input', updateCalculations);
+});
+
+// Initial calculation
+updateCalculations();
+</script>
+{% endblock %}

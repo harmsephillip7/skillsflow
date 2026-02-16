@@ -1,0 +1,674 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Card Scanner - CRM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .scanner-container { max-width: 1400px; margin: 0 auto; }
+    .camera-preview { width: 100%; max-width: 640px; background: #1a1a2e; border-radius: 12px; overflow: hidden; }
+    .camera-preview video { width: 100%; display: block; }
+    .capture-btn { width: 70px; height: 70px; border-radius: 50%; border: 4px solid white; background: #ef4444; cursor: pointer; }
+    .capture-btn:hover { background: #dc2626; transform: scale(1.05); }
+    .card-queue { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+    .scanned-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; }
+    .scanned-card.processing { opacity: 0.7; }
+    .scanned-card.error { border: 2px solid #ef4444; }
+    .scanned-card.ready { border: 2px solid #22c55e; }
+    .scanned-card.saved { border: 2px solid #3b82f6; opacity: 0.6; }
+    .card-thumbnail { width: 100%; height: 150px; object-fit: cover; background: #f3f4f6; }
+    .confidence-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; }
+    .confidence-high { background: #dcfce7; color: #166534; }
+    .confidence-medium { background: #fef9c3; color: #854d0e; }
+    .confidence-low { background: #fee2e2; color: #991b1b; }
+    .field-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
+    .field-row label { width: 90px; font-size: 0.75rem; color: #6b7280; flex-shrink: 0; }
+    .field-row input { flex: 1; font-size: 0.875rem; padding: 4px 8px; border: 1px solid #e5e7eb; border-radius: 4px; }
+    .field-row input:focus { outline: none; border-color: #3b82f6; }
+    .drop-zone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 2rem; text-align: center; transition: all 0.2s; cursor: pointer; }
+    .drop-zone:hover { border-color: #94a3b8; background: #f8fafc; }
+    .drop-zone.dragover { border-color: #3b82f6; background: #eff6ff; }
+    .hidden { display: none !important; }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast { position: fixed; bottom: 1rem; right: 1rem; padding: 0.75rem 1.5rem; border-radius: 0.5rem; color: white; z-index: 9999; animation: slideIn 0.3s ease-out; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .toast-success { background: #16a34a; }
+    .toast-error { background: #dc2626; }
+    .toast-warning { background: #ca8a04; }
+    .collapsible-fields { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+    .collapsible-fields.expanded { max-height: 500px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="scanner-container p-4">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">
+                <i class="fas fa-camera-retro mr-2 text-blue-600"></i>Card Scanner
+            </h1>
+            <p class="text-gray-600">Scan contact cards to create leads automatically using AI</p>
+        </div>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div class="flex items-center gap-2">
+                <label for="defaultCampus" class="text-sm text-gray-600">Campus:</label>
+                <select id="defaultCampus" class="px-3 py-2 border rounded-lg text-sm">
+                    {% for campus in campuses %}
+                    <option value="{{ campus.id }}" {% if default_campus and default_campus.id == campus.id %}selected{% endif %}>{{ campus.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button id="submitAllBtn" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 hidden shadow-sm">
+                <i class="fas fa-save mr-2"></i>Save All (<span id="readyCount">0</span>)
+            </button>
+        </div>
+    </div>
+
+    {% if not scanner_available %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <i class="fas fa-exclamation-triangle text-yellow-600 mr-3 text-xl"></i>
+            <div>
+                <h3 class="font-semibold text-yellow-800">Scanner Not Available</h3>
+                <p class="text-yellow-700 text-sm">OpenAI API key is not configured. Please add OPENAI_API_KEY to your environment variables.</p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left: Camera/Upload -->
+        <div class="lg:col-span-1 space-y-4">
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <h2 class="font-semibold mb-4"><i class="fas fa-camera mr-2 text-blue-600"></i>Capture Cards</h2>
+                
+                <!-- Camera Preview -->
+                <div class="camera-preview mb-4 relative" id="cameraContainer">
+                    <video id="cameraPreview" autoplay playsinline class="rounded-lg"></video>
+                    <canvas id="captureCanvas" class="hidden"></canvas>
+                    <div id="cameraPlaceholder" class="flex items-center justify-center h-48 text-gray-400">
+                        <div class="text-center">
+                            <i class="fas fa-video text-4xl mb-2"></i>
+                            <p class="text-sm">Camera preview</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Camera Controls -->
+                <div class="flex justify-center gap-3 mb-4">
+                    <button id="startCameraBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-video mr-2"></i>Start Camera
+                    </button>
+                    <button id="captureBtn" class="capture-btn hidden items-center justify-center" title="Capture">
+                        <i class="fas fa-camera text-white text-xl"></i>
+                    </button>
+                    <button id="switchCameraBtn" class="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 hidden" title="Switch Camera">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button id="stopCameraBtn" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 hidden" title="Stop Camera">
+                        <i class="fas fa-stop"></i>
+                    </button>
+                </div>
+                
+                <!-- File Upload -->
+                <div class="drop-zone" id="dropZone">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                    <p class="text-gray-600 mb-2">Drop images here or click to upload</p>
+                    <p class="text-xs text-gray-400 mb-3">Supports: JPG, PNG, WebP (max 20MB each)</p>
+                    <input type="file" id="fileInput" accept="image/*" multiple class="hidden">
+                    <button type="button" onclick="document.getElementById('fileInput').click()" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
+                        <i class="fas fa-folder-open mr-2"></i>Browse Files
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Stats -->
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <h3 class="font-semibold mb-3"><i class="fas fa-chart-bar mr-2 text-gray-500"></i>Session Stats</h3>
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="p-3 bg-blue-50 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600" id="statScanned">0</div>
+                        <div class="text-xs text-gray-500">Scanned</div>
+                    </div>
+                    <div class="p-3 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600" id="statReady">0</div>
+                        <div class="text-xs text-gray-500">Ready</div>
+                    </div>
+                    <div class="p-3 bg-red-50 rounded-lg">
+                        <div class="text-2xl font-bold text-red-600" id="statErrors">0</div>
+                        <div class="text-xs text-gray-500">Errors</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Instructions -->
+            <div class="bg-blue-50 rounded-xl p-4 text-sm">
+                <h3 class="font-semibold text-blue-800 mb-2"><i class="fas fa-info-circle mr-2"></i>Tips</h3>
+                <ul class="space-y-1 text-blue-700">
+                    <li>• Ensure good lighting for best results</li>
+                    <li>• Hold card flat and fill the frame</li>
+                    <li>• AI works with handwritten & printed text</li>
+                    <li>• Review extracted data before saving</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Right: Scanned Cards Queue -->
+        <div class="lg:col-span-2">
+            <div class="bg-gray-50 rounded-xl p-4 min-h-[600px]">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-semibold">
+                        <i class="fas fa-layer-group mr-2 text-gray-500"></i>Scanned Cards
+                        <span id="queueCount" class="text-gray-400 text-sm font-normal ml-2">(0)</span>
+                    </h2>
+                    <button id="clearAllBtn" class="text-sm text-red-600 hover:text-red-700 hidden">
+                        <i class="fas fa-trash mr-1"></i>Clear All
+                    </button>
+                </div>
+                
+                <div id="emptyState" class="text-center py-16">
+                    <i class="fas fa-id-card text-6xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500 text-lg">No cards scanned yet</p>
+                    <p class="text-sm text-gray-400 mt-1">Use the camera or upload images to start</p>
+                </div>
+                
+                <div id="cardQueue" class="card-queue hidden"></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Card Template -->
+<template id="cardTemplate">
+    <div class="scanned-card" data-card-id="">
+        <img class="card-thumbnail" src="" alt="Scanned card">
+        <div class="p-3">
+            <div class="flex items-center justify-between mb-2">
+                <span class="font-semibold card-name text-gray-800">Processing...</span>
+                <span class="confidence-badge">--</span>
+            </div>
+            
+            <!-- Primary fields (always visible) -->
+            <div class="card-fields text-sm space-y-1">
+                <div class="field-row">
+                    <label>First Name</label>
+                    <input type="text" name="first_name" placeholder="First name">
+                </div>
+                <div class="field-row">
+                    <label>Last Name</label>
+                    <input type="text" name="last_name" placeholder="Last name">
+                </div>
+                <div class="field-row">
+                    <label>Phone</label>
+                    <input type="tel" name="phone" placeholder="e.g. 082 123 4567">
+                </div>
+                <div class="field-row">
+                    <label>Email</label>
+                    <input type="email" name="email" placeholder="email@example.com">
+                </div>
+            </div>
+            
+            <!-- Toggle for more fields -->
+            <button type="button" class="toggle-fields-btn w-full text-center text-xs text-blue-600 hover:text-blue-800 py-2 mt-2">
+                <i class="fas fa-chevron-down mr-1"></i>Show more fields
+            </button>
+            
+            <!-- Collapsible additional fields -->
+            <div class="collapsible-fields card-fields-extra text-sm space-y-1">
+                <div class="field-row">
+                    <label>WhatsApp</label>
+                    <input type="tel" name="whatsapp_number" placeholder="If different from phone">
+                </div>
+                <div class="field-row">
+                    <label>School</label>
+                    <input type="text" name="school_name" placeholder="School name">
+                </div>
+                <div class="field-row">
+                    <label>Grade</label>
+                    <input type="text" name="grade" placeholder="e.g. Grade 11">
+                </div>
+                <div class="field-row">
+                    <label>Interest</label>
+                    <input type="text" name="qualification_interest" placeholder="Course interest">
+                </div>
+                <div class="field-row">
+                    <label>Parent</label>
+                    <input type="text" name="parent_name" placeholder="Parent/Guardian name">
+                </div>
+                <div class="field-row">
+                    <label>Parent Tel</label>
+                    <input type="tel" name="parent_phone" placeholder="Parent phone">
+                </div>
+                <div class="field-row">
+                    <label>Employer</label>
+                    <input type="text" name="employer_name" placeholder="Company name">
+                </div>
+                <div class="field-row">
+                    <label>Notes</label>
+                    <input type="text" name="notes" placeholder="Additional notes">
+                </div>
+            </div>
+            
+            <div class="flex gap-2 mt-3">
+                <button class="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 save-single-btn transition-colors">
+                    <i class="fas fa-check mr-1"></i>Save Lead
+                </button>
+                <button class="px-3 py-2 bg-red-100 text-red-600 text-sm rounded-lg hover:bg-red-200 remove-btn transition-colors" title="Remove">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF_TOKEN = '{{ csrf_token }}';
+let scannedCards = [];
+let cardIdCounter = 0;
+let cameraStream = null;
+let facingMode = 'environment';
+
+// Camera Functions
+async function startCamera() {
+    try {
+        const constraints = {
+            video: { 
+                facingMode: facingMode, 
+                width: { ideal: 1280 }, 
+                height: { ideal: 720 } 
+            }
+        };
+        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        const video = document.getElementById('cameraPreview');
+        video.srcObject = cameraStream;
+        video.classList.remove('hidden');
+        document.getElementById('cameraPlaceholder').classList.add('hidden');
+        document.getElementById('startCameraBtn').classList.add('hidden');
+        document.getElementById('captureBtn').classList.remove('hidden');
+        document.getElementById('captureBtn').classList.add('flex');
+        document.getElementById('switchCameraBtn').classList.remove('hidden');
+        document.getElementById('stopCameraBtn').classList.remove('hidden');
+    } catch (err) {
+        console.error('Camera error:', err);
+        showToast('Could not access camera. Please check permissions or use file upload.', 'error');
+    }
+}
+
+function stopCamera() {
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    const video = document.getElementById('cameraPreview');
+    video.srcObject = null;
+    video.classList.add('hidden');
+    document.getElementById('cameraPlaceholder').classList.remove('hidden');
+    document.getElementById('startCameraBtn').classList.remove('hidden');
+    document.getElementById('captureBtn').classList.add('hidden');
+    document.getElementById('captureBtn').classList.remove('flex');
+    document.getElementById('switchCameraBtn').classList.add('hidden');
+    document.getElementById('stopCameraBtn').classList.add('hidden');
+}
+
+async function switchCamera() {
+    stopCamera();
+    facingMode = facingMode === 'environment' ? 'user' : 'environment';
+    await startCamera();
+}
+
+function captureImage() {
+    const video = document.getElementById('cameraPreview');
+    const canvas = document.getElementById('captureCanvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    
+    canvas.toBlob(blob => {
+        if (blob) {
+            processImage(blob);
+        }
+    }, 'image/jpeg', 0.9);
+}
+
+// Image Processing
+async function processImage(blob) {
+    const cardId = ++cardIdCounter;
+    const imageUrl = URL.createObjectURL(blob);
+    
+    // Add card to queue in processing state
+    addCardToQueue(cardId, imageUrl);
+    
+    // Send to API
+    const formData = new FormData();
+    formData.append('image', blob, 'card.jpg');
+    
+    try {
+        const response = await fetch('{% url "crm:scan_card_api" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF_TOKEN },
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            updateCardWithData(cardId, result.data, imageUrl);
+        } else {
+            markCardError(cardId, result.error);
+        }
+    } catch (err) {
+        console.error('Scan error:', err);
+        markCardError(cardId, err.message || 'Network error');
+    }
+    
+    updateStats();
+}
+
+function addCardToQueue(cardId, imageUrl) {
+    const template = document.getElementById('cardTemplate');
+    const card = template.content.cloneNode(true).querySelector('.scanned-card');
+    
+    card.dataset.cardId = cardId;
+    card.classList.add('processing');
+    card.querySelector('.card-thumbnail').src = imageUrl;
+    card.querySelector('.card-name').innerHTML = '<i class="fas fa-spinner spinner mr-2"></i>Scanning...';
+    
+    // Event listeners
+    card.querySelector('.save-single-btn').addEventListener('click', () => saveSingleCard(cardId));
+    card.querySelector('.remove-btn').addEventListener('click', () => removeCard(cardId));
+    card.querySelector('.toggle-fields-btn').addEventListener('click', function() {
+        const extraFields = card.querySelector('.collapsible-fields');
+        const isExpanded = extraFields.classList.toggle('expanded');
+        this.innerHTML = isExpanded 
+            ? '<i class="fas fa-chevron-up mr-1"></i>Show less' 
+            : '<i class="fas fa-chevron-down mr-1"></i>Show more fields';
+    });
+    
+    document.getElementById('cardQueue').prepend(card);
+    document.getElementById('cardQueue').classList.remove('hidden');
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('clearAllBtn').classList.remove('hidden');
+    
+    scannedCards.push({ id: cardId, imageUrl, data: null, status: 'processing' });
+    updateStats();
+}
+
+function updateCardWithData(cardId, data, imageUrl) {
+    const card = document.querySelector(`[data-card-id="${cardId}"]`);
+    if (!card) return;
+    
+    card.classList.remove('processing');
+    card.classList.add('ready');
+    
+    // Update name display
+    const name = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'Unknown';
+    card.querySelector('.card-name').textContent = name;
+    
+    // Update confidence badge
+    const badge = card.querySelector('.confidence-badge');
+    const confidence = data.confidence_score || 0;
+    badge.textContent = `${Math.round(confidence * 100)}%`;
+    badge.className = 'confidence-badge ' + (confidence >= 0.8 ? 'confidence-high' : confidence >= 0.5 ? 'confidence-medium' : 'confidence-low');
+    
+    // Fill form fields
+    const fields = ['first_name', 'last_name', 'phone', 'email', 'whatsapp_number', 'school_name', 'grade', 'qualification_interest', 'parent_name', 'parent_phone', 'employer_name', 'notes'];
+    fields.forEach(field => {
+        const input = card.querySelector(`input[name="${field}"]`);
+        if (input && data[field]) input.value = data[field];
+    });
+    
+    // Update stored data
+    const cardData = scannedCards.find(c => c.id === cardId);
+    if (cardData) {
+        cardData.data = data;
+        cardData.status = 'ready';
+    }
+    
+    updateStats();
+    updateSubmitButton();
+}
+
+function markCardError(cardId, error) {
+    const card = document.querySelector(`[data-card-id="${cardId}"]`);
+    if (!card) return;
+    
+    card.classList.remove('processing');
+    card.classList.add('error');
+    card.querySelector('.card-name').innerHTML = '<i class="fas fa-exclamation-circle text-red-500 mr-1"></i>Scan Failed';
+    card.querySelector('.confidence-badge').textContent = 'Error';
+    card.querySelector('.confidence-badge').className = 'confidence-badge confidence-low';
+    
+    // Still allow manual entry
+    const cardData = scannedCards.find(c => c.id === cardId);
+    if (cardData) {
+        cardData.status = 'error';
+        cardData.error = error;
+    }
+    
+    updateStats();
+}
+
+function removeCard(cardId) {
+    const card = document.querySelector(`[data-card-id="${cardId}"]`);
+    if (card) {
+        card.style.transition = 'opacity 0.3s, transform 0.3s';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.95)';
+        setTimeout(() => card.remove(), 300);
+    }
+    
+    scannedCards = scannedCards.filter(c => c.id !== cardId);
+    
+    setTimeout(() => {
+        if (scannedCards.length === 0) {
+            document.getElementById('cardQueue').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
+            document.getElementById('clearAllBtn').classList.add('hidden');
+        }
+        updateStats();
+        updateSubmitButton();
+    }, 300);
+}
+
+function clearAllCards() {
+    if (!confirm('Remove all scanned cards? This cannot be undone.')) return;
+    scannedCards = [];
+    document.getElementById('cardQueue').innerHTML = '';
+    document.getElementById('cardQueue').classList.add('hidden');
+    document.getElementById('emptyState').classList.remove('hidden');
+    document.getElementById('clearAllBtn').classList.add('hidden');
+    updateStats();
+    updateSubmitButton();
+}
+
+// Save Functions
+async function saveSingleCard(cardId) {
+    const card = document.querySelector(`[data-card-id="${cardId}"]`);
+    if (!card) return;
+    
+    const btn = card.querySelector('.save-single-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner spinner mr-1"></i>Saving...';
+    btn.disabled = true;
+    
+    const data = getCardFormData(card);
+    data.campus_id = document.getElementById('defaultCampus').value;
+    
+    try {
+        const response = await fetch('{% url "crm:create_lead_from_scan" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            card.classList.remove('ready', 'error');
+            card.classList.add('saved');
+            btn.innerHTML = '<i class="fas fa-check mr-1"></i>Saved!';
+            btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            
+            showToast(`Lead created: ${data.first_name} ${data.last_name}`, 'success');
+            
+            // Remove after short delay
+            setTimeout(() => removeCard(cardId), 1500);
+        } else {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            showToast(result.error || 'Failed to save lead', 'error');
+        }
+    } catch (err) {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        showToast('Network error - please try again', 'error');
+    }
+}
+
+async function saveAllCards() {
+    const readyCards = scannedCards.filter(c => c.status === 'ready' || c.status === 'error');
+    if (readyCards.length === 0) {
+        showToast('No cards ready to save', 'warning');
+        return;
+    }
+    
+    const btn = document.getElementById('submitAllBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner spinner mr-2"></i>Saving...';
+    btn.disabled = true;
+    
+    const leads = readyCards.map(c => {
+        const card = document.querySelector(`[data-card-id="${c.id}"]`);
+        return getCardFormData(card);
+    });
+    
+    const data = {
+        default_campus_id: document.getElementById('defaultCampus').value,
+        leads: leads
+    };
+    
+    try {
+        const response = await fetch('{% url "crm:create_leads_batch" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            const msg = result.errors > 0 
+                ? `Created ${result.created} leads (${result.errors} failed)`
+                : `Successfully created ${result.created} leads!`;
+            showToast(msg, result.errors > 0 ? 'warning' : 'success');
+            
+            // Remove successful cards
+            result.results.forEach((r, i) => {
+                if (r.success) {
+                    const cardId = readyCards[i].id;
+                    removeCard(cardId);
+                }
+            });
+        } else {
+            showToast(result.error || 'Failed to save leads', 'error');
+        }
+    } catch (err) {
+        showToast('Network error - please try again', 'error');
+    }
+    
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+}
+
+function getCardFormData(card) {
+    const data = {};
+    card.querySelectorAll('input').forEach(input => {
+        if (input.name && input.value.trim()) {
+            data[input.name] = input.value.trim();
+        }
+    });
+    return data;
+}
+
+// UI Helpers
+function updateStats() {
+    const total = scannedCards.length;
+    const ready = scannedCards.filter(c => c.status === 'ready').length;
+    const errors = scannedCards.filter(c => c.status === 'error').length;
+    
+    document.getElementById('statScanned').textContent = total;
+    document.getElementById('statReady').textContent = ready;
+    document.getElementById('statErrors').textContent = errors;
+    document.getElementById('queueCount').textContent = `(${total})`;
+}
+
+function updateSubmitButton() {
+    const readyCount = scannedCards.filter(c => c.status === 'ready' || c.status === 'error').length;
+    const btn = document.getElementById('submitAllBtn');
+    document.getElementById('readyCount').textContent = readyCount;
+    btn.classList.toggle('hidden', readyCount === 0);
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Event Listeners
+document.getElementById('startCameraBtn')?.addEventListener('click', startCamera);
+document.getElementById('captureBtn')?.addEventListener('click', captureImage);
+document.getElementById('switchCameraBtn')?.addEventListener('click', switchCamera);
+document.getElementById('stopCameraBtn')?.addEventListener('click', stopCamera);
+document.getElementById('clearAllBtn')?.addEventListener('click', clearAllCards);
+document.getElementById('submitAllBtn')?.addEventListener('click', saveAllCards);
+
+// File upload
+document.getElementById('fileInput')?.addEventListener('change', (e) => {
+    Array.from(e.target.files).forEach(file => {
+        if (file.type.startsWith('image/')) {
+            processImage(file);
+        }
+    });
+    e.target.value = '';
+});
+
+// Drag and drop
+const dropZone = document.getElementById('dropZone');
+if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')).forEach(processImage);
+    });
+    dropZone.addEventListener('click', () => document.getElementById('fileInput')?.click());
+}
+
+// Cleanup on page leave
+window.addEventListener('beforeunload', stopCamera);
+window.addEventListener('pagehide', stopCamera);
+</script>
+{% endblock %}

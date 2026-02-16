@@ -1,0 +1,72 @@
+{% comment %}
+Responsive Table Wrapper Component
+Provides mobile-friendly table display with horizontal scroll and card view option
+
+Usage:
+{% include 'components/responsive_table.html' with table_id='my-table' %}
+
+Then wrap your table inside the block or use Alpine.js data binding
+{% endcomment %}
+
+<div x-data="{ viewMode: window.innerWidth < 768 ? 'cards' : 'table' }" 
+     x-init="window.addEventListener('resize', () => viewMode = window.innerWidth < 768 ? 'cards' : viewMode)"
+     class="responsive-table-container">
+    
+    <!-- View Toggle (visible on tablet and up) -->
+    <div class="hidden sm:flex justify-end mb-4">
+        <div class="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
+            <button @click="viewMode = 'table'"
+                    :class="viewMode === 'table' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'"
+                    class="px-3 py-1.5 text-sm font-medium rounded-md transition-all">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+            </button>
+            <button @click="viewMode = 'cards'"
+                    :class="viewMode === 'cards' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'"
+                    class="px-3 py-1.5 text-sm font-medium rounded-md transition-all">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Table View -->
+    <div x-show="viewMode === 'table'" x-cloak class="overflow-x-auto -mx-4 sm:mx-0">
+        <div class="inline-block min-w-full align-middle px-4 sm:px-0">
+            {% block table_content %}
+            <!-- Table content goes here -->
+            {% endblock %}
+        </div>
+    </div>
+    
+    <!-- Cards View -->
+    <div x-show="viewMode === 'cards'" x-cloak>
+        {% block cards_content %}
+        <!-- Cards content goes here -->
+        {% endblock %}
+    </div>
+</div>
+
+<style>
+/* Ensure tables work well on mobile */
+.responsive-table-container table {
+    min-width: 100%;
+}
+
+@media (max-width: 640px) {
+    .responsive-table-container table th,
+    .responsive-table-container table td {
+        white-space: nowrap;
+    }
+    
+    .responsive-table-container table th:first-child,
+    .responsive-table-container table td:first-child {
+        position: sticky;
+        left: 0;
+        background: inherit;
+        z-index: 1;
+    }
+}
+</style>

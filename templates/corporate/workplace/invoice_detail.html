@@ -1,0 +1,205 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Invoice {{ invoice.invoice_number }} - SkillsFlow{% endblock %}
+
+{% block page_title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:dashboard' %}" class="text-gray-500 hover:text-gray-700">Corporate</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:host_employer_detail' host.pk %}" class="text-gray-500 hover:text-gray-700">{{ host.company_name }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:invoice_list' host.pk %}" class="text-gray-500 hover:text-gray-700">Invoices</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ invoice.invoice_number }}</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+{% if invoice.status == 'PENDING' %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'corporate:invoice_reject' host.pk invoice.pk %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Reject
+    </a>
+    <a href="{% url 'corporate:invoice_approve' host.pk invoice.pk %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Approve
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Invoice Details -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900">Invoice Details</h3>
+                    {% if invoice.status == 'APPROVED' %}
+                    <span class="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800">Approved</span>
+                    {% elif invoice.status == 'PENDING' %}
+                    <span class="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending Approval</span>
+                    {% elif invoice.status == 'REJECTED' %}
+                    <span class="px-3 py-1 text-sm font-semibold rounded-full bg-red-100 text-red-800">Rejected</span>
+                    {% elif invoice.status == 'PAID' %}
+                    <span class="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800">Paid</span>
+                    {% endif %}
+                </div>
+                
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Invoice Number</dt>
+                        <dd class="mt-1 text-sm text-gray-900 font-semibold">{{ invoice.invoice_number }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Amount</dt>
+                        <dd class="mt-1 text-2xl font-bold text-gray-900">R {{ invoice.amount|floatformat:2 }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Invoice Date</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ invoice.invoice_date|date:"d M Y" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Due Date</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ invoice.due_date|date:"d M Y"|default:"-" }}</dd>
+                    </div>
+                </dl>
+                
+                {% if invoice.description %}
+                <div class="mt-6 pt-6 border-t border-gray-100">
+                    <dt class="text-sm font-medium text-gray-500">Description</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ invoice.description }}</dd>
+                </div>
+                {% endif %}
+                
+                <!-- Invoice File -->
+                <div class="mt-6 pt-6 border-t border-gray-100">
+                    <h4 class="text-sm font-medium text-gray-500 mb-3">Invoice Document</h4>
+                    <a href="{{ invoice.invoice_file.url }}" target="_blank" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        View Invoice Document
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Approval Details -->
+            {% if invoice.status == 'APPROVED' %}
+            <div class="bg-green-50 rounded-xl border border-green-200 p-6">
+                <h3 class="text-lg font-semibold text-green-800 mb-4">Approval Details</h3>
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-green-700">Approved By</dt>
+                        <dd class="mt-1 text-sm text-green-900">{{ invoice.approved_by.get_full_name|default:invoice.approved_by.email }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-green-700">Approved At</dt>
+                        <dd class="mt-1 text-sm text-green-900">{{ invoice.approved_at|date:"d M Y H:i" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-green-700">Approval Method</dt>
+                        <dd class="mt-1 text-sm text-green-900">{{ invoice.get_approval_method_display }}</dd>
+                    </div>
+                </dl>
+                
+                {% if invoice.approval_screenshot %}
+                <div class="mt-4 pt-4 border-t border-green-200">
+                    <dt class="text-sm font-medium text-green-700">Approval Evidence</dt>
+                    <dd class="mt-2">
+                        <a href="{{ invoice.approval_screenshot.url }}" target="_blank" class="inline-flex items-center text-green-700 hover:text-green-800">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            View Approval Screenshot
+                        </a>
+                    </dd>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            {% if invoice.status == 'REJECTED' %}
+            <div class="bg-red-50 rounded-xl border border-red-200 p-6">
+                <h3 class="text-lg font-semibold text-red-800 mb-4">Rejection Details</h3>
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-red-700">Rejected By</dt>
+                        <dd class="mt-1 text-sm text-red-900">{{ invoice.rejected_by.get_full_name|default:invoice.rejected_by.email }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-red-700">Rejected At</dt>
+                        <dd class="mt-1 text-sm text-red-900">{{ invoice.rejected_at|date:"d M Y H:i" }}</dd>
+                    </div>
+                </dl>
+                <div class="mt-4">
+                    <dt class="text-sm font-medium text-red-700">Reason</dt>
+                    <dd class="mt-1 text-sm text-red-900">{{ invoice.rejection_reason }}</dd>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Placement Info -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Placement Details</h3>
+                
+                <dl class="space-y-4">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Reference</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ invoice.placement.placement_reference }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Learner</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ invoice.placement.learner.full_name }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Host Employer</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ invoice.placement.host.company_name }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Status</dt>
+                        <dd class="mt-1">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if invoice.placement.status == 'ACTIVE' %}bg-green-100 text-green-800
+                                {% elif invoice.placement.status == 'COMPLETED' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ invoice.placement.get_status_display }}
+                            </span>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Period</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ invoice.placement.start_date|date:"d M Y" }} - {{ invoice.placement.expected_end_date|date:"d M Y" }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

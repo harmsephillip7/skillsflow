@@ -1,0 +1,172 @@
+{% extends 'base/app_layout.html' %}
+{% load static admin_tags %}
+
+{% block title %}Complete QC Review - {{ tranche.reference_number }}{% endblock %}
+
+{% block page_title %}Complete QC Review{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'tranches:tranche_list' %}" class="text-primary-600 hover:text-primary-800">Tranches</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="text-primary-600 hover:text-primary-800">{{ tranche.reference_number }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">Complete QC</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-purple-600 to-violet-700 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="w-12 h-12 text-purple-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                </div>
+                <div class="ml-5">
+                    <h2 class="text-xl font-bold">Complete QC Review</h2>
+                    <p class="mt-1 text-purple-200">{{ tranche.name }} • {{ tranche.reference_number }}</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-purple-200">QC Started</p>
+                <p class="text-lg font-semibold">{{ tranche.qc_started_date|date:"d M Y" }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Evidence Review -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">Evidence Review</h3>
+        </div>
+        
+        <form method="post" id="qc-form">
+            {% csrf_token %}
+            
+            <ul class="divide-y divide-gray-100">
+                {% for req in requirements %}
+                <li class="px-6 py-4">
+                    <div class="flex items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center">
+                                <p class="text-sm font-medium text-gray-900">{{ req.name }}</p>
+                                {% if req.is_mandatory %}
+                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Required</span>
+                                {% endif %}
+                            </div>
+                            <p class="mt-1 text-sm text-gray-500">{{ req.get_evidence_type_display }}</p>
+                            
+                            {% if req.evidence.exists %}
+                            <div class="mt-3 space-y-2">
+                                {% for evidence in req.evidence.all %}
+                                <div class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 text-gray-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <a href="{{ evidence.file.url }}" target="_blank" class="text-sm text-primary-600 hover:text-primary-800">
+                                            {{ evidence.original_filename }}
+                                        </a>
+                                    </div>
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" name="verified_evidence" value="{{ evidence.pk }}"
+                                               {% if evidence.status == 'VERIFIED' %}checked{% endif %}
+                                               class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                                        <span class="ml-2 text-sm text-gray-600">Verified</span>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="mt-2 text-sm text-red-500">No evidence uploaded</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            
+            <!-- QC Decision -->
+            <div class="p-6 border-t border-gray-100 space-y-6">
+                <h4 class="text-sm font-semibold text-gray-900">QC Decision</h4>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 shadow-sm focus:outline-none hover:border-green-300 qc-option" data-result="pass">
+                        <input type="radio" name="qc_result" value="pass" class="sr-only" required>
+                        <span class="flex flex-1">
+                            <span class="flex flex-col items-center w-full">
+                                <svg class="w-8 h-8 text-green-500 mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-sm font-medium text-gray-900">QC Passed</span>
+                                <span class="mt-1 text-xs text-gray-500">Ready for submission</span>
+                            </span>
+                        </span>
+                    </label>
+                    
+                    <label class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 shadow-sm focus:outline-none hover:border-red-300 qc-option" data-result="fail">
+                        <input type="radio" name="qc_result" value="fail" class="sr-only" required>
+                        <span class="flex flex-1">
+                            <span class="flex flex-col items-center w-full">
+                                <svg class="w-8 h-8 text-red-500 mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-sm font-medium text-gray-900">QC Failed</span>
+                                <span class="mt-1 text-xs text-gray-500">Needs rework</span>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+                
+                <!-- QC Notes -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">QC Notes *</label>
+                    <textarea name="qc_notes" rows="4" required placeholder="Document your findings, issues identified, or approval notes..."
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"></textarea>
+                </div>
+            </div>
+            
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+                <a href="{% url 'tranches:tranche_detail' tranche.pk %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700">
+                    Complete QC Review
+                </button>
+            </div>
+        </form>
+    </div>
+    
+</div>
+
+<style>
+    .qc-option:has(input:checked) {
+        border-color: #8b5cf6;
+        background-color: #f5f3ff;
+    }
+    .qc-option:has(input:checked)[data-result="pass"] {
+        border-color: #22c55e;
+        background-color: #f0fdf4;
+    }
+    .qc-option:has(input:checked)[data-result="fail"] {
+        border-color: #ef4444;
+        background-color: #fef2f2;
+    }
+</style>
+{% endblock %}

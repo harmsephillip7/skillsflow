@@ -1,0 +1,295 @@
+{% extends 'portals/officer/base.html' %}
+{% load static %}
+
+{% block title %}Stipend Disputes - Officer Portal{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Stipend Dispute Management</h1>
+            <p class="text-gray-600 mt-1">Review and resolve learner stipend disputes</p>
+        </div>
+        <a href="{% url 'portals:officer_dashboard' %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+            ← Back to Dashboard
+        </a>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-2xl font-bold text-amber-600">{{ stats.pending }}</div>
+            <div class="text-sm text-gray-600">Pending</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-2xl font-bold text-blue-600">{{ stats.under_review }}</div>
+            <div class="text-sm text-gray-600">Under Review</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-2xl font-bold text-purple-600">{{ stats.escalated }}</div>
+            <div class="text-sm text-gray-600">Escalated</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-2xl font-bold text-green-600">{{ stats.resolved }}</div>
+            <div class="text-sm text-gray-600">Resolved</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-2xl font-bold text-red-600">{{ stats.overdue }}</div>
+            <div class="text-sm text-gray-600">⚠️ Overdue SLA</div>
+        </div>
+    </div>
+    
+    <!-- Filter Tabs -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="border-b border-gray-200">
+            <nav class="flex space-x-1 p-2">
+                <a href="?status=pending" class="px-4 py-2 rounded-lg text-sm font-medium transition
+                    {% if status_filter == 'pending' %}bg-amber-100 text-amber-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                    Pending ({{ stats.pending }})
+                </a>
+                <a href="?status=under_review" class="px-4 py-2 rounded-lg text-sm font-medium transition
+                    {% if status_filter == 'under_review' %}bg-blue-100 text-blue-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                    Under Review ({{ stats.under_review }})
+                </a>
+                <a href="?status=escalated" class="px-4 py-2 rounded-lg text-sm font-medium transition
+                    {% if status_filter == 'escalated' %}bg-purple-100 text-purple-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                    Escalated ({{ stats.escalated }})
+                </a>
+                <a href="?status=resolved" class="px-4 py-2 rounded-lg text-sm font-medium transition
+                    {% if status_filter == 'resolved' %}bg-green-100 text-green-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                    Resolved ({{ stats.resolved }})
+                </a>
+                <a href="?status=overdue" class="px-4 py-2 rounded-lg text-sm font-medium transition
+                    {% if status_filter == 'overdue' %}bg-red-100 text-red-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                    ⚠️ Overdue ({{ stats.overdue }})
+                </a>
+                <a href="?status=all" class="px-4 py-2 rounded-lg text-sm font-medium transition
+                    {% if status_filter == 'all' %}bg-gray-100 text-gray-900{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                    All
+                </a>
+            </nav>
+        </div>
+        
+        <!-- Bulk Actions -->
+        {% if disputes %}
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <label class="flex items-center space-x-2 text-white cursor-pointer">
+                        <input type="checkbox" id="selectAll" class="w-5 h-5 rounded border-white/30">
+                        <span class="font-medium">Select All (<span id="selectedCount">0</span>)</span>
+                    </label>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <button id="bulkReviewBtn" disabled class="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Mark as Under Review
+                    </button>
+                    <button id="bulkAssignBtn" disabled class="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Assign to Me
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Dispute Table -->
+        {% if disputes %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left">
+                            <input type="checkbox" id="headerCheckbox" class="w-4 h-4 rounded border-gray-300">
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Learner</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SLA</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for dispute in disputes %}
+                    <tr class="dispute-row hover:bg-gray-50" data-dispute-id="{{ dispute.id }}">
+                        <td class="px-4 py-3">
+                            <input type="checkbox" class="dispute-checkbox w-4 h-4 rounded border-gray-300" data-dispute-id="{{ dispute.id }}">
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="text-sm font-medium text-gray-900">#{{ dispute.id }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="text-sm font-medium text-gray-900">{{ dispute.learner.get_full_name }}</div>
+                            <div class="text-xs text-gray-500">{{ dispute.stipend_calculation.placement.campus.name }}</div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            {{ dispute.stipend_calculation.month }}/{{ dispute.stipend_calculation.year }}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="text-sm font-medium text-gray-900">R{{ dispute.stipend_calculation.net_amount }}</span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ dispute.submitted_at|date:"d M Y" }}</div>
+                            <div class="text-xs text-gray-500">{{ dispute.submitted_at|date:"H:i" }}</div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full
+                                {% if dispute.status == 'PENDING' %}bg-amber-100 text-amber-700
+                                {% elif dispute.status == 'UNDER_REVIEW' %}bg-blue-100 text-blue-700
+                                {% elif dispute.status == 'ESCALATED' %}bg-purple-100 text-purple-700
+                                {% elif dispute.status == 'RESOLVED' %}bg-green-100 text-green-700
+                                {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                {{ dispute.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            {% if dispute.is_overdue %}
+                                <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">
+                                    ⚠️ Overdue
+                                </span>
+                            {% elif dispute.status == 'PENDING' %}
+                                <span class="text-xs text-gray-600">{{ dispute.sla_deadline|date:"d M H:i" }}</span>
+                            {% else %}
+                                <span class="text-xs text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                            <a href="{% url 'portals:officer_dispute_detail' dispute.id %}" 
+                               class="text-blue-600 hover:text-blue-700 font-medium">
+                                Review →
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="p-6 border-t border-gray-100">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-600">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ paginator.count }}
+                </div>
+                <div class="flex space-x-2">
+                    {% if page_obj.has_previous %}
+                    <a href="?status={{ status_filter }}&page={{ page_obj.previous_page_number }}" 
+                       class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                        ← Previous
+                    </a>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                    <a href="?status={{ status_filter }}&page={{ page_obj.next_page_number }}" 
+                       class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                        Next →
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="p-12 text-center">
+            <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">No Disputes</h3>
+            <p class="mt-2 text-sm text-gray-500">No disputes found for the selected filter.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const selectedDisputes = new Set();
+
+// Select All
+document.getElementById('selectAll')?.addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.dispute-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = this.checked;
+        const disputeId = cb.dataset.disputeId;
+        if (this.checked) {
+            selectedDisputes.add(disputeId);
+        } else {
+            selectedDisputes.delete(disputeId);
+        }
+    });
+    updateBulkActions();
+});
+
+// Individual checkboxes
+document.querySelectorAll('.dispute-checkbox').forEach(cb => {
+    cb.addEventListener('change', function() {
+        const disputeId = this.dataset.disputeId;
+        if (this.checked) {
+            selectedDisputes.add(disputeId);
+        } else {
+            selectedDisputes.delete(disputeId);
+        }
+        updateBulkActions();
+    });
+});
+
+function updateBulkActions() {
+    const count = selectedDisputes.size;
+    document.getElementById('selectedCount').textContent = count;
+    document.getElementById('bulkReviewBtn').disabled = count === 0;
+    document.getElementById('bulkAssignBtn').disabled = count === 0;
+}
+
+// Bulk actions
+document.getElementById('bulkReviewBtn')?.addEventListener('click', async function() {
+    if (selectedDisputes.size === 0) return;
+    
+    if (!confirm(`Mark ${selectedDisputes.size} dispute(s) as under review?`)) return;
+    
+    await bulkAction('mark_under_review');
+});
+
+document.getElementById('bulkAssignBtn')?.addEventListener('click', async function() {
+    if (selectedDisputes.size === 0) return;
+    
+    if (!confirm(`Assign ${selectedDisputes.size} dispute(s) to yourself?`)) return;
+    
+    await bulkAction('assign_to_me');
+});
+
+async function bulkAction(action) {
+    try {
+        const response = await fetch('{% url "portals:officer_dispute_bulk_action" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                dispute_ids: Array.from(selectedDisputes),
+                action: action
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Network error: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

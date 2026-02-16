@@ -1,0 +1,221 @@
+{% extends 'base/dashboard.html' %}
+{% load static %}
+
+{% block title %}Host Employer Dashboard | SkillsFlow{% endblock %}
+
+{% block page_title %}Host Employer Dashboard{% endblock %}
+
+{% block dashboard_nav %}
+<nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex space-x-8">
+                <a href="{% url 'portals:host_employer_dashboard' %}" 
+                   class="border-orange-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Dashboard
+                </a>
+                <a href="#" 
+                   class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Placed Learners
+                </a>
+                <a href="#" 
+                   class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Logbooks
+                </a>
+                <a href="#" 
+                   class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Reports
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="space-y-6">
+    <!-- Welcome Banner -->
+    <div class="bg-gradient-to-r from-orange-500 to-orange-700 rounded-2xl p-6 text-white">
+        <h2 class="text-2xl font-bold mb-2">Host Employer Portal</h2>
+        <p class="text-orange-100">Manage your workplace-based learning placements.</p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Current Placements</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-1">{{ current_placements|default:0 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Pending Logbooks</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-1">{{ pending_logbooks|default:0 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Upcoming Visits</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-1">{{ upcoming_visits|default:0 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Completed Programs</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-1">{{ completed_programs|default:0 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Active Learners -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-800">Placed Learners</h3>
+                <a href="#" class="text-sm text-orange-600 hover:text-orange-700">View All →</a>
+            </div>
+            <div class="divide-y divide-gray-100">
+                {% for placement in placements %}
+                <div class="p-4 hover:bg-gray-50">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                                <span class="text-sm font-medium text-gray-600">
+                                    {{ placement.learner.first_name.0 }}{{ placement.learner.last_name.0 }}
+                                </span>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-900">
+                                    {{ placement.learner.first_name }} {{ placement.learner.last_name }}
+                                </h4>
+                                <p class="text-sm text-gray-500">{{ placement.qualification }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full 
+                                {% if placement.status == 'active' %}bg-green-100 text-green-800
+                                {% elif placement.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ placement.status|title }}
+                            </span>
+                            <p class="text-xs text-gray-400 mt-1">Started: {{ placement.start_date|date:"j M Y" }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-8 text-center text-gray-500">
+                    <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <p class="mt-2">No learners currently placed</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Tasks & Actions -->
+        <div class="space-y-6">
+            <!-- Pending Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="p-6 border-b border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-800">Pending Actions</h3>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for task in tasks %}
+                    <div class="p-4 hover:bg-gray-50">
+                        <h4 class="font-medium text-gray-900">{{ task.title }}</h4>
+                        <p class="text-sm text-gray-500 mt-1">{{ task.description|truncatewords:10 }}</p>
+                    </div>
+                    {% empty %}
+                    <div class="p-4 text-center text-gray-500">
+                        <p class="text-sm">No pending actions</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                <div class="space-y-3">
+                    <button class="w-full flex items-center justify-between p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition">
+                        <span class="font-medium text-orange-700">Sign Logbook Entry</span>
+                        <svg class="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <button class="w-full flex items-center justify-between p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
+                        <span class="font-medium text-blue-700">Submit Evaluation</span>
+                        <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <button class="w-full flex items-center justify-between p-3 bg-green-50 rounded-lg hover:bg-green-100 transition">
+                        <span class="font-medium text-green-700">View Reports</span>
+                        <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Announcements -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="p-6 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-800">Announcements</h3>
+        </div>
+        <div class="divide-y divide-gray-100">
+            {% for announcement in announcements %}
+            <div class="p-4">
+                <div class="flex items-start">
+                    {% if announcement.is_pinned %}
+                    <span class="text-yellow-500 mr-2">📌</span>
+                    {% endif %}
+                    <div>
+                        <h4 class="font-medium text-gray-900">{{ announcement.title }}</h4>
+                        <p class="text-sm text-gray-500 mt-1">{{ announcement.content|truncatewords:30 }}</p>
+                        <p class="text-xs text-gray-400 mt-2">{{ announcement.publish_at|date:"j M Y" }}</p>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="p-4 text-center text-gray-500">
+                <p class="text-sm">No announcements</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

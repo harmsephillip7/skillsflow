@@ -1,0 +1,202 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}SETA Export Templates - SkillsFlow{% endblock %}
+
+{% block main_content %}
+<div class="flex flex-col h-full">
+    <!-- Page Header -->
+    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">SETA Export Templates</h1>
+                <p class="mt-1 text-sm text-gray-500">Export learner data in SETA-compliant formats for NLRD, WSP, ATR and more</p>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'learners:bulk_import' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    Import Data
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Content -->
+    <div class="flex-1 overflow-auto p-6 bg-gray-50">
+        <!-- Category Filters -->
+        <div class="mb-6 flex flex-wrap gap-2">
+            <button class="px-4 py-2 rounded-lg text-sm font-medium bg-primary-100 text-primary-700">
+                All Templates
+            </button>
+            <button class="px-4 py-2 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200">
+                NLRD
+            </button>
+            <button class="px-4 py-2 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200">
+                QCTO
+            </button>
+            <button class="px-4 py-2 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-100 border border-gray-200">
+                WSP/ATR
+            </button>
+        </div>
+        
+        <!-- Templates Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for template in templates %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r 
+                    {% if template.category == 'nlrd' %}from-green-50 to-white
+                    {% elif template.category == 'qcto' %}from-blue-50 to-white
+                    {% else %}from-purple-50 to-white{% endif %}">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 rounded-lg flex items-center justify-center
+                            {% if template.category == 'nlrd' %}bg-green-100
+                            {% elif template.category == 'qcto' %}bg-blue-100
+                            {% else %}bg-purple-100{% endif %}">
+                            <svg class="w-6 h-6 {% if template.category == 'nlrd' %}text-green-600{% elif template.category == 'qcto' %}text-blue-600{% else %}text-purple-600{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-base font-semibold text-gray-900">{{ template.name }}</h3>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                {% if template.category == 'nlrd' %}bg-green-100 text-green-700
+                                {% elif template.category == 'qcto' %}bg-blue-100 text-blue-700
+                                {% else %}bg-purple-100 text-purple-700{% endif %}">
+                                {{ template.category|upper }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="px-6 py-4">
+                    <p class="text-sm text-gray-600 mb-4">{{ template.description }}</p>
+                    
+                    <!-- Export Options Form -->
+                    <form action="{% url 'learners:export_seta_data' template.id %}" method="get" class="space-y-3">
+                        <!-- Date Range -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Date Range</label>
+                            <div class="flex space-x-2">
+                                <input type="date" name="date_from" class="flex-1 border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500">
+                                <input type="date" name="date_to" class="flex-1 border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500">
+                            </div>
+                        </div>
+                        
+                        {% if template.has_campus_filter %}
+                        <!-- Campus Filter -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Campus</label>
+                            <select name="campus" class="w-full border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500">
+                                <option value="">All Campuses</option>
+                                {% for campus in campuses %}
+                                <option value="{{ campus.id }}">{{ campus.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+                        
+                        {% if template.has_qualification_filter %}
+                        <!-- Qualification Filter -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Qualification</label>
+                            <select name="qualification" class="w-full border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500">
+                                <option value="">All Qualifications</option>
+                                {% for qual in qualifications %}
+                                <option value="{{ qual.id }}">{{ qual.title|truncatechars:40 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+                        
+                        {% if template.has_status_filter %}
+                        <!-- Status Filter -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Status</label>
+                            <select name="status" class="w-full border border-gray-300 rounded-lg text-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500">
+                                <option value="">All Statuses</option>
+                                <option value="ACTIVE">Active</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="CERTIFIED">Certified</option>
+                            </select>
+                        </div>
+                        {% endif %}
+                        
+                        <button type="submit" class="w-full py-2.5 px-4 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 flex items-center justify-center transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Export {{ template.format|upper }}
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Template Info Footer -->
+                <div class="px-6 py-3 bg-gray-50 border-t border-gray-200">
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                        <span>Format: {{ template.format|upper }}</span>
+                        <span>Fields: {{ template.field_count }}</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-3 text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No export templates available</h3>
+                <p class="mt-1 text-sm text-gray-500">Contact your administrator to set up SETA export templates.</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Help Section -->
+        <div class="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Export Guidelines</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <div class="flex items-center mb-3">
+                            <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center mr-3">
+                                <span class="text-green-700 font-bold text-sm">1</span>
+                            </div>
+                            <h3 class="font-medium text-gray-900">Select Template</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">
+                            Choose the appropriate SETA template for your reporting requirements. Each template is pre-configured with the correct fields and format.
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <div class="flex items-center mb-3">
+                            <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center mr-3">
+                                <span class="text-green-700 font-bold text-sm">2</span>
+                            </div>
+                            <h3 class="font-medium text-gray-900">Apply Filters</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">
+                            Filter by date range, campus, qualification, or status to export only the relevant data for your submission period.
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <div class="flex items-center mb-3">
+                            <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center mr-3">
+                                <span class="text-green-700 font-bold text-sm">3</span>
+                            </div>
+                            <h3 class="font-medium text-gray-900">Download & Submit</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">
+                            Download the export file and submit it directly to your SETA portal. Files are formatted to meet all NLRD/QCTO requirements.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

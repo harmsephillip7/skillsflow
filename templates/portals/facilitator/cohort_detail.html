@@ -1,0 +1,293 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{{ cohort.name }} - Facilitator Portal{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <nav class="flex mb-2" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                <li><a href="{% url 'portals:facilitator_dashboard' %}" class="hover:text-primary-600">Dashboard</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li><a href="{% url 'portals:facilitator_classes' %}" class="hover:text-primary-600">Classes</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li class="text-gray-900">{{ cohort.name }}</li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">{{ cohort.name }}</h1>
+        <p class="mt-1 text-sm text-gray-500">{{ cohort.qualification.title }}</p>
+    </div>
+    <div class="mt-4 sm:mt-0 flex gap-2">
+        <a href="{% url 'portals:facilitator_pending_assessments' %}?cohort={{ cohort.id }}" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition font-medium">
+            <i class="fas fa-clipboard-check mr-2"></i>Assess Class
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Class Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-center">
+                <p class="text-3xl font-bold text-gray-900">{{ enrollments|length }}</p>
+                <p class="text-xs text-gray-500 mt-1">Total Learners</p>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-center">
+                <p class="text-3xl font-bold text-green-600">{{ active_learners }}</p>
+                <p class="text-xs text-gray-500 mt-1">Active</p>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-center">
+                <p class="text-3xl font-bold text-amber-600">{{ pending_assessments }}</p>
+                <p class="text-xs text-gray-500 mt-1">Pending Marks</p>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-center">
+                <p class="text-3xl font-bold text-primary-600">{{ avg_progress|floatformat:0 }}%</p>
+                <p class="text-xs text-gray-500 mt-1">Avg Progress</p>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-center">
+                <p class="text-3xl font-bold text-green-600">{{ pass_rate|floatformat:0 }}%</p>
+                <p class="text-xs text-gray-500 mt-1">Pass Rate</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="flex flex-col sm:flex-row gap-4">
+            <div class="flex-1 relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" 
+                       id="learnerSearch"
+                       placeholder="Search learners..." 
+                       class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            <div class="flex gap-2">
+                <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">All Status</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="WITHDRAWN">Withdrawn</option>
+                </select>
+                <button class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition">
+                    <i class="fas fa-download mr-2"></i>Export
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Learners Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-900">
+                <i class="fas fa-user-graduate text-primary-600 mr-2"></i>Learners in {{ cohort.name }}
+            </h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full" id="learnersTable">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Learner</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Number</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Score</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for enrollment in enrollments %}
+                    <tr class="hover:bg-gray-50 learner-row" data-status="{{ enrollment.status }}">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-3">
+                                    <span class="text-sm font-medium text-primary-700">{{ enrollment.learner.user.first_name|slice:":1" }}{{ enrollment.learner.user.last_name|slice:":1" }}</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900 learner-name">{{ enrollment.learner.user.get_full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ enrollment.learner.user.email }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600 learner-id">
+                            {{ enrollment.learner.id_number|default:"-" }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center justify-center">
+                                <div class="w-24">
+                                    <div class="flex items-center justify-between text-xs mb-1">
+                                        <span class="sr-only">Progress</span>
+                                        <span class="font-medium">{{ enrollment.progress|default:0 }}%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="h-2 rounded-full {% if enrollment.progress >= 70 %}bg-green-500{% elif enrollment.progress >= 40 %}bg-amber-500{% else %}bg-red-500{% endif %}" style="width: {{ enrollment.progress|default:0 }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if enrollment.avg_score %}
+                            <span class="text-lg font-bold {% if enrollment.avg_score >= 70 %}text-green-600{% elif enrollment.avg_score >= 50 %}text-amber-600{% else %}text-red-600{% endif %}">
+                                {{ enrollment.avg_score|floatformat:0 }}%
+                            </span>
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if enrollment.status == 'ACTIVE' %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Active
+                            </span>
+                            {% elif enrollment.status == 'COMPLETED' %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Completed
+                            </span>
+                            {% elif enrollment.status == 'WITHDRAWN' %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                Withdrawn
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                {{ enrollment.get_status_display }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if enrollment.pending_count > 0 %}
+                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-700 font-bold">
+                                {{ enrollment.pending_count }}
+                            </span>
+                            {% else %}
+                            <span class="text-green-600"><i class="fas fa-check-circle"></i></span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <a href="{% url 'portals:facilitator_learner_progress' enrollment.id %}" 
+                                   class="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition" 
+                                   title="View Progress">
+                                    <i class="fas fa-chart-line"></i>
+                                </a>
+                                {% if enrollment.pending_count > 0 %}
+                                <a href="{% url 'portals:facilitator_pending_assessments' %}?learner={{ enrollment.id }}" 
+                                   class="p-2 text-gray-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                                   title="Assess Learner">
+                                    <i class="fas fa-clipboard-check"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            <i class="fas fa-users text-4xl text-gray-300 mb-3"></i>
+                            <p>No learners enrolled in this cohort yet.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Class Progress Chart -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="font-semibold text-gray-900 mb-4">
+            <i class="fas fa-chart-bar text-primary-600 mr-2"></i>Class Performance Overview
+        </h3>
+        <div class="h-64">
+            <canvas id="classPerformanceChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('learnerSearch');
+    const statusFilter = document.getElementById('statusFilter');
+    const rows = document.querySelectorAll('.learner-row');
+    
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        
+        rows.forEach(row => {
+            const name = row.querySelector('.learner-name').textContent.toLowerCase();
+            const id = row.querySelector('.learner-id').textContent.toLowerCase();
+            const status = row.dataset.status;
+            
+            const matchesSearch = name.includes(searchTerm) || id.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+            
+            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
+    }
+    
+    searchInput.addEventListener('input', filterTable);
+    statusFilter.addEventListener('change', filterTable);
+    
+    // Performance Chart
+    const ctx = document.getElementById('classPerformanceChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['0-30%', '31-50%', '51-70%', '71-85%', '86-100%'],
+            datasets: [{
+                label: 'Number of Learners',
+                data: [
+                    {{ score_distribution.0_30|default:0 }},
+                    {{ score_distribution.31_50|default:0 }},
+                    {{ score_distribution.51_70|default:0 }},
+                    {{ score_distribution.71_85|default:0 }},
+                    {{ score_distribution.86_100|default:0 }}
+                ],
+                backgroundColor: [
+                    '#ef4444',
+                    '#f97316',
+                    '#eab308',
+                    '#22c55e',
+                    '#10b981'
+                ],
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

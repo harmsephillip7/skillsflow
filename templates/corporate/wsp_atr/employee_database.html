@@ -1,0 +1,191 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}Employee Qualifications - {{ client.company_name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <a href="{% url 'corporate:wsp_atr_dashboard' %}" class="hover:text-blue-600">WSP/ATR</a>
+                <span>/</span>
+                <span>Employee Database</span>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900">Employee Qualifications Database</h1>
+            <p class="text-gray-500">{{ client.company_name }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <button class="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2">
+                <svg class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Import CSV
+            </button>
+            <a href="{% url 'corporate:employee_add' client.pk %}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Add Employee
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Total Employees</p>
+            <p class="text-3xl font-bold text-gray-900">{{ employees|length }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">With Qualifications</p>
+            <p class="text-3xl font-bold text-green-600">{{ with_qualifications_count }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Total Qualifications</p>
+            <p class="text-3xl font-bold text-blue-600">{{ total_qualifications }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Expiring Soon</p>
+            <p class="text-3xl font-bold text-yellow-600">{{ expiring_count }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border p-5">
+            <p class="text-sm text-gray-500">Expired</p>
+            <p class="text-3xl font-bold text-red-600">{{ expired_count }}</p>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="bg-white rounded-xl shadow-sm border p-4">
+        <form method="get" class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <input type="search" name="search" value="{{ request.GET.search }}" placeholder="Search employees..." 
+                    class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <select name="department" class="rounded-lg border-gray-300">
+                <option value="">All Departments</option>
+                {% for dept in departments %}
+                <option value="{{ dept }}" {% if request.GET.department == dept %}selected{% endif %}>{{ dept }}</option>
+                {% endfor %}
+            </select>
+            <select name="qualification_type" class="rounded-lg border-gray-300">
+                <option value="">All Qualification Types</option>
+                <option value="DEGREE" {% if request.GET.qualification_type == 'DEGREE' %}selected{% endif %}>Degree</option>
+                <option value="DIPLOMA" {% if request.GET.qualification_type == 'DIPLOMA' %}selected{% endif %}>Diploma</option>
+                <option value="CERTIFICATE" {% if request.GET.qualification_type == 'CERTIFICATE' %}selected{% endif %}>Certificate</option>
+                <option value="TRADE" {% if request.GET.qualification_type == 'TRADE' %}selected{% endif %}>Trade Test</option>
+            </select>
+            <button type="submit" class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900">
+                Filter
+            </button>
+        </form>
+    </div>
+
+    <!-- Employee List -->
+    <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID Number</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">OFO Code</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Level</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qualifications</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-5 py-3"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for employee in employees %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-5 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <span class="text-sm font-medium text-gray-600">{{ employee.learner.first_name|slice:":1" }}{{ employee.learner.last_name|slice:":1" }}</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ employee.learner.first_name }} {{ employee.learner.last_name }}</p>
+                                    <p class="text-sm text-gray-500">{{ employee.learner.email }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 text-sm text-gray-600">{{ employee.learner.sa_id_number }}</td>
+                        <td class="px-5 py-4 text-sm text-gray-600">{{ employee.ofo_code|default:"-" }}</td>
+                        <td class="px-5 py-4 text-sm text-gray-600">{{ employee.get_occupational_level_display|default:"-" }}</td>
+                        <td class="px-5 py-4">
+                            {% if employee.qualification_count > 0 %}
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+                                    {{ employee.qualification_count }} qualification{{ employee.qualification_count|pluralize }}
+                                </span>
+                                {% if employee.expiring_soon > 0 %}
+                                <span class="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full">
+                                    {{ employee.expiring_soon }} expiring
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="text-sm text-gray-400">None recorded</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-4">
+                            {% if employee.has_expired_qualifications %}
+                            <span class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full">Requires Update</span>
+                            {% else %}
+                            <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">Up to Date</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-4">
+                            <div class="flex items-center gap-3">
+                                <a href="{% url 'corporate:employee_detail' employee.pk %}" class="text-blue-600 hover:underline text-sm">View</a>
+                                <a href="{% url 'corporate:employee_idp_list' employee.pk %}" class="text-green-600 hover:underline text-sm">IDP</a>
+                                <button class="text-gray-400 hover:text-gray-600">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-5 py-12 text-center text-gray-500">
+                            <svg class="h-12 w-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <p>No employees found.</p>
+                            <a href="{% url 'corporate:employee_add' client.pk %}" class="mt-2 inline-block text-blue-600 hover:underline">
+                                Add your first employee
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="flex items-center justify-between">
+        <p class="text-sm text-gray-500">
+            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ paginator.count }} employees
+        </p>
+        <nav class="flex items-center gap-2">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 border rounded-lg hover:bg-gray-50">Previous</a>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <span class="px-3 py-2 bg-blue-600 text-white rounded-lg">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?page={{ num }}" class="px-3 py-2 border rounded-lg hover:bg-gray-50">{{ num }}</a>
+            {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 border rounded-lg hover:bg-gray-50">Next</a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

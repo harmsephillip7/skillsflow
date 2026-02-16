@@ -1,0 +1,246 @@
+{% extends 'portals/workplace_officer/base.html' %}
+{% load static %}
+
+{% block title %}Messages - Workplace Officer Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-chat-dots me-2"></i>Messages</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newMessageModal">
+        <i class="bi bi-plus-lg me-1"></i> New Message
+    </button>
+</div>
+
+<div class="row">
+    <!-- Thread List -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Conversations</span>
+                <span class="badge bg-primary">{{ threads|length }}</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="threadList">
+                    {% for thread in threads %}
+                    <a href="?thread={{ thread.id }}" class="list-group-item list-group-item-action {% if selected_thread.id == thread.id %}active{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ thread.subject|truncatewords:5 }}</h6>
+                                <p class="mb-1 small {% if selected_thread.id == thread.id %}text-white-50{% else %}text-muted{% endif %}">
+                                    {% if thread.related_placement %}
+                                    {{ thread.related_placement.learner.user.get_full_name }}
+                                    {% else %}
+                                    {% for participant in thread.participants.all|slice:":2" %}
+                                    {{ participant.user.first_name }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                    {% endif %}
+                                </p>
+                                <small class="{% if selected_thread.id == thread.id %}text-white-50{% else %}text-muted{% endif %}">
+                                    {{ thread.last_message.created_at|timesince }} ago
+                                </small>
+                            </div>
+                            {% if thread.unread_count %}
+                            <span class="badge bg-danger">{{ thread.unread_count }}</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="list-group-item text-center py-4 text-muted">
+                        <i class="bi bi-chat-dots display-4"></i>
+                        <p class="mt-2">No conversations yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Message Content -->
+    <div class="col-md-8">
+        {% if selected_thread %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">{{ selected_thread.subject }}</h5>
+                    <small class="text-muted">
+                        {% for participant in selected_thread.participants.all %}
+                        {{ participant.user.get_full_name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </small>
+                </div>
+                {% if selected_thread.related_placement %}
+                <a href="{% url 'portals:workplace_officer_placement_detail' selected_thread.related_placement.id %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-person"></i> View Learner
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body" id="messageContainer" style="height: 400px; overflow-y: auto;">
+                {% for message in messages %}
+                <div class="d-flex mb-3 {% if message.sender == request.user %}flex-row-reverse{% endif %}">
+                    <div class="message-bubble {% if message.sender == request.user %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 70%; padding: 1rem; border-radius: 1rem;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>{% if message.sender == request.user %}You{% else %}{{ message.sender.get_full_name }}{% endif %}</strong>
+                            <small class="{% if message.sender == request.user %}text-white-50{% else %}text-muted{% endif %} ms-2">
+                                {{ message.created_at|date:"d M, H:i" }}
+                            </small>
+                        </div>
+                        <p class="mb-0">{{ message.content|linebreaks }}</p>
+                        {% if message.attachments.exists %}
+                        <div class="mt-2 pt-2 border-top {% if message.sender == request.user %}border-light{% endif %}">
+                            {% for attachment in message.attachments.all %}
+                            <a href="{{ attachment.file.url }}" class="btn btn-sm {% if message.sender == request.user %}btn-light{% else %}btn-outline-primary{% endif %} me-1 mb-1">
+                                <i class="bi bi-paperclip"></i> {{ attachment.filename }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-chat-dots display-4"></i>
+                    <p class="mt-2">No messages in this conversation yet</p>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="card-footer">
+                <form method="post" action="{% url 'portals:workplace_officer_send_message' selected_thread.id %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="content" placeholder="Type your message..." required>
+                        <label class="btn btn-outline-secondary" for="attachmentInput">
+                            <i class="bi bi-paperclip"></i>
+                        </label>
+                        <input type="file" id="attachmentInput" name="attachment" class="d-none">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="bi bi-send"></i> Send
+                        </button>
+                    </div>
+                    <div id="attachmentPreview" class="mt-2 d-none">
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-paperclip"></i> <span id="attachmentName"></span>
+                            <button type="button" class="btn-close btn-close-white ms-2" onclick="clearAttachment()"></button>
+                        </span>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-chat-text display-1 text-muted"></i>
+                <h4 class="mt-3 text-muted">Select a conversation</h4>
+                <p class="text-muted">Choose a conversation from the list or start a new one</p>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newMessageModal">
+                    <i class="bi bi-plus-lg me-1"></i> Start New Conversation
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- New Message Modal -->
+<div class="modal fade" id="newMessageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-chat-dots me-2"></i>New Message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'portals:officer_messages' %}" onsubmit="alert('Messaging feature coming soon!'); return false;">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Related Learner/Placement (optional)</label>
+                        <select class="form-select" name="placement">
+                            <option value="">-- General Message --</option>
+                            {% for placement in my_placements %}
+                            <option value="{{ placement.id }}">{{ placement.learner.user.get_full_name }} ({{ placement.host_employer.name }})</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Select a placement to include the learner and mentor in the conversation</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Recipients</label>
+                        <select class="form-select" name="recipients" multiple id="recipientSelect">
+                            <optgroup label="Learners">
+                                {% for placement in my_placements %}
+                                <option value="{{ placement.learner.user.id }}">{{ placement.learner.user.get_full_name }} (Learner)</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="Mentors">
+                                {% for placement in my_placements %}
+                                {% if placement.mentor %}
+                                <option value="{{ placement.mentor.user.id }}">{{ placement.mentor.user.get_full_name }} (Mentor - {{ placement.host_employer.name }})</option>
+                                {% endif %}
+                                {% endfor %}
+                            </optgroup>
+                        </select>
+                        <small class="text-muted">Hold Ctrl/Cmd to select multiple recipients</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Subject <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="subject" required placeholder="Message subject...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="content" rows="4" required placeholder="Type your message..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send me-1"></i> Send Message
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Scroll to bottom of messages
+    const messageContainer = document.getElementById('messageContainer');
+    if (messageContainer) {
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+    }
+    
+    // Attachment preview
+    document.getElementById('attachmentInput').addEventListener('change', function() {
+        const preview = document.getElementById('attachmentPreview');
+        const nameSpan = document.getElementById('attachmentName');
+        if (this.files.length > 0) {
+            nameSpan.textContent = this.files[0].name;
+            preview.classList.remove('d-none');
+        }
+    });
+    
+    function clearAttachment() {
+        document.getElementById('attachmentInput').value = '';
+        document.getElementById('attachmentPreview').classList.add('d-none');
+    }
+    
+    // Auto-select recipients when placement is selected
+    document.querySelector('select[name="placement"]').addEventListener('change', function() {
+        // Could add AJAX to auto-populate recipients based on placement
+    });
+    
+    // Poll for new messages every 30 seconds
+    {% if selected_thread %}
+    setInterval(function() {
+        // AJAX call to check for new messages
+        fetch('{% url "portals:workplace_officer_check_messages" selected_thread.id %}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.new_messages) {
+                    location.reload();
+                }
+            });
+    }, 30000);
+    {% endif %}
+</script>
+{% endblock %}

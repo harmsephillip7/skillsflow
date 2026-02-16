@@ -1,0 +1,171 @@
+{% extends 'base/app_layout.html' %}
+
+{% block page_title %}New Trade Test Application{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Header -->
+    <div>
+        <nav class="text-sm mb-2">
+            <a href="{% url 'trade_tests:dashboard' %}" class="text-primary-600 hover:text-primary-800">Trade Tests</a>
+            <span class="text-gray-400 mx-2">/</span>
+            <a href="{% url 'trade_tests:application_list' %}" class="text-primary-600 hover:text-primary-800">Applications</a>
+            <span class="text-gray-400 mx-2">/</span>
+            <span class="text-gray-500">New Application</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">New Trade Test Application</h1>
+        <p class="text-gray-500 mt-1">Create a new trade test application for a candidate</p>
+    </div>
+
+    <!-- Info Alert -->
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-blue-700">
+                    A learner record is required before creating an application. If the candidate doesn't have a learner record, 
+                    <a href="/admin/learners/learner/add/" class="font-medium underline">create one first</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        
+        <!-- Candidate Source Section -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Candidate Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Candidate Source *</label>
+                    {{ form.candidate_source }}
+                    {% if form.candidate_source.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.candidate_source.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500">
+                        Internal: Trained at our institution. External: From another centre. ARPL: Recognition of Prior Learning.
+                    </p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Learner *</label>
+                    {{ form.learner }}
+                    {% if form.learner.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.learner.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Enrollment Section (for internal learners) -->
+        <div class="px-6 py-5 border-b border-gray-100" id="enrollment-section">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Enrollment Details</h2>
+            <p class="text-sm text-gray-500 mb-4">For internal learners, select their enrollment to link the trade test.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Enrollment</label>
+                    {{ form.enrollment }}
+                    {% if form.enrollment.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.enrollment.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Trade Section -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Trade Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Trade *</label>
+                    {{ form.trade }}
+                    {% if form.trade.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.trade.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Test Centre</label>
+                    {{ form.preferred_centre }}
+                    {% if form.preferred_centre.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.preferred_centre.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- External Centre Section (for external learners) -->
+        <div class="px-6 py-5 border-b border-gray-100" id="external-centre-section">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Training Provider Information</h2>
+            <p class="text-sm text-gray-500 mb-4">For external learners, provide their original training provider details.</p>
+            <div class="grid grid-cols-1 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">External Training Centre Name</label>
+                    {{ form.external_training_centre }}
+                    {% if form.external_training_centre.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.external_training_centre.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes Section -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Additional Information</h2>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                {{ form.notes }}
+                {% if form.notes.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.notes.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+            <a href="{% url 'trade_tests:application_list' %}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                Cancel
+            </a>
+            <button type="submit" name="save_draft" value="true" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                Save as Draft
+            </button>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition-colors">
+                Submit Application
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sourceSelect = document.querySelector('[name="candidate_source"]');
+    const enrollmentSection = document.getElementById('enrollment-section');
+    const externalSection = document.getElementById('external-centre-section');
+    
+    function toggleSections() {
+        const source = sourceSelect.value;
+        
+        // Show/hide enrollment section (only for INTERNAL)
+        if (source === 'INTERNAL') {
+            enrollmentSection.style.display = 'block';
+        } else {
+            enrollmentSection.style.display = 'none';
+        }
+        
+        // Show/hide external centre section (only for EXTERNAL)
+        if (source === 'EXTERNAL') {
+            externalSection.style.display = 'block';
+        } else {
+            externalSection.style.display = 'none';
+        }
+    }
+    
+    sourceSelect.addEventListener('change', toggleSections);
+    toggleSections();
+});
+</script>
+{% endblock %}

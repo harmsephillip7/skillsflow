@@ -1,0 +1,454 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block title %}Client Onboarding - {{ client.company_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex mb-4" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li><a href="{% url 'corporate:dashboard' %}" class="text-gray-500 hover:text-gray-700">Corporate</a></li>
+        <li class="flex items-center">
+            <svg class="w-4 h-4 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+            <a href="{% url 'corporate:client_list' %}" class="text-gray-500 hover:text-gray-700">Clients</a>
+        </li>
+        <li class="flex items-center">
+            <svg class="w-4 h-4 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+            <a href="{% url 'corporate:client_detail' client.pk %}" class="text-gray-500 hover:text-gray-700">{{ client.company_name }}</a>
+        </li>
+        <li class="flex items-center">
+            <svg class="w-4 h-4 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+            <span class="text-gray-700 font-medium">Onboarding</span>
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-5xl mx-auto" x-data="onboardingWizard()">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Client Onboarding</h1>
+                <p class="text-gray-600 mt-1">{{ client.company_name }}</p>
+            </div>
+            <div class="text-right">
+                <div class="text-sm text-gray-500">Progress</div>
+                <div class="text-2xl font-bold text-primary-600">{{ onboarding.progress_percentage }}%</div>
+            </div>
+        </div>
+        
+        <!-- Account Manager -->
+        <div class="mt-4 flex items-center text-sm text-gray-600">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            Account Manager: <strong class="ml-1">{{ onboarding.account_manager.get_full_name|default:onboarding.account_manager.username }}</strong>
+        </div>
+    </div>
+    
+    <!-- Progress Steps -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            {% for step in steps %}
+            <div class="flex items-center {% if not forloop.last %}flex-1{% endif %}">
+                <div class="flex flex-col items-center">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium
+                        {% if step.completed %}bg-green-500 text-white
+                        {% elif step.current %}bg-primary-600 text-white ring-4 ring-primary-100
+                        {% else %}bg-gray-200 text-gray-500{% endif %}">
+                        {% if step.completed %}
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                        {% else %}
+                            {{ step.number }}
+                        {% endif %}
+                    </div>
+                    <span class="mt-2 text-xs text-center {% if step.current %}text-primary-600 font-medium{% else %}text-gray-500{% endif %}" style="max-width: 80px;">
+                        {{ step.name }}
+                    </span>
+                </div>
+                {% if not forloop.last %}
+                <div class="flex-1 mx-4 h-0.5 {% if step.completed %}bg-green-500{% else %}bg-gray-200{% endif %}"></div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Step Content -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <form method="post" action="{% url 'corporate:client_onboarding_step' client.pk current_step %}">
+            {% csrf_token %}
+            
+            <!-- Step 1: Company Verification -->
+            {% if current_step_code == 'COMPANY_VERIFY' %}
+            <div class="p-6 border-b border-gray-200 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Step 1: Company Verification</h2>
+                <p class="text-sm text-gray-600 mt-1">Verify and update the client's company information.</p>
+            </div>
+            <div class="p-6 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
+                        <input type="text" name="company_name" value="{{ client.company_name }}" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Trading Name</label>
+                        <input type="text" name="trading_name" value="{{ client.trading_name }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>
+                        <input type="text" name="registration_number" value="{{ client.registration_number }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">VAT Number</label>
+                        <input type="text" name="vat_number" value="{{ client.vat_number }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Physical Address</label>
+                        <textarea name="physical_address" rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">{{ client.physical_address }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Postal Address</label>
+                        <textarea name="postal_address" rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">{{ client.postal_address }}</textarea>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                        <input type="text" name="industry" value="{{ client.industry }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">SIC Code</label>
+                        <input type="text" name="sic_code" value="{{ client.sic_code }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Employee Count</label>
+                        <input type="number" name="employee_count" value="{{ client.employee_count }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">SETA</label>
+                        <select name="seta" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Select SETA...</option>
+                            {% for seta in setas %}
+                            <option value="{{ seta.id }}" {% if client.seta_id == seta.id %}selected{% endif %}>{{ seta.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">SDL Number</label>
+                        <input type="text" name="seta_number" value="{{ client.seta_number }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Step 2: Services Configuration -->
+            {% if current_step_code == 'SERVICES' %}
+            <div class="p-6 border-b border-gray-200 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Step 2: Services Configuration</h2>
+                <p class="text-sm text-gray-600 mt-1">Select and configure the services for this client.</p>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Current Subscriptions -->
+                {% if subscriptions %}
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 mb-3">Current Services</h3>
+                    <div class="space-y-2">
+                        {% for sub in subscriptions %}
+                        <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 text-green-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="font-medium">{{ sub.service.name }}</span>
+                            </div>
+                            <span class="text-sm px-2 py-1 rounded-full {% if sub.status == 'ACTIVE' %}bg-green-100 text-green-700{% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                                {{ sub.get_status_display }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Add New Services -->
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 mb-3">Add Services</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for service in available_services %}
+                        <label class="flex items-start p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-primary-300 hover:bg-primary-50 transition-colors">
+                            <input type="checkbox" name="services" value="{{ service.id }}" class="mt-1 mr-3 rounded text-primary-600 focus:ring-primary-500">
+                            <div>
+                                <div class="font-medium text-gray-900">{{ service.name }}</div>
+                                <div class="text-sm text-gray-500">{{ service.description|truncatewords:20 }}</div>
+                                {% if service.base_price %}
+                                <div class="text-sm font-medium text-primary-600 mt-1">R{{ service.base_price|intcomma }}</div>
+                                {% endif %}
+                            </div>
+                        </label>
+                        {% empty %}
+                        <p class="text-gray-500 col-span-2">All available services have been added.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Step 3: Contacts & Portal Access -->
+            {% if current_step_code == 'CONTACTS' %}
+            <div class="p-6 border-b border-gray-200 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Step 3: Contacts & Portal Access</h2>
+                <p class="text-sm text-gray-600 mt-1">Add key contacts and set up their portal access.</p>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Existing Contacts -->
+                {% if contacts %}
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 mb-3">Current Contacts</h3>
+                    <div class="space-y-2">
+                        {% for contact in contacts %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div>
+                                <div class="font-medium">{{ contact.name }}</div>
+                                <div class="text-sm text-gray-500">{{ contact.email }} • {{ contact.get_role_display }}</div>
+                            </div>
+                            {% if contact.user %}
+                            <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">Has Portal Access</span>
+                            {% else %}
+                            <span class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">No Portal Access</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Pending Invitations -->
+                {% if invitations %}
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 mb-3">Pending Invitations</h3>
+                    <div class="space-y-2">
+                        {% for inv in invitations %}
+                        <div class="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div>
+                                <div class="font-medium">{{ inv.name }}</div>
+                                <div class="text-sm text-gray-500">{{ inv.email }} • Invited {{ inv.invited_at|timesince }} ago</div>
+                            </div>
+                            <span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full">Pending</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Add New Contact -->
+                <div class="border-t pt-6">
+                    <h3 class="text-sm font-medium text-gray-700 mb-3">Add New Contact</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <input type="text" name="new_contact_name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" name="new_contact_email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                            <select name="new_contact_role" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                {% for code, name in role_choices %}
+                                <option value="{{ code }}">{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                            <input type="text" name="new_contact_phone" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="send_invitation" value="1" class="rounded text-primary-600 focus:ring-primary-500 mr-2">
+                            <span class="text-sm text-gray-700">Send portal invitation to this contact</span>
+                        </label>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Permission Template</label>
+                        <select name="permission_template" class="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                            {% for code, name in permission_choices %}
+                            <option value="{{ code }}">{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Step 4: Document Initialization -->
+            {% if current_step_code == 'DOCUMENTS' %}
+            <div class="p-6 border-b border-gray-200 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Step 4: Document Initialization</h2>
+                <p class="text-sm text-gray-600 mt-1">Review and initialize document requirements for this client.</p>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Core Documents -->
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 mb-3">Core Documents</h3>
+                    <div class="space-y-2">
+                        {% for doc in core_documents %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                <span>{{ doc.name }}</span>
+                                {% if doc.required %}
+                                <span class="ml-2 text-xs text-red-500">Required</span>
+                                {% endif %}
+                            </div>
+                            <span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full">Pending</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Service-Specific Documents -->
+                {% for sub in subscriptions %}
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 mb-3">{{ sub.service.name }} Documents</h3>
+                    <p class="text-sm text-gray-500">Document requirements will be initialized based on the service type.</p>
+                </div>
+                {% endfor %}
+                
+                <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-500 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div class="text-sm text-blue-700">
+                            <strong>Note:</strong> Document checklists will be automatically created when you complete this step. 
+                            You can request documents from the client via the Client 360 view.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Step 5: Kickoff Meeting -->
+            {% if current_step_code == 'KICKOFF' %}
+            <div class="p-6 border-b border-gray-200 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Step 5: Kickoff Meeting</h2>
+                <p class="text-sm text-gray-600 mt-1">Schedule the onboarding kickoff meeting with the client.</p>
+            </div>
+            <div class="p-6 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Meeting Date *</label>
+                        <input type="date" name="meeting_date" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Meeting Time</label>
+                        <input type="time" name="meeting_time" value="10:00"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Meeting Format</label>
+                    <select name="meeting_format" class="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <option value="VIRTUAL">Virtual (Online)</option>
+                        <option value="IN_PERSON">In-Person</option>
+                        <option value="HYBRID">Hybrid</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Attendees</label>
+                    <div class="space-y-2">
+                        {% for contact in contacts %}
+                        <label class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100">
+                            <input type="checkbox" name="attendees" value="{{ contact.id }}" checked class="rounded text-primary-600 focus:ring-primary-500 mr-3">
+                            <div>
+                                <div class="font-medium">{{ contact.name }}</div>
+                                <div class="text-sm text-gray-500">{{ contact.get_role_display }}</div>
+                            </div>
+                        </label>
+                        {% empty %}
+                        <p class="text-gray-500">No contacts added yet. You can add attendees after completing onboarding.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div class="text-sm text-green-700">
+                            <strong>Almost done!</strong> After scheduling the kickoff meeting, the onboarding process will be complete.
+                            You'll be redirected to the Client 360 view where you can continue setting up service-specific configurations.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Actions -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                <div>
+                    {% if current_step > 1 %}
+                    <button type="submit" name="action" value="back" class="px-4 py-2 text-gray-700 hover:text-gray-900">
+                        ← Previous
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button type="submit" name="action" value="save" class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Save Progress
+                    </button>
+                    <button type="submit" name="action" value="complete" class="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium">
+                        {% if current_step == 5 %}
+                            Complete Onboarding
+                        {% else %}
+                            Continue →
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function onboardingWizard() {
+    return {
+        init() {
+            // Any initialization logic
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,217 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}{{ title }} - {{ qualification.short_title }}{% endblock %}
+
+{% block main_content %}
+<div class="max-w-3xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <nav class="flex items-center text-sm text-gray-500 mb-2">
+            <a href="{% url 'academics:qualification_list' %}" class="hover:text-primary-600">Qualifications</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a href="{% url 'academics:qualification_detail' qualification.pk %}" class="hover:text-primary-600">{{ qualification.short_title }}</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="text-gray-700">{{ title }}</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
+        <p class="text-sm text-gray-500 mt-1">{{ qualification.title }}</p>
+    </div>
+    
+    <!-- Form -->
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Campus & Accreditation Details</h2>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <!-- Campus Selection -->
+                <div>
+                    <label for="id_campus" class="block text-sm font-medium text-gray-700 mb-1">
+                        Campus <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.campus }}
+                    {% if form.campus.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.campus.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500">Select the campus to add accreditation for</p>
+                </div>
+                
+                <!-- Letter Details Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="id_letter_reference" class="block text-sm font-medium text-gray-700 mb-1">
+                            Letter Reference
+                        </label>
+                        {{ form.letter_reference }}
+                        {% if form.letter_reference.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.letter_reference.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500">Reference number from the accreditation letter</p>
+                    </div>
+                    
+                    <div>
+                        <label for="id_letter_date" class="block text-sm font-medium text-gray-700 mb-1">
+                            Letter Date
+                        </label>
+                        {{ form.letter_date }}
+                        {% if form.letter_date.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.letter_date.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500">Date the letter was issued</p>
+                    </div>
+                </div>
+                
+                <!-- Accreditation Period Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="id_accredited_from" class="block text-sm font-medium text-gray-700 mb-1">
+                            Accredited From <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.accredited_from }}
+                        {% if form.accredited_from.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.accredited_from.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="id_accredited_until" class="block text-sm font-medium text-gray-700 mb-1">
+                            Accredited Until <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.accredited_until }}
+                        {% if form.accredited_until.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.accredited_until.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Capacity & Status Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="id_learner_capacity" class="block text-sm font-medium text-gray-700 mb-1">
+                            Learner Capacity
+                        </label>
+                        {{ form.learner_capacity }}
+                        {% if form.learner_capacity.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.learner_capacity.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500">Maximum learners allowed (optional)</p>
+                    </div>
+                    
+                    <div>
+                        <label for="id_status" class="block text-sm font-medium text-gray-700 mb-1">
+                            Status <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.status.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Additional Reference -->
+                <div>
+                    <label for="id_accreditation_reference" class="block text-sm font-medium text-gray-700 mb-1">
+                        Additional Reference
+                    </label>
+                    {{ form.accreditation_reference }}
+                    {% if form.accreditation_reference.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.accreditation_reference.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Document Upload Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Accreditation Letter Document</h2>
+                <p class="text-sm text-gray-500 mt-1">Upload the official accreditation letter (PDF, DOC, or image)</p>
+            </div>
+            
+            <div class="p-6">
+                {% if accreditation.accreditation_document %}
+                <div class="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-medium text-green-800">Current Document</p>
+                                <p class="text-xs text-green-600">{{ accreditation.accreditation_document.name|slice:"-50:" }}</p>
+                            </div>
+                        </div>
+                        <a href="{{ accreditation.accreditation_document.url }}" target="_blank" 
+                           class="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition">
+                            <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Download
+                        </a>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-500 mb-2">Upload a new document to replace the existing one:</p>
+                {% endif %}
+                
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors">
+                    {{ form.accreditation_document }}
+                    {% if form.accreditation_document.errors %}
+                    <p class="mt-2 text-sm text-red-600">{{ form.accreditation_document.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-2 text-xs text-gray-500">Accepted formats: PDF, DOC, DOCX, JPG, PNG (max 10MB)</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notes Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Notes</h2>
+            </div>
+            
+            <div class="p-6">
+                {{ form.notes }}
+                {% if form.notes.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.notes.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Form Errors -->
+        {% if form.non_field_errors %}
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="flex">
+                <svg class="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div class="ml-3">
+                    {% for error in form.non_field_errors %}
+                    <p class="text-sm text-red-700">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-3">
+            <a href="{% url 'academics:qualification_detail' qualification.pk %}" 
+               class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                Cancel
+            </a>
+            <button type="submit" 
+                    class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition shadow-sm">
+                {% if accreditation %}Update{% else %}Add{% endif %} Campus Accreditation
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

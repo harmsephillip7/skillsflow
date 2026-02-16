@@ -1,0 +1,217 @@
+{% extends 'base/app_layout.html' %}
+
+{% block title %}{% if project.pk %}Edit{% else %}Create{% endif %} Delivery Project{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="{% url 'core:dashboard' %}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:dashboard' %}" class="text-gray-700 hover:text-blue-600">Corporate</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li>
+            <a href="{% url 'corporate:delivery_project_list' %}" class="text-gray-700 hover:text-blue-600">Projects</a>
+        </li>
+        <li><span class="mx-2 text-gray-400">/</span></li>
+        <li class="text-gray-500">{% if project.pk %}{{ project.project_number }}{% else %}New Project{% endif %}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white rounded-lg shadow p-6">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">
+            {% if project.pk %}Edit Delivery Project{% else %}Create Delivery Project{% endif %}
+        </h1>
+        
+        {% if subscription %}
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 class="font-medium text-blue-900">Service Subscription</h3>
+            <p class="text-blue-700">{{ subscription.client.company_name }} - {{ subscription.service.name }}</p>
+            <p class="text-sm text-blue-600">Valid: {{ subscription.start_date|date:"d M Y" }} to {{ subscription.end_date|date:"d M Y"|default:"Ongoing" }}</p>
+        </div>
+        {% endif %}
+        
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Implementation Year -->
+                <div>
+                    <label for="id_implementation_year" class="block text-sm font-medium text-gray-700 mb-1">Implementation Year *</label>
+                    <input type="number" name="implementation_year" id="id_implementation_year" 
+                        value="{{ form.implementation_year.value|default:'' }}"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., 2026"
+                        min="2020" max="2050">
+                    <p class="mt-1 text-xs text-gray-500">The year cycle for this project implementation</p>
+                </div>
+                
+                <!-- Project Name (Optional) -->
+                <div>
+                    <label for="id_name" class="block text-sm font-medium text-gray-700 mb-1">Project Name (Optional)</label>
+                    <input type="text" name="name" id="id_name" 
+                        value="{{ form.name.value|default:'' }}"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Auto-generated if left blank">
+                    {% if form.name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Description -->
+                <div class="md:col-span-2">
+                    <label for="id_description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea name="description" id="id_description" rows="3"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Brief description of the project scope and objectives">{{ form.description.value|default:'' }}</textarea>
+                </div>
+                
+                <!-- Subscription (if not pre-selected) -->
+                {% if not subscription %}
+                <div class="md:col-span-2">
+                    <label for="id_subscription" class="block text-sm font-medium text-gray-700 mb-1">Service Subscription *</label>
+                    <select name="subscription" id="id_subscription"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select subscription...</option>
+                        {% for sub in subscriptions %}
+                        <option value="{{ sub.pk }}" {% if form.subscription.value == sub.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ sub.client.company_name }} - {{ sub.service.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% else %}
+                <input type="hidden" name="subscription" value="{{ subscription.pk }}">
+                {% endif %}
+                
+                <!-- Project Manager -->
+                <div>
+                    <label for="id_project_manager" class="block text-sm font-medium text-gray-700 mb-1">Project Manager</label>
+                    <select name="project_manager" id="id_project_manager"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select manager (optional)...</option>
+                        {% for user in staff_members %}
+                        <option value="{{ user.pk }}" {% if form.project_manager.value == user.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ user.get_full_name|default:user.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Client Contact -->
+                <div>
+                    <label for="id_client_contact" class="block text-sm font-medium text-gray-700 mb-1">Client Contact</label>
+                    <select name="client_contact" id="id_client_contact"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select contact...</option>
+                        {% for contact in client_contacts %}
+                        <option value="{{ contact.pk }}" {% if form.client_contact.value == contact.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ contact.full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Planned Start Date -->
+                <div>
+                    <label for="id_planned_start_date" class="block text-sm font-medium text-gray-700 mb-1">Planned Start Date</label>
+                    <input type="date" name="planned_start_date" id="id_planned_start_date"
+                        value="{{ form.planned_start_date.value|date:'Y-m-d'|default:'' }}"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <!-- Planned End Date -->
+                <div>
+                    <label for="id_planned_end_date" class="block text-sm font-medium text-gray-700 mb-1">Planned End Date</label>
+                    <input type="date" name="planned_end_date" id="id_planned_end_date"
+                        value="{{ form.planned_end_date.value|date:'Y-m-d'|default:'' }}"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <!-- Budget -->
+                <div>
+                    <label for="id_budget" class="block text-sm font-medium text-gray-700 mb-1">Budget (R)</label>
+                    <input type="number" name="budget" id="id_budget" step="0.01"
+                        value="{{ form.budget.value|default:'' }}"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="0.00">
+                </div>
+                
+                <!-- Status (only for edit) -->
+                {% if project.pk %}
+                <div>
+                    <label for="id_status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select name="status" id="id_status"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        {% for code, name in status_choices %}
+                        <option value="{{ code }}" {% if form.status.value == code %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                
+                <!-- Use Template -->
+                {% if templates and not project.pk %}
+                <div class="md:col-span-2">
+                    <label for="id_template" class="block text-sm font-medium text-gray-700 mb-1">Create from Template</label>
+                    <select name="template" id="id_template"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">No template (start blank)</option>
+                        {% for tpl in templates %}
+                        <option value="{{ tpl.pk }}">{{ tpl.name }} ({{ tpl.milestones.count }} milestones)</option>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500">Using a template will pre-populate milestones for this project</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <a href="{% url 'corporate:delivery_project_list' %}" 
+                    class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    {% if project.pk %}Save Changes{% else %}Create Project{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Add Milestone Section (only for existing projects) -->
+    {% if project.pk %}
+    <div class="bg-white rounded-lg shadow p-6 mt-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Add Milestone</h2>
+        <form method="post" action="{% url 'corporate:add_milestone' project.pk %}" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Milestone Name *</label>
+                    <input type="text" name="milestone_name" required
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Planned End Date</label>
+                    <input type="date" name="planned_end_date"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Weight (%)</label>
+                    <input type="number" name="weight" min="0" max="100" value="0"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                Add Milestone
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

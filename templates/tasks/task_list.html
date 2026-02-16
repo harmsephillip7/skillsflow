@@ -1,0 +1,256 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}All Tasks{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">All Tasks</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'core:task_hub' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Task Hub
+    </a>
+    <a href="{% url 'core:task_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        New Task
+    </a>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <form method="get" class="flex flex-wrap items-center gap-4">
+            <!-- Search -->
+            <div class="flex-1 min-w-[200px]">
+                <div class="relative">
+                    <input type="text" name="search" value="{{ search }}"
+                           placeholder="Search tasks..."
+                           class="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                    <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Category Filter -->
+            <select name="category" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">All Categories</option>
+                {% for value, label in categories %}
+                <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            
+            <!-- Priority Filter -->
+            <select name="priority" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">All Priorities</option>
+                {% for value, label in priorities %}
+                <option value="{{ value }}" {% if selected_priority == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            
+            <!-- Status Filter -->
+            <select name="status" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">All Open</option>
+                {% for value, label in statuses %}
+                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            
+            <!-- Date Filter -->
+            <select name="date" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">All Dates</option>
+                <option value="overdue" {% if selected_date == 'overdue' %}selected{% endif %}>Overdue</option>
+                <option value="today" {% if selected_date == 'today' %}selected{% endif %}>Due Today</option>
+                <option value="week" {% if selected_date == 'week' %}selected{% endif %}>Due This Week</option>
+                <option value="month" {% if selected_date == 'month' %}selected{% endif %}>Due This Month</option>
+            </select>
+            
+            <button type="submit" class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition">
+                Apply Filters
+            </button>
+            
+            <a href="{% url 'core:task_list' %}" class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition">
+                Clear
+            </a>
+        </form>
+    </div>
+    
+    <!-- Task List -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% if tasks %}
+        <div class="divide-y divide-gray-100">
+            {% for task in tasks %}
+            <div class="p-4 hover:bg-gray-50 transition-colors" x-data="{ showMenu: false }">
+                <div class="flex items-start gap-4">
+                    <!-- Checkbox -->
+                    <form method="post" action="{% url 'core:task_quick_complete' task.pk %}" class="flex-shrink-0">
+                        {% csrf_token %}
+                        <button type="submit" 
+                                class="w-6 h-6 border-2 rounded-lg transition mt-0.5
+                                       {% if task.status == 'completed' %}bg-primary-500 border-primary-500{% else %}border-gray-300 hover:border-primary-500{% endif %}">
+                            {% if task.status == 'completed' %}
+                            <svg class="w-full h-full text-white p-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            {% endif %}
+                        </button>
+                    </form>
+                    
+                    <!-- Task Content -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <!-- Priority -->
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                {% if task.priority == 'urgent' %}bg-red-100 text-red-800
+                                {% elif task.priority == 'high' %}bg-orange-100 text-orange-800
+                                {% elif task.priority == 'medium' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ task.get_priority_display }}
+                            </span>
+                            
+                            <!-- Category -->
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                                {{ task.get_category_display }}
+                            </span>
+                            
+                            <!-- Status -->
+                            {% if task.status != 'pending' %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                {% if task.status == 'in_progress' %}bg-blue-100 text-blue-800
+                                {% elif task.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif task.status == 'waiting' %}bg-yellow-100 text-yellow-800
+                                {% elif task.status == 'cancelled' %}bg-gray-100 text-gray-600
+                                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ task.get_status_display }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        
+                        <a href="{% url 'core:task_detail' task.pk %}" 
+                           class="text-base font-medium text-gray-900 hover:text-primary-600 {% if task.status == 'completed' %}line-through text-gray-500{% endif %}">
+                            {{ task.title }}
+                        </a>
+                        
+                        {% if task.description %}
+                        <p class="text-sm text-gray-500 mt-1 line-clamp-2">{{ task.description }}</p>
+                        {% endif %}
+                        
+                        <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                            {% if task.due_date %}
+                            <span class="flex items-center {% if task.is_overdue %}text-red-600 font-medium{% endif %}">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                {{ task.due_date|date:"M d, Y" }}
+                                {% if task.is_overdue %}<span class="ml-1">(Overdue)</span>{% endif %}
+                            </span>
+                            {% endif %}
+                            
+                            {% if task.content_object %}
+                            <span class="flex items-center">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                </svg>
+                                {{ task.content_type.model|title }}
+                            </span>
+                            {% endif %}
+                            
+                            {% if task.comments.count %}
+                            <span class="flex items-center">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                </svg>
+                                {{ task.comments.count }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex items-center gap-2">
+                        <a href="{% url 'core:task_detail' task.pk %}" 
+                           class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition"
+                           title="View Details">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-100">
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-500">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ paginator.count }} tasks
+                </p>
+                <div class="flex items-center gap-2">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_priority %}&priority={{ selected_priority }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_date %}&date={{ selected_date }}{% endif %}"
+                       class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition">
+                        Previous
+                    </a>
+                    {% endif %}
+                    
+                    <span class="px-3 py-1.5 bg-primary-600 text-white rounded-lg text-sm font-medium">
+                        {{ page_obj.number }}
+                    </span>
+                    
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_priority %}&priority={{ selected_priority }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_date %}&date={{ selected_date }}{% endif %}"
+                       class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition">
+                        Next
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">No tasks found</h3>
+            <p class="mt-2 text-gray-500">
+                {% if search or selected_category or selected_priority or selected_status or selected_date %}
+                Try adjusting your filters or search query.
+                {% else %}
+                Get started by creating your first task.
+                {% endif %}
+            </p>
+            <div class="mt-6">
+                <a href="{% url 'core:task_create' %}" 
+                   class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Create Task
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

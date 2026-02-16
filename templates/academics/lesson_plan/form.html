@@ -1,0 +1,389 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}{% if lesson_plan %}Edit{% else %}Create{% endif %} Lesson Plan - SkillsFlow{% endblock %}
+
+{% block page_title %}{% if lesson_plan %}Edit Lesson Plan{% else %}Create Lesson Plan{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'academics:qualification_detail' module.qualification.pk %}" class="text-primary-600 hover:text-primary-800">{{ module.qualification.title|truncatewords:3 }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'academics:lesson_plan_list' module.pk %}" class="text-primary-600 hover:text-primary-800">{{ module.code }}</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{% if lesson_plan %}Edit{% else %}Create{% endif %}</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto">
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900">Basic Information</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Session Title *</label>
+                        <input type="text" name="title" id="title" required
+                            value="{{ lesson_plan.title|default:'' }}"
+                            placeholder="e.g., Introduction to Workplace Safety"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label for="session_number" class="block text-sm font-medium text-gray-700 mb-1">Session Number *</label>
+                        <input type="number" name="session_number" id="session_number" required min="1"
+                            value="{{ lesson_plan.session_number|default:1 }}"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="session_type" class="block text-sm font-medium text-gray-700 mb-1">Session Type *</label>
+                        <select name="session_type" id="session_type" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            <option value="CLASSROOM" {% if lesson_plan.session_type == 'CLASSROOM' %}selected{% endif %}>Classroom Only</option>
+                            <option value="PRACTICAL" {% if lesson_plan.session_type == 'PRACTICAL' %}selected{% endif %}>Practical Only</option>
+                            <option value="COMBINED" {% if lesson_plan.session_type == 'COMBINED' %}selected{% endif %}>Combined (Classroom + Practical)</option>
+                            <option value="ASSESSMENT" {% if lesson_plan.session_type == 'ASSESSMENT' %}selected{% endif %}>Assessment</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="classroom_duration_minutes" class="block text-sm font-medium text-gray-700 mb-1">Classroom (min)</label>
+                            <input type="number" name="classroom_duration_minutes" id="classroom_duration_minutes" min="0"
+                                value="{{ lesson_plan.classroom_duration_minutes|default:120 }}"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+                        <div>
+                            <label for="practical_duration_minutes" class="block text-sm font-medium text-gray-700 mb-1">Practical (min)</label>
+                            <input type="number" name="practical_duration_minutes" id="practical_duration_minutes" min="0"
+                                value="{{ lesson_plan.practical_duration_minutes|default:240 }}"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Learning Objectives -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-blue-50">
+                <h3 class="text-lg font-semibold text-gray-900">Learning Objectives</h3>
+                <p class="text-sm text-gray-500 mt-1">What should learners be able to do after this session?</p>
+            </div>
+            <div class="p-6">
+                <div id="objectives-container" class="space-y-2">
+                    {% if lesson_plan.learning_objectives %}
+                    {% for obj in lesson_plan.learning_objectives %}
+                    <div class="flex items-center space-x-2 objective-row">
+                        <input type="text" name="learning_objectives" value="{{ obj }}"
+                            placeholder="Enter a learning objective..."
+                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                        <button type="button" onclick="this.parentElement.remove()" class="p-2 text-red-500 hover:text-red-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="flex items-center space-x-2 objective-row">
+                        <input type="text" name="learning_objectives" 
+                            placeholder="Enter a learning objective..."
+                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                        <button type="button" onclick="this.parentElement.remove()" class="p-2 text-red-500 hover:text-red-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+                <button type="button" onclick="addObjective()" class="mt-3 inline-flex items-center text-sm text-primary-600 hover:text-primary-800 font-medium">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Add Objective
+                </button>
+            </div>
+        </div>
+        
+        <!-- Classroom Segment -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" id="classroom-segment">
+            <div class="px-6 py-4 border-b border-gray-100 bg-indigo-50">
+                <h3 class="text-lg font-semibold text-gray-900">📚 Classroom Segment</h3>
+                <p class="text-sm text-gray-500 mt-1">Theoretical presentation content</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label for="introduction" class="block text-sm font-medium text-gray-700 mb-1">Introduction</label>
+                    <textarea name="introduction" id="introduction" rows="3"
+                        placeholder="How to open the session, grab attention, set context..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">{{ lesson_plan.introduction|default:'' }}</textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Key Topics</label>
+                    <div id="topics-container" class="space-y-2">
+                        {% if lesson_plan.topics %}
+                        {% for topic in lesson_plan.topics %}
+                        <div class="flex items-center space-x-2">
+                            <input type="text" name="topics" value="{{ topic }}"
+                                placeholder="Topic to cover..."
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            <button type="button" onclick="this.parentElement.remove()" class="p-2 text-red-500 hover:text-red-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="flex items-center space-x-2">
+                            <input type="text" name="topics" placeholder="Topic to cover..."
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            <button type="button" onclick="this.parentElement.remove()" class="p-2 text-red-500 hover:text-red-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" onclick="addTopic()" class="mt-2 inline-flex items-center text-sm text-primary-600 hover:text-primary-800 font-medium">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Topic
+                    </button>
+                </div>
+                
+                <div>
+                    <label for="key_concepts" class="block text-sm font-medium text-gray-700 mb-1">Key Concepts</label>
+                    <textarea name="key_concepts" id="key_concepts" rows="3"
+                        placeholder="Main takeaways learners must understand..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">{{ lesson_plan.key_concepts|default:'' }}</textarea>
+                </div>
+                
+                <div>
+                    <label for="discussion_questions" class="block text-sm font-medium text-gray-700 mb-1">Discussion Questions</label>
+                    <textarea name="discussion_questions" id="discussion_questions" rows="3"
+                        placeholder="Questions to prompt class discussion..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">{{ lesson_plan.discussion_questions|default:'' }}</textarea>
+                </div>
+                
+                <div>
+                    <label for="summary" class="block text-sm font-medium text-gray-700 mb-1">Session Summary</label>
+                    <textarea name="summary" id="summary" rows="2"
+                        placeholder="How to wrap up the classroom segment..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">{{ lesson_plan.summary|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Practical Segment -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" id="practical-segment">
+            <div class="px-6 py-4 border-b border-gray-100 bg-emerald-50">
+                <h3 class="text-lg font-semibold text-gray-900">🔧 Practical Segment</h3>
+                <p class="text-sm text-gray-500 mt-1">Hands-on activities and demonstrations</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label for="safety_briefing" class="block text-sm font-medium text-gray-700 mb-1">Safety Briefing</label>
+                    <textarea name="safety_briefing" id="safety_briefing" rows="2"
+                        placeholder="Safety considerations and PPE requirements..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">{{ lesson_plan.safety_briefing|default:'' }}</textarea>
+                </div>
+                
+                <div>
+                    <label for="demonstration_notes" class="block text-sm font-medium text-gray-700 mb-1">Demonstration Notes</label>
+                    <textarea name="demonstration_notes" id="demonstration_notes" rows="3"
+                        placeholder="How to demonstrate the practical skill..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">{{ lesson_plan.demonstration_notes|default:'' }}</textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Practical Activities</label>
+                    <div id="activities-container" class="space-y-2">
+                        {% if lesson_plan.activities %}
+                        {% for activity in lesson_plan.activities %}
+                        <div class="flex items-center space-x-2">
+                            <input type="text" name="activities" value="{{ activity }}"
+                                placeholder="Activity description..."
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            <button type="button" onclick="this.parentElement.remove()" class="p-2 text-red-500 hover:text-red-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="flex items-center space-x-2">
+                            <input type="text" name="activities" placeholder="Activity description..."
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            <button type="button" onclick="this.parentElement.remove()" class="p-2 text-red-500 hover:text-red-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" onclick="addActivity()" class="mt-2 inline-flex items-center text-sm text-primary-600 hover:text-primary-800 font-medium">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Activity
+                    </button>
+                </div>
+                
+                <div>
+                    <label for="debrief" class="block text-sm font-medium text-gray-700 mb-1">Debrief Notes</label>
+                    <textarea name="debrief" id="debrief" rows="2"
+                        placeholder="How to debrief after practical activities..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">{{ lesson_plan.debrief|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Resources & Assessment -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-amber-50">
+                    <h3 class="text-lg font-semibold text-gray-900">📋 Resources Required</h3>
+                </div>
+                <div class="p-6">
+                    <div id="resources-container" class="space-y-2">
+                        {% if lesson_plan.resources_required %}
+                        {% for resource in lesson_plan.resources_required %}
+                        <div class="flex items-center space-x-2">
+                            <input type="text" name="resources_required" value="{{ resource }}"
+                                placeholder="Resource needed..."
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            <button type="button" onclick="this.parentElement.remove()" class="p-2 text-red-500 hover:text-red-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="flex items-center space-x-2">
+                            <input type="text" name="resources_required" placeholder="Resource needed..."
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                            <button type="button" onclick="this.parentElement.remove()" class="p-2 text-red-500 hover:text-red-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" onclick="addResource()" class="mt-2 inline-flex items-center text-sm text-primary-600 hover:text-primary-800 font-medium">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Resource
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-purple-50">
+                    <h3 class="text-lg font-semibold text-gray-900">✅ Assessment Guidance</h3>
+                </div>
+                <div class="p-6">
+                    <textarea name="assessment_guidance" id="assessment_guidance" rows="6"
+                        placeholder="How to assess learner understanding and competence..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">{{ lesson_plan.assessment_guidance|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Facilitator Notes -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900">💡 Facilitator Notes</h3>
+                <p class="text-sm text-gray-500 mt-1">Tips and guidance for the facilitator</p>
+            </div>
+            <div class="p-6">
+                <textarea name="facilitator_notes" id="facilitator_notes" rows="4"
+                    placeholder="Additional tips, common mistakes to address, time management suggestions..."
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">{{ lesson_plan.facilitator_notes|default:'' }}</textarea>
+            </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="flex items-center justify-between">
+            <a href="{% url 'academics:lesson_plan_list' module.pk %}" class="text-gray-600 hover:text-gray-800 font-medium">
+                ← Cancel
+            </a>
+            <button type="submit" class="px-6 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-sm">
+                {% if lesson_plan %}Update Lesson Plan{% else %}Create Lesson Plan{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function addRow(containerId, inputName, placeholder) {
+    const container = document.getElementById(containerId);
+    const row = document.createElement('div');
+    row.className = 'flex items-center space-x-2';
+    row.innerHTML = `
+        <input type="text" name="${inputName}" placeholder="${placeholder}"
+            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500">
+        <button type="button" onclick="this.parentElement.remove()" class="p-2 text-red-500 hover:text-red-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    `;
+    container.appendChild(row);
+    row.querySelector('input').focus();
+}
+
+function addObjective() { addRow('objectives-container', 'learning_objectives', 'Enter a learning objective...'); }
+function addTopic() { addRow('topics-container', 'topics', 'Topic to cover...'); }
+function addActivity() { addRow('activities-container', 'activities', 'Activity description...'); }
+function addResource() { addRow('resources-container', 'resources_required', 'Resource needed...'); }
+
+// Show/hide segments based on session type
+document.getElementById('session_type').addEventListener('change', function() {
+    const classroomSegment = document.getElementById('classroom-segment');
+    const practicalSegment = document.getElementById('practical-segment');
+    
+    switch(this.value) {
+        case 'CLASSROOM':
+            classroomSegment.classList.remove('hidden');
+            practicalSegment.classList.add('hidden');
+            break;
+        case 'PRACTICAL':
+            classroomSegment.classList.add('hidden');
+            practicalSegment.classList.remove('hidden');
+            break;
+        default:
+            classroomSegment.classList.remove('hidden');
+            practicalSegment.classList.remove('hidden');
+    }
+});
+</script>
+{% endblock %}

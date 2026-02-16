@@ -1,0 +1,194 @@
+{% extends "portals/student/base.html" %}
+{% load static %}
+
+{% block page_title %}My Logbooks{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 pb-20">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+        <div class="px-4 py-6">
+            <div class="flex items-center gap-2 mb-2">
+                <a href="{% url 'portals:student_wbl_dashboard' %}" class="text-blue-100 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <h1 class="text-2xl font-bold">My Logbooks</h1>
+            </div>
+            <p class="text-blue-100 text-sm">Monthly workplace activity records</p>
+        </div>
+    </header>
+
+    <div class="px-4 -mt-4">
+        {% if placement %}
+        
+        <!-- Create New Button -->
+        {% if can_create_logbook %}
+        <a href="{% url 'portals:student_logbook_create' %}" class="block bg-white rounded-xl shadow-sm p-4 mb-4 border-2 border-dashed border-blue-200 hover:border-blue-400 transition">
+            <div class="flex items-center justify-center gap-3 text-blue-600">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                <span class="font-medium">Create New Logbook Entry</span>
+            </div>
+        </a>
+        {% endif %}
+
+        <!-- Logbook Stats -->
+        <div class="grid grid-cols-3 gap-3 mb-4">
+            <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                <span class="text-2xl font-bold text-blue-600">{{ logbook_stats.total|default:0 }}</span>
+                <p class="text-xs text-gray-500 mt-1">Total</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                <span class="text-2xl font-bold text-green-600">{{ logbook_stats.approved|default:0 }}</span>
+                <p class="text-xs text-gray-500 mt-1">Approved</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                <span class="text-2xl font-bold text-amber-600">{{ logbook_stats.pending|default:0 }}</span>
+                <p class="text-xs text-gray-500 mt-1">Pending</p>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="bg-white rounded-xl shadow-sm p-2 mb-4">
+            <div class="flex gap-2">
+                <a href="?status=all" class="flex-1 px-4 py-2 text-sm font-medium text-center rounded-lg transition
+                    {% if not status_filter or status_filter == 'all' %}bg-blue-100 text-blue-700{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
+                    All
+                </a>
+                <a href="?status=pending" class="flex-1 px-4 py-2 text-sm font-medium text-center rounded-lg transition
+                    {% if status_filter == 'pending' %}bg-blue-100 text-blue-700{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
+                    Pending
+                </a>
+                <a href="?status=approved" class="flex-1 px-4 py-2 text-sm font-medium text-center rounded-lg transition
+                    {% if status_filter == 'approved' %}bg-blue-100 text-blue-700{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
+                    Approved
+                </a>
+            </div>
+        </div>
+
+        <!-- Logbook List -->
+        {% if logbooks %}
+        <div class="space-y-3">
+            {% for logbook in logbooks %}
+            <a href="{% url 'portals:student_logbook_detail' logbook.id %}" class="block bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900">{{ logbook.get_month_display }} {{ logbook.year }}</h3>
+                            <p class="text-sm text-gray-500">{{ logbook.month_start_date|date:"d M" }} - {{ logbook.month_end_date|date:"d M Y" }}</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full
+                        {% if logbook.status == 'APPROVED' %}bg-green-100 text-green-700
+                        {% elif logbook.status == 'SUBMITTED' %}bg-blue-100 text-blue-700
+                        {% elif logbook.status == 'RETURNED' %}bg-red-100 text-red-700
+                        {% else %}bg-amber-100 text-amber-700{% endif %}">
+                        {{ logbook.get_status_display }}
+                    </span>
+                </div>
+                
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex gap-4">
+                        <span class="text-gray-600">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            {{ logbook.total_hours|default:0 }} hours
+                        </span>
+                        <span class="text-gray-600">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            {{ logbook.task_count|default:0 }} tasks
+                        </span>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </div>
+
+                <!-- Sign-off Status -->
+                <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="{% if logbook.mentor_signed %}text-green-600{% else %}text-gray-400{% endif %}">
+                            {% if logbook.mentor_signed %}✓{% else %}○{% endif %} Mentor
+                        </span>
+                        <span class="{% if logbook.facilitator_signed %}text-green-600{% else %}text-gray-400{% endif %}">
+                            {% if logbook.facilitator_signed %}✓{% else %}○{% endif %} Facilitator
+                        </span>
+                    </div>
+                    {% if logbook.submitted_at %}
+                    <span class="text-gray-400">Submitted {{ logbook.submitted_at|timesince }} ago</span>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="mt-4 flex items-center justify-center gap-2">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+               class="px-4 py-2 bg-white rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Previous
+            </a>
+            {% endif %}
+            
+            <span class="px-4 py-2 text-sm text-gray-600">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+            
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+               class="px-4 py-2 bg-white rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Next
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+            </div>
+            <h3 class="font-medium text-gray-900 mb-1">No Logbook Entries</h3>
+            <p class="text-sm text-gray-500 mb-4">You haven't created any logbook entries yet.</p>
+            {% if can_create_logbook %}
+            <a href="{% url 'portals:student_logbook_create' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Create First Entry
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- No Placement -->
+        <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+            </div>
+            <h3 class="font-medium text-gray-900 mb-1">No Active Placement</h3>
+            <p class="text-sm text-gray-500">You need an active workplace placement to create logbook entries.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

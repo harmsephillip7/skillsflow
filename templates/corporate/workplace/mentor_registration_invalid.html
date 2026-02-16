@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invalid Invitation - SkillsFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div class="sm:mx-auto sm:w-full sm:max-w-md">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-primary-600">SkillsFlow</h1>
+            </div>
+        </div>
+
+        <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+            <div class="bg-white py-8 px-4 shadow-lg sm:rounded-xl sm:px-10 border border-gray-100">
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+                        <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </div>
+                    
+                    <h2 class="mt-6 text-2xl font-bold text-gray-900">Invalid Invitation</h2>
+                    
+                    <div class="mt-4 text-sm text-gray-600">
+                        <p>{{ error }}</p>
+                    </div>
+                    
+                    <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
+                        <h3 class="text-sm font-medium text-yellow-800">Need help?</h3>
+                        <p class="mt-2 text-sm text-yellow-700">
+                            Please contact the HR department at your workplace to request a new invitation link.
+                        </p>
+                    </div>
+                    
+                    <div class="mt-8">
+                        <a href="/" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                            ← Return to SkillsFlow
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <p class="mt-8 text-center text-sm text-gray-500">
+            © 2025 SkillsFlow. All rights reserved.
+        </p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,1221 @@
+{% extends 'base/app_layout.html' %}
+{% load humanize %}
+
+{% block page_title %}{{ project.reference_number }} - Project Details{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6" x-data="{ activeTab: 'overview' }">
+    <!-- Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                    <a href="{% url 'core:projects_dashboard' %}" 
+                       class="text-gray-400 hover:text-gray-600 transition">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                    </a>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ project.reference_number }}</h1>
+                    <span class="px-3 py-1 text-sm font-medium rounded-full 
+                                 {% if project.status == 'IN_PROGRESS' %}bg-green-100 text-green-800
+                                 {% elif project.status == 'COMPLETED' %}bg-blue-100 text-blue-800
+                                 {% elif project.status in 'DRAFT,PLANNING' %}bg-gray-100 text-gray-800
+                                 {% elif project.status == 'PENDING_APPROVAL' %}bg-yellow-100 text-yellow-800
+                                 {% elif project.status == 'APPROVED' %}bg-emerald-100 text-emerald-800
+                                 {% elif project.status == 'CANCELLED' %}bg-red-100 text-red-800
+                                 {% else %}bg-gray-100 text-gray-700{% endif %}">
+                        {{ project.get_status_display }}
+                    </span>
+                </div>
+                <p class="text-lg text-gray-600 mb-2">{{ project.title }}</p>
+                {% if project.qualification %}
+                <p class="text-sm text-gray-500">{{ project.qualification.title }}</p>
+                {% endif %}
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'core:project_timeline' project.pk %}" 
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Timeline
+                </a>
+                <a href="{% url 'not_detail' project.pk %}" 
+                   class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition shadow-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                    Edit Project
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="mt-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <p class="text-2xl font-bold text-gray-900">{{ project.expected_learner_count|default:0 }}</p>
+                <p class="text-xs text-gray-500">Expected Learners</p>
+            </div>
+            <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <p class="text-2xl font-bold text-gray-900">{{ learner_stats.enrolled|default:0 }}</p>
+                <p class="text-xs text-gray-500">Enrolled</p>
+            </div>
+            <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <p class="text-2xl font-bold text-gray-900">{{ deliverable_stats.total }}</p>
+                <p class="text-xs text-gray-500">Deliverables</p>
+            </div>
+            <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <p class="text-2xl font-bold text-green-600">{{ deliverable_stats.completed }}</p>
+                <p class="text-xs text-gray-500">Completed</p>
+            </div>
+            <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <p class="text-lg font-bold text-gray-900">R{{ financial_summary.contract_value|floatformat:0|intcomma }}</p>
+                <p class="text-xs text-gray-500">Contract Value</p>
+            </div>
+            <div class="text-center p-3 bg-green-50 rounded-lg">
+                <p class="text-lg font-bold text-green-600">R{{ financial_summary.received|floatformat:0|intcomma }}</p>
+                <p class="text-xs text-gray-500">Received</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="border-b border-gray-200 bg-white rounded-t-xl px-4">
+        <nav class="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
+            <button @click="activeTab = 'overview'" 
+                    :class="activeTab === 'overview' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition">
+                Overview
+            </button>
+            <button @click="activeTab = 'stakeholders'" 
+                    :class="activeTab === 'stakeholders' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition">
+                Stakeholders
+            </button>
+            <button @click="activeTab = 'deliverables'" 
+                    :class="activeTab === 'deliverables' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition">
+                Deliverables <span class="ml-1 px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">{{ deliverable_stats.total }}</span>
+            </button>
+            <button @click="activeTab = 'finance'" 
+                    :class="activeTab === 'finance' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition">
+                Finance
+            </button>
+            <button @click="activeTab = 'learners'" 
+                    :class="activeTab === 'learners' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition">
+                Learners & Classes
+            </button>
+            <button @click="activeTab = 'moderation'" 
+                    :class="activeTab === 'moderation' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition">
+                Moderation <span class="ml-1 px-2 py-0.5 text-xs bg-yellow-100 text-yellow-600 rounded-full">{{ moderation_requests|length }}</span>
+            </button>
+            <button @click="activeTab = 'attendance'" 
+                    :class="activeTab === 'attendance' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition">
+                <svg class="w-4 h-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                Attendance
+            </button>
+        </nav>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="bg-white rounded-b-xl shadow-sm border border-gray-100 border-t-0">
+        <!-- Overview Tab -->
+        <div x-show="activeTab === 'overview'" class="p-6 space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Project Details -->
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Project Information</h3>
+                        <dl class="grid grid-cols-2 gap-4">
+                            <div>
+                                <dt class="text-sm text-gray-500">Reference Number</dt>
+                                <dd class="text-sm font-medium text-gray-900">{{ project.reference_number }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm text-gray-500">Funding Source</dt>
+                                <dd class="text-sm font-medium text-gray-900">{{ project.get_funder_display }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm text-gray-500">Grant Number</dt>
+                                <dd class="text-sm font-medium text-gray-900">{{ project.grant_number|default:"-" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm text-gray-500">Client Name</dt>
+                                <dd class="text-sm font-medium text-gray-900">{{ project.client_name|default:"-" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm text-gray-500">Training Duration</dt>
+                                <dd class="text-sm font-medium text-gray-900">
+                                    {% if project.training_start_date and project.training_end_date %}
+                                        {{ project.training_start_date|date:"d M Y" }} - {{ project.training_end_date|date:"d M Y" }}
+                                    {% else %}
+                                        Not set
+                                    {% endif %}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm text-gray-500">Project Duration</dt>
+                                <dd class="text-sm font-medium text-gray-900">
+                                    {% if project.project_start_date and project.project_end_date %}
+                                        {{ project.project_start_date|date:"d M Y" }} - {{ project.project_end_date|date:"d M Y" }}
+                                    {% else %}
+                                        Not set
+                                    {% endif %}
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <!-- Resources -->
+                    {% if resources %}
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Assigned Resources</h3>
+                        <div class="space-y-2">
+                            {% for resource in resources %}
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-sm font-medium">
+                                        {{ resource.resource.first_name|slice:":1" }}{{ resource.resource.last_name|slice:":1" }}
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">{{ resource.resource.get_full_name }}</p>
+                                        <p class="text-xs text-gray-500">{{ resource.get_role_display }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Progress & Recent Activity -->
+                <div class="space-y-6">
+                    <!-- Progress Overview -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Progress Overview</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-600">Deliverables</span>
+                                    <span class="font-medium">{{ deliverable_stats.completed }}/{{ deliverable_stats.total }}</span>
+                                </div>
+                                <div class="h-2 bg-gray-200 rounded-full">
+                                    {% widthratio deliverable_stats.completed deliverable_stats.total 100 as del_progress %}
+                                    <div class="h-2 bg-green-500 rounded-full" style="width: {{ del_progress|default:0 }}%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-600">Learner Enrollment</span>
+                                    <span class="font-medium">{{ learner_stats.enrolled }}/{{ project.expected_learner_count|default:0 }}</span>
+                                </div>
+                                <div class="h-2 bg-gray-200 rounded-full">
+                                    {% widthratio learner_stats.enrolled project.expected_learner_count 100 as learner_progress %}
+                                    <div class="h-2 bg-blue-500 rounded-full" style="width: {{ learner_progress|default:0 }}%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-600">Revenue Collection</span>
+                                    <span class="font-medium">{{ financial_summary.collection_rate|floatformat:0 }}%</span>
+                                </div>
+                                <div class="h-2 bg-gray-200 rounded-full">
+                                    <div class="h-2 bg-emerald-500 rounded-full" style="width: {{ financial_summary.collection_rate }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Phases -->
+                    {% if phases %}
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Project Phases</h3>
+                        <div class="space-y-3">
+                            {% for phase in phases %}
+                            <div class="flex items-center justify-between p-3 rounded-lg border 
+                                        {% if phase.is_current %}border-primary-500 bg-primary-50
+                                        {% elif phase.status == 'COMPLETED' %}border-green-200 bg-green-50
+                                        {% else %}border-gray-200{% endif %}">
+                                <div class="flex items-center gap-3">
+                                    {% if phase.status == 'COMPLETED' %}
+                                    <div class="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                    </div>
+                                    {% elif phase.is_current %}
+                                    <div class="w-8 h-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                                            <circle cx="10" cy="10" r="5"/>
+                                        </svg>
+                                    </div>
+                                    {% else %}
+                                    <div class="w-8 h-8 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">{{ phase.get_phase_display }}</p>
+                                        <p class="text-xs text-gray-500">{{ phase.start_date|date:"d M Y" }} - {{ phase.end_date|date:"d M Y" }}</p>
+                                    </div>
+                                </div>
+                                <span class="px-2 py-1 text-xs rounded-full 
+                                             {% if phase.status == 'COMPLETED' %}bg-green-100 text-green-700
+                                             {% elif phase.is_current %}bg-primary-100 text-primary-700
+                                             {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                    {{ phase.get_status_display }}
+                                </span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Stakeholders Tab -->
+        <div x-show="activeTab === 'stakeholders'" class="p-6 space-y-6" style="display: none;">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Client/Sponsor Info -->
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Client/Sponsor</h3>
+                    <dl class="space-y-3">
+                        <div>
+                            <dt class="text-sm text-gray-500">Name</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ project.client_name|default:"Not specified" }}</dd>
+                        </div>
+                        {% if project.seta %}
+                        <div>
+                            <dt class="text-sm text-gray-500">SETA</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ project.seta }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+
+                <!-- Internal Team -->
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Project Team</h3>
+                    {% if resources %}
+                    <div class="space-y-3">
+                        {% for resource in resources %}
+                        <div class="flex items-center gap-3 p-2 bg-white rounded-lg">
+                            <div class="w-10 h-10 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-sm font-medium">
+                                {{ resource.resource.first_name|slice:":1" }}{{ resource.resource.last_name|slice:":1" }}
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-900">{{ resource.resource.get_full_name }}</p>
+                                <p class="text-xs text-gray-500">{{ resource.get_role_display }}</p>
+                            </div>
+                            {% if resource.resource.email %}
+                            <a href="mailto:{{ resource.resource.email }}" class="text-gray-400 hover:text-gray-600">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-gray-500">No resources assigned yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Deliverables Tab -->
+        <div x-show="activeTab === 'deliverables'" class="p-6" style="display: none;">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-gray-900">{{ deliverable_stats.total }}</p>
+                    <p class="text-xs text-gray-500">Total</p>
+                </div>
+                <div class="bg-green-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-green-600">{{ deliverable_stats.completed }}</p>
+                    <p class="text-xs text-gray-500">Completed</p>
+                </div>
+                <div class="bg-blue-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-blue-600">{{ deliverable_stats.in_progress }}</p>
+                    <p class="text-xs text-gray-500">In Progress</p>
+                </div>
+                <div class="bg-yellow-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-yellow-600">{{ deliverable_stats.pending }}</p>
+                    <p class="text-xs text-gray-500">Pending</p>
+                </div>
+                <div class="bg-red-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-red-600">{{ deliverable_stats.overdue }}</p>
+                    <p class="text-xs text-gray-500">Overdue</p>
+                </div>
+            </div>
+
+            <!-- Deliverables List -->
+            <div class="space-y-4">
+                {% for deliverable in deliverables %}
+                <div x-data="{ 
+                    expanded: false, 
+                    uploading: false, 
+                    evidenceList: [], 
+                    evidenceCount: {{ deliverable.evidence_count }},
+                    loadEvidence() {
+                        fetch('{% url 'core:deliverable_evidence_list' project.pk deliverable.pk %}')
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.success) {
+                                    this.evidenceList = data.evidence;
+                                    this.evidenceCount = data.stats.total;
+                                }
+                            });
+                    }
+                }" 
+                     class="border rounded-lg transition 
+                            {% if deliverable.is_overdue %}border-red-200 bg-red-50{% else %}border-gray-200{% endif %}">
+                    <!-- Deliverable Header -->
+                    <div class="p-4 cursor-pointer hover:bg-gray-50" @click="expanded = !expanded; if(expanded && evidenceList.length === 0) loadEvidence();">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <svg class="w-5 h-5 text-gray-400 transition-transform" :class="{ 'rotate-90': expanded }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                    <h4 class="text-sm font-semibold text-gray-900">{{ deliverable.title }}</h4>
+                                    <span class="px-2 py-0.5 text-xs rounded-full 
+                                                 {% if deliverable.status == 'COMPLETED' %}bg-green-100 text-green-700
+                                                 {% elif deliverable.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-700
+                                                 {% elif deliverable.status == 'APPROVED' %}bg-emerald-100 text-emerald-700
+                                                 {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                        {{ deliverable.get_status_display }}
+                                    </span>
+                                    {% if deliverable.is_overdue %}
+                                    <span class="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full">Overdue</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-sm text-gray-600 mb-2 ml-8">{{ deliverable.description|truncatewords:30 }}</p>
+                                <div class="flex items-center gap-4 text-xs text-gray-500 ml-8">
+                                    <span>Due: {{ deliverable.due_date|date:"d M Y"|default:"Not set" }}</span>
+                                    <span>Type: {{ deliverable.get_deliverable_type_display }}</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 ml-4">
+                                <span x-show="evidenceCount > 0" class="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                                    <svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                                    </svg>
+                                    <span x-text="evidenceCount"></span> files
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Expanded Evidence Section -->
+                    <div x-show="expanded" x-collapse class="border-t border-gray-100 bg-gray-50 p-4">
+                        <!-- Upload Area -->
+                        <div x-data="{ 
+                            dragOver: false,
+                            handleDrop(e) {
+                                this.dragOver = false;
+                                this.uploadFiles(e.dataTransfer.files);
+                            },
+                            handleFileSelect(e) {
+                                this.uploadFiles(e.target.files);
+                            },
+                            async uploadFiles(files) {
+                                if (files.length === 0) return;
+                                uploading = true;
+                                const formData = new FormData();
+                                for (let file of files) {
+                                    formData.append('files', file);
+                                }
+                                try {
+                                    const response = await fetch('{% url 'core:deliverable_evidence_upload' project.pk deliverable.pk %}', {
+                                        method: 'POST',
+                                        body: formData,
+                                        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                                    });
+                                    const data = await response.json();
+                                    if (data.success) {
+                                        evidenceList = [...evidenceList, ...data.uploaded.map(f => ({
+                                            id: f.id,
+                                            title: f.title,
+                                            filename: f.filename,
+                                            size: f.size,
+                                            status: f.status,
+                                            status_display: 'Pending Review',
+                                            url: f.url,
+                                            is_image: f.is_image
+                                        }))];
+                                        evidenceCount = data.evidence_count;
+                                    }
+                                    if (data.errors && data.errors.length > 0) {
+                                        alert('Some files failed: ' + data.errors.map(e => e.filename + ': ' + e.error).join(', '));
+                                    }
+                                } catch (err) {
+                                    alert('Upload failed: ' + err.message);
+                                }
+                                uploading = false;
+                            }
+                        }"
+                             class="mb-4">
+                            <!-- Dropzone -->
+                            <div @dragover.prevent="dragOver = true" 
+                                 @dragleave.prevent="dragOver = false"
+                                 @drop.prevent="handleDrop($event)"
+                                 :class="{ 'border-primary-500 bg-primary-50': dragOver }"
+                                 class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition-colors">
+                                <input type="file" 
+                                       multiple 
+                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
+                                       @change="handleFileSelect($event)"
+                                       class="hidden"
+                                       :id="'file-upload-{{ deliverable.pk }}'">
+                                <label :for="'file-upload-{{ deliverable.pk }}'" class="cursor-pointer">
+                                    <svg class="w-10 h-10 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                    <p class="mt-2 text-sm text-gray-600">
+                                        <span class="text-primary-600 hover:text-primary-700 font-medium">Upload files</span> or drag and drop
+                                    </p>
+                                    <p class="mt-1 text-xs text-gray-500">PDF, Word, Excel, Images up to 10MB</p>
+                                </label>
+                            </div>
+                            
+                            <!-- Upload Progress -->
+                            <div x-show="uploading" class="mt-3 flex items-center justify-center gap-2 text-sm text-gray-600">
+                                <svg class="animate-spin h-4 w-4 text-primary-600" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Uploading...
+                            </div>
+                        </div>
+                        
+                        <!-- Evidence List -->
+                        <div x-show="evidenceList.length > 0" class="space-y-2">
+                            <h5 class="text-sm font-medium text-gray-700 mb-2">Attached Evidence</h5>
+                            <template x-for="evidence in evidenceList" :key="evidence.id">
+                                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                                    <div class="flex items-center gap-3">
+                                        <!-- File Icon -->
+                                        <div class="w-10 h-10 rounded-lg flex items-center justify-center"
+                                             :class="evidence.is_image ? 'bg-purple-100' : (evidence.is_pdf ? 'bg-red-100' : 'bg-blue-100')">
+                                            <template x-if="evidence.is_image">
+                                                <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                </svg>
+                                            </template>
+                                            <template x-if="evidence.is_pdf">
+                                                <svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                                </svg>
+                                            </template>
+                                            <template x-if="!evidence.is_image && !evidence.is_pdf">
+                                                <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                            </template>
+                                        </div>
+                                        <div>
+                                            <a :href="evidence.url" target="_blank" class="text-sm font-medium text-gray-900 hover:text-primary-600" x-text="evidence.filename"></a>
+                                            <p class="text-xs text-gray-500" x-text="evidence.size"></p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <!-- Status Badge -->
+                                        <span class="px-2 py-0.5 text-xs rounded-full"
+                                              :class="{
+                                                  'bg-gray-100 text-gray-700': evidence.status === 'PENDING',
+                                                  'bg-green-100 text-green-700': evidence.status === 'VERIFIED',
+                                                  'bg-red-100 text-red-700': evidence.status === 'REJECTED',
+                                                  'bg-yellow-100 text-yellow-700': evidence.status === 'NEEDS_REVISION'
+                                              }"
+                                              x-text="evidence.status_display"></span>
+                                        
+                                        <!-- QC Actions -->
+                                        <template x-if="evidence.status === 'PENDING'">
+                                            <div class="flex items-center gap-1">
+                                                <button @click.stop="
+                                                    if(confirm('Verify this evidence?')) {
+                                                        fetch('{% url 'core:deliverable_evidence_verify' project.pk 0 %}'.replace('0', evidence.id), {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                                                            body: JSON.stringify({ action: 'verify', notes: '' })
+                                                        }).then(r => r.json()).then(data => {
+                                                            if(data.success) { evidence.status = data.status; evidence.status_display = data.status_display; }
+                                                        });
+                                                    }"
+                                                        class="p-1.5 text-green-600 hover:bg-green-50 rounded" title="Verify">
+                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                    </svg>
+                                                </button>
+                                                <button @click.stop="
+                                                    let reason = prompt('Rejection reason:');
+                                                    if(reason) {
+                                                        fetch('{% url 'core:deliverable_evidence_verify' project.pk 0 %}'.replace('0', evidence.id), {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                                                            body: JSON.stringify({ action: 'reject', notes: reason })
+                                                        }).then(r => r.json()).then(data => {
+                                                            if(data.success) { evidence.status = data.status; evidence.status_display = data.status_display; }
+                                                        });
+                                                    }"
+                                                        class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Reject">
+                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </template>
+                                        
+                                        <!-- Delete -->
+                                        <template x-if="evidence.status !== 'VERIFIED'">
+                                            <button @click.stop="
+                                                if(confirm('Delete this file?')) {
+                                                    fetch('{% url 'core:deliverable_evidence_delete' project.pk 0 %}'.replace('0', evidence.id), {
+                                                        method: 'POST',
+                                                        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                                                    }).then(r => r.json()).then(data => {
+                                                        if(data.success) { 
+                                                            evidenceList = evidenceList.filter(e => e.id !== evidence.id);
+                                                            evidenceCount = data.evidence_count;
+                                                        }
+                                                    });
+                                                }"
+                                                    class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Delete">
+                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                        
+                        <!-- Empty State -->
+                        <div x-show="evidenceList.length === 0 && !uploading" class="text-center py-4 text-sm text-gray-500">
+                            No evidence files uploaded yet
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-12 text-gray-500">
+                    <svg class="w-12 h-12 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    <p class="mt-2">No deliverables defined for this project</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Finance Tab -->
+        <div x-show="activeTab === 'finance'" class="p-6 space-y-6" style="display: none;">
+            <!-- Financial Summary -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-blue-50 rounded-lg p-4 text-center">
+                    <p class="text-lg font-bold text-blue-900">R{{ financial_summary.contract_value|floatformat:0|intcomma }}</p>
+                    <p class="text-xs text-blue-600">Contract Value</p>
+                </div>
+                <div class="bg-yellow-50 rounded-lg p-4 text-center">
+                    <p class="text-lg font-bold text-yellow-900">R{{ financial_summary.scheduled|floatformat:0|intcomma }}</p>
+                    <p class="text-xs text-yellow-600">Scheduled</p>
+                </div>
+                <div class="bg-green-50 rounded-lg p-4 text-center">
+                    <p class="text-lg font-bold text-green-900">R{{ financial_summary.received|floatformat:0|intcomma }}</p>
+                    <p class="text-xs text-green-600">Received</p>
+                </div>
+                <div class="bg-orange-50 rounded-lg p-4 text-center">
+                    <p class="text-lg font-bold text-orange-900">R{{ financial_summary.outstanding|floatformat:0|intcomma }}</p>
+                    <p class="text-xs text-orange-600">Outstanding</p>
+                </div>
+            </div>
+
+            <!-- Billing Schedule & Collection Metrics -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Billing Schedule -->
+                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Billing Schedule</h3>
+                        {% if project.billing_schedule %}
+                        <span class="px-2 py-1 text-xs rounded-full bg-primary-100 text-primary-700">
+                            {{ project.get_billing_schedule_display }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if billing_schedule %}
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Schedule Type:</span>
+                            <span class="font-medium text-gray-900">{{ billing_schedule.get_schedule_type_display }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Total Contract Value:</span>
+                            <span class="font-medium text-gray-900">R{{ billing_schedule.total_amount|floatformat:0|intcomma }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Amount Per Period:</span>
+                            <span class="font-medium text-gray-900">R{{ billing_schedule.amount_per_period|floatformat:0|intcomma }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Auto Generate:</span>
+                            <span class="font-medium {% if billing_schedule.auto_generate %}text-green-600{% else %}text-gray-500{% endif %}">
+                                {% if billing_schedule.auto_generate %}Enabled{% else %}Disabled{% endif %}
+                            </span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Invoice Type:</span>
+                            <span class="font-medium text-gray-900">{{ billing_schedule.get_invoice_type_display }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Scheduled Invoices -->
+                    {% if scheduled_invoices %}
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-3">Scheduled Invoices</h4>
+                        <div class="space-y-2 max-h-64 overflow-y-auto">
+                            {% for si in scheduled_invoices %}
+                            <div class="flex items-center justify-between p-2 rounded-lg 
+                                        {% if si.status == 'GENERATED' or si.status == 'PAID' %}bg-green-50{% elif si.status == 'CANCELLED' %}bg-gray-100{% elif si.scheduled_date <= today and si.status == 'SCHEDULED' %}bg-yellow-50{% else %}bg-gray-50{% endif %}">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">Period {{ si.period_number }}</p>
+                                    <p class="text-xs text-gray-500">{{ si.scheduled_date|date:"d M Y" }}</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-medium text-gray-700">R{{ si.amount|floatformat:0|intcomma }}</span>
+                                    {% if si.status == 'SCHEDULED' and si.scheduled_date <= today %}
+                                    <form method="post" action="{% url 'core:generate_invoice' project.pk si.pk %}" class="inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="px-2 py-1 text-xs bg-primary-600 text-white rounded hover:bg-primary-700">
+                                            Generate
+                                        </button>
+                                    </form>
+                                    {% elif si.status == 'GENERATED' %}
+                                    <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">Generated</span>
+                                    {% elif si.status == 'PAID' %}
+                                    <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">Paid</span>
+                                    {% elif si.status == 'SENT' %}
+                                    <span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">Sent</span>
+                                    {% elif si.status == 'OVERDUE' %}
+                                    <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">Overdue</span>
+                                    {% elif si.status == 'CANCELLED' %}
+                                    <span class="px-2 py-0.5 text-xs rounded-full bg-gray-200 text-gray-600">Cancelled</span>
+                                    {% else %}
+                                    <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-500">Scheduled</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-6">
+                        <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p class="text-sm text-gray-500 mb-3">No billing schedule configured</p>
+                        <a href="{% url 'core:project_billing_schedule' project.pk %}" 
+                           class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700">
+                            <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                            Setup Billing
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Collection Metrics -->
+                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Collection Metrics</h3>
+                        {% if collection_metrics %}
+                        <form method="post" action="{% url 'core:recalculate_metrics' project.pk %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                                Refresh
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    
+                    {% if collection_metrics %}
+                    <!-- Collection Rate Gauge -->
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-sm text-gray-500">Collection Rate</span>
+                            <span class="text-lg font-bold {% if collection_metrics.collection_rate >= 80 %}text-green-600{% elif collection_metrics.collection_rate >= 60 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                                {{ collection_metrics.collection_rate|floatformat:1 }}%
+                            </span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="h-3 rounded-full transition-all {% if collection_metrics.collection_rate >= 80 %}bg-green-500{% elif collection_metrics.collection_rate >= 60 %}bg-yellow-500{% else %}bg-red-500{% endif %}"
+                                 style="width: {{ collection_metrics.collection_rate }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Persistency Rate -->
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-sm text-gray-500">Persistency Rate</span>
+                            <span class="text-lg font-bold {% if collection_metrics.persistency_rate >= 90 %}text-green-600{% elif collection_metrics.persistency_rate >= 70 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                                {{ collection_metrics.persistency_rate|floatformat:1 }}%
+                            </span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="h-3 rounded-full transition-all {% if collection_metrics.persistency_rate >= 90 %}bg-green-500{% elif collection_metrics.persistency_rate >= 70 %}bg-yellow-500{% else %}bg-red-500{% endif %}"
+                                 style="width: {{ collection_metrics.persistency_rate }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Business Assessment -->
+                    <div class="p-3 rounded-lg mb-4 {% if collection_metrics.is_good_business %}bg-green-50 border border-green-200{% else %}bg-red-50 border border-red-200{% endif %}">
+                        <div class="flex items-center gap-2">
+                            {% if collection_metrics.is_good_business %}
+                            <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span class="text-sm font-medium text-green-700">Good Business</span>
+                            {% else %}
+                            <svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <span class="text-sm font-medium text-red-700">Risk Assessment Needed</span>
+                            {% endif %}
+                        </div>
+                        {% if collection_metrics.risk_rating %}
+                        <p class="text-xs mt-1 {% if collection_metrics.is_good_business %}text-green-600{% else %}text-red-600{% endif %}">
+                            Risk Rating: {{ collection_metrics.risk_rating }}
+                        </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Aging Breakdown -->
+                    <div class="border-t border-gray-200 pt-3">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2">Aging Breakdown</h4>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="flex justify-between p-2 bg-green-50 rounded">
+                                <span class="text-gray-600">Current:</span>
+                                <span class="font-medium text-green-700">R{{ collection_metrics.aging_current|floatformat:0|intcomma }}</span>
+                            </div>
+                            <div class="flex justify-between p-2 bg-yellow-50 rounded">
+                                <span class="text-gray-600">30 Days:</span>
+                                <span class="font-medium text-yellow-700">R{{ collection_metrics.aging_30_days|floatformat:0|intcomma }}</span>
+                            </div>
+                            <div class="flex justify-between p-2 bg-orange-50 rounded">
+                                <span class="text-gray-600">60 Days:</span>
+                                <span class="font-medium text-orange-700">R{{ collection_metrics.aging_60_days|floatformat:0|intcomma }}</span>
+                            </div>
+                            <div class="flex justify-between p-2 bg-red-50 rounded">
+                                <span class="text-gray-600">90+ Days:</span>
+                                <span class="font-medium text-red-700">R{{ collection_metrics.aging_over_90|floatformat:0|intcomma }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Period Info -->
+                    <div class="mt-3 pt-3 border-t border-gray-200 flex justify-between text-xs text-gray-500">
+                        <span>Period: {{ collection_metrics.get_period_type_display }}</span>
+                        <span>Updated: {{ collection_metrics.calculated_at|date:"d M Y H:i" }}</span>
+                    </div>
+                    
+                    {% else %}
+                    <div class="text-center py-6">
+                        <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        <p class="text-sm text-gray-500">No metrics available yet</p>
+                        <p class="text-xs text-gray-400 mt-1">Metrics will be calculated when invoices are created</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Funder Type Comparison (if applicable) -->
+            {% if funder_comparison %}
+            <div class="bg-gradient-to-r from-primary-50 to-blue-50 border border-primary-200 rounded-lg p-4">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Funder Type Comparison: {{ project.get_funder_display }}</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <p class="text-2xl font-bold text-primary-700">{{ funder_comparison.avg_collection_rate|floatformat:1 }}%</p>
+                        <p class="text-xs text-gray-600">Avg Collection Rate</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-2xl font-bold text-primary-700">{{ funder_comparison.avg_persistency|floatformat:1 }}%</p>
+                        <p class="text-xs text-gray-600">Avg Persistency</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-2xl font-bold text-primary-700">{{ funder_comparison.total_projects }}</p>
+                        <p class="text-xs text-gray-600">Total Projects</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-2xl font-bold {% if funder_comparison.good_business_pct >= 70 %}text-green-600{% elif funder_comparison.good_business_pct >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                            {{ funder_comparison.good_business_pct|floatformat:0 }}%
+                        </p>
+                        <p class="text-xs text-gray-600">Good Business Rate</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Tranches -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Payment Schedule (Tranches)</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tranche</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Evidence</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for tranche in tranches %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="text-sm font-medium text-gray-900">Tranche {{ tranche.tranche_number }}</span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                    {{ tranche.due_date|date:"d M Y"|default:"Not set" }}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    R{{ tranche.amount|floatformat:0|intcomma }}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs rounded-full 
+                                                 {% if tranche.status == 'PAID' %}bg-green-100 text-green-700
+                                                 {% elif tranche.status == 'SUBMITTED' %}bg-blue-100 text-blue-700
+                                                 {% elif tranche.status == 'PENDING' %}bg-yellow-100 text-yellow-700
+                                                 {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                        {{ tranche.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                    {{ tranche.evidence_count|default:0 }} files
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                    No tranches scheduled
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Invoices & Payments -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Invoices -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Invoices</h3>
+                    <div class="space-y-3">
+                        {% for invoice in invoices %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">{{ invoice.invoice_number }}</p>
+                                <p class="text-xs text-gray-500">{{ invoice.date|date:"d M Y" }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-semibold text-gray-900">R{{ invoice.amount|floatformat:0|intcomma }}</p>
+                                <span class="px-2 py-0.5 text-xs rounded-full 
+                                             {% if invoice.status == 'PAID' %}bg-green-100 text-green-700
+                                             {% elif invoice.status == 'SENT' %}bg-blue-100 text-blue-700
+                                             {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                    {{ invoice.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-sm text-gray-500 text-center py-4">No invoices created</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Payments -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Payments Received</h3>
+                    <div class="space-y-3">
+                        {% for payment in payments %}
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">{{ payment.reference|default:"Payment" }}</p>
+                                <p class="text-xs text-gray-500">{{ payment.date|date:"d M Y" }}</p>
+                            </div>
+                            <p class="text-sm font-semibold text-green-600">R{{ payment.amount|floatformat:0|intcomma }}</p>
+                        </div>
+                        {% empty %}
+                        <p class="text-sm text-gray-500 text-center py-4">No payments recorded</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Learners & Classes Tab -->
+        <div x-show="activeTab === 'learners'" class="p-6 space-y-6" style="display: none;">
+            <!-- Learner Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-gray-900">{{ project.expected_learner_count|default:0 }}</p>
+                    <p class="text-xs text-gray-500">Expected</p>
+                </div>
+                <div class="bg-blue-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-blue-600">{{ learner_stats.enrolled|default:0 }}</p>
+                    <p class="text-xs text-blue-500">Enrolled</p>
+                </div>
+                <div class="bg-green-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-green-600">{{ learner_stats.active|default:0 }}</p>
+                    <p class="text-xs text-green-500">Active</p>
+                </div>
+                <div class="bg-purple-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-purple-600">{{ learner_stats.completed|default:0 }}</p>
+                    <p class="text-xs text-purple-500">Completed</p>
+                </div>
+            </div>
+
+            <!-- Training Classes -->
+            {% if training_classes %}
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Training Classes</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for class in training_classes %}
+                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                        <div class="flex items-start justify-between mb-3">
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-900">{{ class.name }}</h4>
+                                <p class="text-xs text-gray-500">{{ class.start_date|date:"d M Y" }} - {{ class.end_date|date:"d M Y"|default:"Ongoing" }}</p>
+                            </div>
+                            <span class="px-2 py-0.5 text-xs rounded-full 
+                                         {% if class.status == 'ACTIVE' %}bg-green-100 text-green-700
+                                         {% elif class.status == 'COMPLETED' %}bg-blue-100 text-blue-700
+                                         {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ class.get_status_display }}
+                            </span>
+                        </div>
+                        {% if class.facilitator %}
+                        <p class="text-xs text-gray-500 mb-2">Facilitator: {{ class.facilitator.get_full_name }}</p>
+                        {% endif %}
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-gray-500">{{ class.learner_count|default:0 }} learners</span>
+                            {% if class.campus %}
+                            <span class="text-gray-500">{{ class.campus }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Intakes -->
+            {% if intakes %}
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Linked Intakes</h3>
+                <div class="space-y-3">
+                    {% for intake in intakes %}
+                    <a href="{% url 'intakes:detail' intake.pk %}" 
+                       class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">{{ intake.reference_number|default:intake }}</p>
+                                <p class="text-xs text-gray-500">{{ intake.learner_count|default:0 }} learners</p>
+                            </div>
+                            <span class="px-2 py-1 text-xs rounded-full 
+                                         {% if intake.status == 'ACTIVE' %}bg-green-100 text-green-700
+                                         {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ intake.get_status_display }}
+                            </span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Moderation Tab -->
+        <div x-show="activeTab === 'moderation'" class="p-6" style="display: none;">
+            <div class="space-y-4">
+                {% for mod in moderation_requests %}
+                <div class="border rounded-lg p-4 
+                            {% if mod.status == 'APPROVED' %}border-green-200 bg-green-50
+                            {% elif mod.status == 'PENDING' %}border-yellow-200 bg-yellow-50
+                            {% else %}border-gray-200{% endif %}">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-900">{{ mod.etqa_name }}</h4>
+                            <p class="text-xs text-gray-500 mt-1">Submitted: {{ mod.submitted_date|date:"d M Y" }}</p>
+                            {% if mod.expected_date %}
+                            <p class="text-xs text-gray-500">Expected: {{ mod.expected_date|date:"d M Y" }}</p>
+                            {% endif %}
+                        </div>
+                        <span class="px-2 py-1 text-xs rounded-full 
+                                     {% if mod.status == 'APPROVED' %}bg-green-100 text-green-700
+                                     {% elif mod.status == 'REJECTED' %}bg-red-100 text-red-700
+                                     {% elif mod.status == 'PENDING' %}bg-yellow-100 text-yellow-700
+                                     {% else %}bg-gray-100 text-gray-600{% endif %}">
+                            {{ mod.get_status_display }}
+                        </span>
+                    </div>
+                    {% if mod.notes %}
+                    <p class="text-sm text-gray-600 mt-3">{{ mod.notes }}</p>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center py-12 text-gray-500">
+                    <svg class="w-12 h-12 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="mt-2">No moderation requests yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Attendance Tab -->
+        <div x-show="activeTab === 'attendance'" class="p-6" style="display: none;">
+            <div class="space-y-6">
+                <!-- Header -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Monthly Attendance Registers</h3>
+                        <p class="text-sm text-gray-500 mt-1">View and manage learner workplace attendance for this project</p>
+                    </div>
+                    <a href="{% url 'not_attendance_select' project.pk %}" 
+                       class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition shadow-sm">
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                        Open Attendance Register
+                    </a>
+                </div>
+
+                <!-- Quick Access Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Current Month -->
+                    <a href="{% url 'not_attendance_register' project.pk current_year current_month %}" 
+                       class="block p-6 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl border border-primary-200 hover:shadow-md transition">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-primary-500 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-primary-900">Current Month</h4>
+                                <p class="text-sm text-primary-700">{{ current_month_name }} {{ current_year }}</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Previous Month -->
+                    <a href="{% url 'not_attendance_register' project.pk prev_year prev_month %}" 
+                       class="block p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-gray-500 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900">Previous Month</h4>
+                                <p class="text-sm text-gray-600">{{ prev_month_name }} {{ prev_year }}</p>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- All Months -->
+                    <a href="{% url 'not_attendance_select' project.pk %}" 
+                       class="block p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:shadow-md transition">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-blue-900">View All Months</h4>
+                                <p class="text-sm text-blue-700">Select any month</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Attendance Summary -->
+                {% if attendance_summary %}
+                <div class="bg-white rounded-xl border border-gray-200 p-6">
+                    <h4 class="font-semibold text-gray-900 mb-4">Attendance Overview</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center p-4 bg-gray-50 rounded-lg">
+                            <p class="text-2xl font-bold text-gray-900">{{ attendance_summary.total_placements }}</p>
+                            <p class="text-xs text-gray-500">Active Placements</p>
+                        </div>
+                        <div class="text-center p-4 bg-green-50 rounded-lg">
+                            <p class="text-2xl font-bold text-green-600">{{ attendance_summary.total_records }}</p>
+                            <p class="text-xs text-gray-500">Attendance Records</p>
+                        </div>
+                        <div class="text-center p-4 bg-blue-50 rounded-lg">
+                            <p class="text-2xl font-bold text-blue-600">{{ attendance_summary.verified_pct|floatformat:1 }}%</p>
+                            <p class="text-xs text-gray-500">Verified</p>
+                        </div>
+                        <div class="text-center p-4 bg-purple-50 rounded-lg">
+                            <p class="text-2xl font-bold text-purple-600">{{ attendance_summary.stipends_calculated }}</p>
+                            <p class="text-xs text-gray-500">Stipends Calculated</p>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                    <svg class="w-16 h-16 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    <h4 class="mt-4 font-semibold text-gray-900">Workplace Attendance</h4>
+                    <p class="mt-2 text-sm text-gray-500">Track and manage learner attendance at their workplace placements</p>
+                    <a href="{% url 'not_attendance_select' project.pk %}" 
+                       class="mt-4 inline-flex items-center px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition">
+                        View Attendance Register
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- Info Section -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div class="text-sm text-blue-800">
+                            <p class="font-medium">About Attendance Registers</p>
+                            <p class="mt-1 text-blue-700">The attendance register allows you to view, verify, and export monthly attendance data for all learners on workplace placements. You can also calculate stipends and generate deliverable documents for submission.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

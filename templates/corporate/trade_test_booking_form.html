@@ -1,0 +1,92 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}New Trade Test Booking - SkillsFlow{% endblock %}
+
+{% block page_title %}New Trade Test Booking{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:dashboard' %}" class="text-primary-600 hover:text-primary-800">Corporate</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'corporate:trade_test_list' %}" class="text-primary-600 hover:text-primary-800">Trade Tests</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">New Booking</span>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="max-w-2xl mx-auto">
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Booking Details -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Booking Details</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label for="id_learner" class="block text-sm font-medium text-gray-700">Learner *</label>
+                    {{ form.learner }}
+                    {% if form.learner.errors %}<p class="mt-1 text-sm text-red-600">{{ form.learner.errors.0 }}</p>{% endif %}
+                </div>
+                
+                <div>
+                    <label for="id_venue" class="block text-sm font-medium text-gray-700">Venue *</label>
+                    {{ form.venue }}
+                    {% if form.venue.errors %}<p class="mt-1 text-sm text-red-600">{{ form.venue.errors.0 }}</p>{% endif %}
+                </div>
+                
+                <div>
+                    <label for="id_trade" class="block text-sm font-medium text-gray-700">Trade *</label>
+                    <input type="text" name="trade" id="id_trade" value="{{ form.trade.value|default:'' }}" required
+                           placeholder="e.g., Electrician, Plumber, Fitter"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                    {% if form.trade.errors %}<p class="mt-1 text-sm text-red-600">{{ form.trade.errors.0 }}</p>{% endif %}
+                </div>
+                
+                <div>
+                    <label for="id_test_date" class="block text-sm font-medium text-gray-700">Test Date *</label>
+                    <input type="date" name="test_date" id="id_test_date" value="{{ form.test_date.value|default:'' }}" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                    {% if form.test_date.errors %}<p class="mt-1 text-sm text-red-600">{{ form.test_date.errors.0 }}</p>{% endif %}
+                </div>
+                
+                <div>
+                    <label for="id_booking_reference" class="block text-sm font-medium text-gray-700">Booking Reference</label>
+                    <input type="text" name="booking_reference" id="id_booking_reference" value="{{ form.booking_reference.value|default:'' }}"
+                           placeholder="NAMB/INDLELA reference number"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                
+                <div>
+                    <label for="id_notes" class="block text-sm font-medium text-gray-700">Notes</label>
+                    <textarea name="notes" id="id_notes" rows="3"
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">{{ form.notes.value|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="flex items-center justify-end space-x-4">
+            <a href="{% url 'corporate:trade_test_list' %}" class="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 transition-all">
+                Create Booking
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

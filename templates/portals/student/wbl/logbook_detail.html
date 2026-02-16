@@ -1,0 +1,205 @@
+{% extends "portals/student/base.html" %}
+{% load static %}
+
+{% block page_title %}Logbook - {{ logbook.get_month_display }} {{ logbook.year }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 pb-20">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+        <div class="px-4 py-6">
+            <div class="flex items-center gap-2 mb-2">
+                <a href="{% url 'portals:student_logbook' %}" class="text-blue-100 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <h1 class="text-2xl font-bold">{{ logbook.get_month_display }} {{ logbook.year }}</h1>
+            </div>
+            <p class="text-blue-100 text-sm">{{ logbook.month_start_date|date:"d M" }} - {{ logbook.month_end_date|date:"d M Y" }}</p>
+        </div>
+    </header>
+
+    <div class="px-4 -mt-4">
+        <!-- Status Card -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <span class="text-sm text-gray-500">Status</span>
+                    <span class="ml-2 px-3 py-1 text-sm font-medium rounded-full
+                        {% if logbook.status == 'APPROVED' %}bg-green-100 text-green-700
+                        {% elif logbook.status == 'SUBMITTED' %}bg-blue-100 text-blue-700
+                        {% elif logbook.status == 'RETURNED' %}bg-red-100 text-red-700
+                        {% else %}bg-amber-100 text-amber-700{% endif %}">
+                        {{ logbook.get_status_display }}
+                    </span>
+                </div>
+                {% if logbook.status == 'DRAFT' or logbook.status == 'RETURNED' %}
+                <a href="{% url 'portals:student_logbook_update' logbook.id %}" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">
+                    Edit
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Sign-off Progress -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                    <span class="text-sm text-gray-600">Mentor Sign-off</span>
+                    {% if logbook.mentor_signed %}
+                    <span class="flex items-center text-green-600 text-sm font-medium">
+                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Signed {{ logbook.mentor_signed_at|date:"d M Y" }}
+                    </span>
+                    {% else %}
+                    <span class="text-gray-400 text-sm">Pending</span>
+                    {% endif %}
+                </div>
+                <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                    <span class="text-sm text-gray-600">Facilitator Sign-off</span>
+                    {% if logbook.facilitator_signed %}
+                    <span class="flex items-center text-green-600 text-sm font-medium">
+                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Signed {{ logbook.facilitator_signed_at|date:"d M Y" }}
+                    </span>
+                    {% else %}
+                    <span class="text-gray-400 text-sm">Pending</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <div class="text-2xl font-bold text-blue-600">{{ logbook.total_hours|default:0 }}</div>
+                <p class="text-xs text-gray-500">Total Hours</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-4">
+                <div class="text-2xl font-bold text-emerald-600">{{ logbook.days_worked|default:0 }}</div>
+                <p class="text-xs text-gray-500">Days Worked</p>
+            </div>
+        </div>
+
+        <!-- Returned Comments -->
+        {% if logbook.status == 'RETURNED' and logbook.return_comments %}
+        <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="font-medium text-red-800">Changes Requested</h4>
+                    <p class="text-sm text-red-700 mt-1">{{ logbook.return_comments }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Tasks/Activities Section -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-4">
+            <div class="p-4 border-b border-gray-100">
+                <h3 class="font-semibold text-gray-900">Tasks & Activities</h3>
+            </div>
+            
+            {% if logbook.tasks.exists %}
+            <div class="divide-y divide-gray-100">
+                {% for task in logbook.tasks.all %}
+                <div class="p-4">
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-900">{{ task.title }}</h4>
+                            <p class="text-sm text-gray-500">{{ task.date|date:"d M Y" }}</p>
+                        </div>
+                        <span class="text-sm text-blue-600 font-medium">{{ task.hours }} hrs</span>
+                    </div>
+                    {% if task.description %}
+                    <p class="text-sm text-gray-600">{{ task.description }}</p>
+                    {% endif %}
+                    {% if task.skills_learned %}
+                    <div class="mt-2">
+                        <p class="text-xs text-gray-500 mb-1">Skills Learned:</p>
+                        <p class="text-sm text-gray-700">{{ task.skills_learned }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-8 text-center">
+                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                </div>
+                <p class="text-sm text-gray-500">No tasks recorded yet</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Module Completions Section -->
+        {% if modules %}
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-4">
+            <div class="p-4 border-b border-gray-100">
+                <h3 class="font-semibold text-gray-900">Module Completions</h3>
+            </div>
+            <div class="divide-y divide-gray-100">
+                {% for module in modules %}
+                <div class="p-4 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-medium text-gray-900">{{ module.module.name|default:module.module_name }}</h4>
+                        <p class="text-sm text-gray-500">Completed {{ module.completion_date|date:"d M Y" }}</p>
+                    </div>
+                    {% if module.mentor_signed %}
+                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                        Signed
+                    </span>
+                    {% else %}
+                    <span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+                        Pending
+                    </span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Learner Reflection -->
+        {% if logbook.learner_reflection %}
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <h3 class="font-semibold text-gray-900 mb-2">My Reflection</h3>
+            <p class="text-sm text-gray-600">{{ logbook.learner_reflection }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Mentor Comments -->
+        {% if logbook.mentor_comments %}
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <h3 class="font-semibold text-gray-900 mb-2">Mentor Comments</h3>
+            <p class="text-sm text-gray-600">{{ logbook.mentor_comments }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        {% if logbook.status == 'DRAFT' or logbook.status == 'RETURNED' %}
+        <div class="flex gap-3">
+            <a href="{% url 'portals:student_logbook_update' logbook.id %}" class="flex-1 px-4 py-3 bg-white border border-gray-200 text-gray-700 text-center font-medium rounded-xl hover:bg-gray-50 transition">
+                Edit Logbook
+            </a>
+            <form method="post" action="{% url 'portals:student_logbook_submit' logbook.id %}" class="flex-1">
+                {% csrf_token %}
+                <button type="submit" class="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition">
+                    Submit for Review
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

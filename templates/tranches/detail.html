@@ -1,0 +1,707 @@
+{% extends 'base/app_layout.html' %}
+{% load static admin_tags %}
+
+{% block title %}{{ tranche.reference_number }} - SkillsFlow{% endblock %}
+
+{% block page_title %}{{ tranche.name }}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'tranches:tranche_dashboard' %}" class="text-primary-600 hover:text-primary-800">Tranches</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{{ tranche.reference_number }}</span>
+</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center space-x-3">
+    {% if tranche.status == 'EVIDENCE_COMPLETE' or tranche.status == 'QC_FAILED' %}
+    <form method="post" action="{% url 'tranches:tranche_start_qc' tranche.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-all">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            Start QC
+        </button>
+    </form>
+    {% elif tranche.status == 'QC_PASSED' %}
+    <a href="{% url 'tranches:tranche_submit' tranche.pk %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-all">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        </svg>
+        Submit to Funder
+    </a>
+    {% elif tranche.status == 'APPROVED' %}
+    <button type="button" onclick="document.getElementById('paymentModal').classList.remove('hidden')" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-all">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Record Payment
+    </button>
+    {% endif %}
+    <a href="{% url 'tranches:tranche_edit' tranche.pk %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        Edit
+    </a>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    
+    <!-- Status Header -->
+    <div class="flex flex-wrap items-center gap-3">
+        <span class="font-mono text-lg text-primary-600">{{ tranche.reference_number }}</span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+            {% if tranche.status == 'SCHEDULED' %}bg-gray-100 text-gray-800
+            {% elif tranche.status == 'EVIDENCE_COLLECTION' %}bg-blue-100 text-blue-800
+            {% elif tranche.status == 'EVIDENCE_COMPLETE' %}bg-cyan-100 text-cyan-800
+            {% elif tranche.status == 'PENDING_QC' %}bg-indigo-100 text-indigo-800
+            {% elif tranche.status == 'QC_FAILED' %}bg-orange-100 text-orange-800
+            {% elif tranche.status == 'QC_PASSED' %}bg-teal-100 text-teal-800
+            {% elif tranche.status == 'SUBMITTED' %}bg-purple-100 text-purple-800
+            {% elif tranche.status == 'QUERY' %}bg-pink-100 text-pink-800
+            {% elif tranche.status == 'APPROVED' %}bg-green-100 text-green-800
+            {% elif tranche.status == 'INVOICED' %}bg-emerald-100 text-emerald-800
+            {% elif tranche.status == 'PAID' %}bg-emerald-200 text-emerald-900
+            {% elif tranche.status == 'CANCELLED' %}bg-red-100 text-red-800
+            {% else %}bg-gray-100 text-gray-800{% endif %}">
+            {{ tranche.get_status_display }}
+        </span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+            {% if tranche.priority == 'CRITICAL' %}bg-red-100 text-red-800
+            {% elif tranche.priority == 'HIGH' %}bg-orange-100 text-orange-800
+            {% elif tranche.priority == 'MEDIUM' %}bg-blue-100 text-blue-800
+            {% else %}bg-gray-100 text-gray-800{% endif %}">
+            {{ tranche.get_priority_display }} Priority
+        </span>
+        {% if tranche.is_overdue %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            {{ tranche.days_until_due|abs_value }} Days Overdue
+        </span>
+        {% endif %}
+    </div>
+    
+    <!-- Alert for QC Status -->
+    {% if tranche.status == 'PENDING_QC' %}
+    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+        <div class="flex items-center">
+            <svg class="w-6 h-6 text-blue-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-blue-800">Quality Check Required</p>
+                <p class="text-xs text-blue-600">Review evidence and complete QC checklist</p>
+            </div>
+            <button type="button" onclick="document.getElementById('qcModal').classList.remove('hidden')" class="ml-4 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                Complete QC
+            </button>
+        </div>
+    </div>
+    {% elif tranche.status == 'QC_FAILED' %}
+    <div class="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg">
+        <div class="flex items-center">
+            <svg class="w-6 h-6 text-orange-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-orange-800">Rework Required</p>
+                <p class="text-xs text-orange-600">QC failed - please address issues and resubmit</p>
+                {% if tranche.qc_notes %}
+                <p class="text-sm text-orange-700 mt-2">{{ tranche.qc_notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% elif tranche.status == 'QUERY' %}
+    <div class="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-r-lg">
+        <div class="flex items-center">
+            <svg class="w-6 h-6 text-purple-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-purple-800">Funder Query</p>
+                <p class="text-xs text-purple-600">Response required from funder</p>
+                {% if tranche.funder_response_notes %}
+                <p class="text-sm text-purple-700 mt-2">{{ tranche.funder_response_notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Tabs Navigation -->
+            <div x-data="{ activeTab: 'details' }" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="border-b border-gray-200">
+                    <nav class="flex -mb-px overflow-x-auto">
+                        <button @click="activeTab = 'details'" :class="activeTab === 'details' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center whitespace-nowrap">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Details
+                        </button>
+                        <button @click="activeTab = 'evidence'" :class="activeTab === 'evidence' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center whitespace-nowrap">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Evidence
+                            <span class="ml-2 {% if evidence_stats.percentage < 100 %}bg-yellow-100 text-yellow-600{% else %}bg-green-100 text-green-600{% endif %} px-2 py-0.5 rounded-full text-xs">{{ evidence_stats.percentage }}%</span>
+                        </button>
+                        <button @click="activeTab = 'submissions'" :class="activeTab === 'submissions' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center whitespace-nowrap">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                            Submissions
+                            <span class="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">{{ submissions.count }}</span>
+                        </button>
+                        <button @click="activeTab = 'comments'" :class="activeTab === 'comments' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center whitespace-nowrap">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                            Comments
+                            <span class="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">{{ comments.count }}</span>
+                        </button>
+                    </nav>
+                </div>
+                
+                <!-- Details Tab -->
+                <div x-show="activeTab === 'details'" class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Tranche Information</h4>
+                            <dl class="space-y-3">
+                                <div class="flex justify-between py-2 border-b border-gray-100">
+                                    <dt class="text-sm text-gray-500">Type</dt>
+                                    <dd class="text-sm font-medium text-gray-900">{{ tranche.get_tranche_type_display }}</dd>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-gray-100">
+                                    <dt class="text-sm text-gray-500">Sequence</dt>
+                                    <dd class="text-sm font-medium text-gray-900">#{{ tranche.sequence_number }}</dd>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-gray-100">
+                                    <dt class="text-sm text-gray-500">Due Date</dt>
+                                    <dd class="text-sm font-medium {% if tranche.is_overdue %}text-red-600{% else %}text-gray-900{% endif %}">
+                                        {{ tranche.due_date|date:"d M Y" }}
+                                    </dd>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-gray-100">
+                                    <dt class="text-sm text-gray-500">Amount</dt>
+                                    <dd class="text-sm font-medium text-gray-900">R{{ tranche.amount|floatformat:2 }}</dd>
+                                </div>
+                                {% if tranche.actual_amount_received %}
+                                <div class="flex justify-between py-2 border-b border-gray-100">
+                                    <dt class="text-sm text-gray-500">Amount Received</dt>
+                                    <dd class="text-sm font-medium text-green-600">R{{ tranche.actual_amount_received|floatformat:2 }}</dd>
+                                </div>
+                                {% endif %}
+                            </dl>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Learner Counts</h4>
+                            <dl class="space-y-3">
+                                <div class="flex justify-between py-2 border-b border-gray-100">
+                                    <dt class="text-sm text-gray-500">Target Count</dt>
+                                    <dd class="text-sm font-medium text-gray-900">{{ tranche.learner_count_target }}</dd>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-gray-100">
+                                    <dt class="text-sm text-gray-500">Actual Count</dt>
+                                    <dd class="text-sm font-medium text-gray-900">{{ tranche.learner_count_actual }}</dd>
+                                </div>
+                            </dl>
+                            
+                            {% if tranche.funder_reference %}
+                            <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4 mt-6">Funder Details</h4>
+                            <dl class="space-y-3">
+                                <div class="flex justify-between py-2 border-b border-gray-100">
+                                    <dt class="text-sm text-gray-500">Funder Reference</dt>
+                                    <dd class="text-sm font-medium text-gray-900">{{ tranche.funder_reference }}</dd>
+                                </div>
+                            </dl>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if tranche.description %}
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Description</h4>
+                        <p class="text-sm text-gray-700">{{ tranche.description|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if tranche.notes %}
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Notes</h4>
+                        <p class="text-sm text-gray-700">{{ tranche.notes|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Evidence Tab -->
+                <div x-show="activeTab === 'evidence'" x-cloak class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Evidence Requirements</h4>
+                            <p class="text-sm text-gray-600 mt-1">{{ evidence_stats.fulfilled }} of {{ evidence_stats.total }} requirements fulfilled</p>
+                        </div>
+                        <a href="{% url 'tranches:tranche_add_requirement' tranche.pk %}" class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Add Requirement
+                        </a>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mb-6">
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="{% if evidence_stats.percentage == 100 %}bg-green-500{% elif evidence_stats.percentage >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %} h-3 rounded-full transition-all" style="width: {{ evidence_stats.percentage }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        {% for requirement in evidence_requirements %}
+                        <div class="border border-gray-200 rounded-lg p-4 {% if requirement.is_fulfilled %}bg-green-50{% elif requirement.evidence.count > 0 %}bg-yellow-50{% else %}bg-white{% endif %}">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    {% if requirement.is_fulfilled %}
+                                    <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    {% elif requirement.evidence.count > 0 %}
+                                    <svg class="w-5 h-5 text-yellow-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                                    </svg>
+                                    {% else %}
+                                    <svg class="w-5 h-5 text-gray-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clip-rule="evenodd"/>
+                                    </svg>
+                                    {% endif %}
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">{{ requirement.name }}</p>
+                                        <p class="text-xs text-gray-500">{{ requirement.get_evidence_type_display }} • {{ requirement.collected_count }}/{{ requirement.expected_count }} collected</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    {% if requirement.is_mandatory %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Required</span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Optional</span>
+                                    {% endif %}
+                                    <a href="{% url 'tranches:tranche_upload_evidence' tranche.pk requirement.pk %}" class="inline-flex items-center px-2.5 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                        </svg>
+                                        Upload
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            {% if requirement.evidence.count > 0 %}
+                            <div class="mt-3 pl-8 space-y-2">
+                                {% for evidence in requirement.evidence.all %}
+                                <div class="flex items-center justify-between text-sm bg-white rounded p-2 border border-gray-100">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        <span class="text-gray-700">{{ evidence.title }}</span>
+                                    </div>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                        {% if evidence.status == 'VERIFIED' %}bg-green-100 text-green-800
+                                        {% elif evidence.status == 'REJECTED' %}bg-red-100 text-red-800
+                                        {% elif evidence.status == 'NEEDS_REVISION' %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ evidence.get_status_display }}
+                                    </span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-8 text-gray-500">
+                            <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <p>No evidence requirements defined</p>
+                            <a href="{% url 'tranches:tranche_add_requirement' tranche.pk %}" class="mt-2 inline-flex items-center text-primary-600 hover:text-primary-800">
+                                Add requirement →
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Submissions Tab -->
+                <div x-show="activeTab === 'submissions'" x-cloak class="p-6">
+                    <div class="space-y-4">
+                        {% for submission in submissions %}
+                        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center">
+                                    <span class="font-mono text-sm text-primary-600">{{ submission.submission_reference }}</span>
+                                    <span class="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                        {% if submission.status == 'PAID' %}bg-green-100 text-green-800
+                                        {% elif submission.status == 'APPROVED' %}bg-emerald-100 text-emerald-800
+                                        {% elif submission.status == 'SUBMITTED' or submission.status == 'ACKNOWLEDGED' or submission.status == 'UNDER_REVIEW' %}bg-blue-100 text-blue-800
+                                        {% elif submission.status == 'QUERY' %}bg-purple-100 text-purple-800
+                                        {% elif submission.status == 'REJECTED' %}bg-red-100 text-red-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ submission.get_status_display }}
+                                    </span>
+                                </div>
+                                <span class="text-sm text-gray-500">{{ submission.submission_date|date:"d M Y H:i" }}</span>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <p class="text-gray-500">Method</p>
+                                    <p class="font-medium">{{ submission.get_submission_method_display }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500">Claimed</p>
+                                    <p class="font-medium">R{{ submission.claimed_amount|floatformat:2 }}</p>
+                                </div>
+                                {% if submission.approved_amount %}
+                                <div>
+                                    <p class="text-gray-500">Approved</p>
+                                    <p class="font-medium text-green-600">R{{ submission.approved_amount|floatformat:2 }}</p>
+                                </div>
+                                {% endif %}
+                                {% if submission.payment_amount %}
+                                <div>
+                                    <p class="text-gray-500">Paid</p>
+                                    <p class="font-medium text-green-600">R{{ submission.payment_amount|floatformat:2 }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% if submission.notes %}
+                            <p class="text-sm text-gray-600 mt-2">{{ submission.notes }}</p>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-8 text-gray-500">
+                            <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                            <p>No submissions yet</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Comments Tab -->
+                <div x-show="activeTab === 'comments'" x-cloak class="p-6">
+                    <!-- Add Comment Form -->
+                    <form method="post" action="{% url 'tranches:tranche_add_comment' tranche.pk %}" class="mb-6">
+                        {% csrf_token %}
+                        <div class="flex space-x-4">
+                            <select name="comment_type" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                                <option value="INTERNAL">Internal Note</option>
+                                <option value="FUNDER_RESPONSE">Response to Funder</option>
+                                <option value="STATUS_UPDATE">Status Update</option>
+                            </select>
+                            <input type="text" name="comment" placeholder="Add a comment..." class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                            <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                                Add
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="space-y-4">
+                        {% for comment in comments %}
+                        <div class="flex space-x-3">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                    <span class="text-sm font-medium text-gray-600">{{ comment.created_by.first_name.0 }}{{ comment.created_by.last_name.0 }}</span>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm font-medium text-gray-900">{{ comment.created_by.get_full_name }}</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                        {% if comment.comment_type == 'FUNDER_QUERY' %}bg-purple-100 text-purple-800
+                                        {% elif comment.comment_type == 'FUNDER_RESPONSE' %}bg-blue-100 text-blue-800
+                                        {% elif comment.comment_type == 'QC_NOTE' %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ comment.get_comment_type_display }}
+                                    </span>
+                                    <span class="text-xs text-gray-500">{{ comment.created_at|date:"d M Y H:i" }}</span>
+                                </div>
+                                <p class="mt-1 text-sm text-gray-700">{{ comment.comment }}</p>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-8 text-gray-500">
+                            <p>No comments yet</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Project Info -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Project Information
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <dl class="space-y-3 text-sm">
+                        <div>
+                            <dt class="text-gray-500">NOT Reference</dt>
+                            <dd>
+                                <a href="{% url 'not_detail' tranche.training_notification.pk %}" class="font-mono text-primary-600 hover:text-primary-800">
+                                    {{ tranche.training_notification.reference_number }}
+                                </a>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500">Project Title</dt>
+                            <dd class="font-medium text-gray-900">{{ tranche.training_notification.title }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500">Project Type</dt>
+                            <dd class="text-gray-900">{{ tranche.training_notification.get_project_type_display }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500">Funder</dt>
+                            <dd class="text-gray-900">{{ tranche.training_notification.get_funder_display }}</dd>
+                        </div>
+                        {% if tranche.training_notification.corporate_client %}
+                        <div>
+                            <dt class="text-gray-500">Client</dt>
+                            <dd class="text-gray-900">{{ tranche.training_notification.corporate_client }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+            
+            <!-- Timeline -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Timeline
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="flow-root">
+                        <ul class="-mb-8">
+                            {% for event in timeline %}
+                            <li>
+                                <div class="relative pb-8">
+                                    {% if not forloop.last %}
+                                    <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"></span>
+                                    {% endif %}
+                                    <div class="relative flex space-x-3">
+                                        <div>
+                                            <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white
+                                                {% if event.type == 'paid' %}bg-green-500
+                                                {% elif event.type == 'approved' %}bg-emerald-500
+                                                {% elif event.type == 'submitted' %}bg-indigo-500
+                                                {% elif event.type == 'qc_passed' %}bg-teal-500
+                                                {% elif event.type == 'qc_failed' %}bg-orange-500
+                                                {% elif event.type == 'evidence' %}bg-blue-500
+                                                {% else %}bg-gray-400{% endif %}">
+                                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    {% if event.type == 'paid' %}
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    {% elif event.type == 'approved' or event.type == 'qc_passed' %}
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    {% elif event.type == 'qc_failed' %}
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    {% elif event.type == 'submitted' %}
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                                                    {% else %}
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    {% endif %}
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <div class="min-w-0 flex-1 pt-1.5">
+                                            <p class="text-sm text-gray-900">{{ event.event }}</p>
+                                            <p class="text-xs text-gray-500">{{ event.date|date:"d M Y H:i" }}{% if event.user %} by {{ event.user.get_full_name }}{% endif %}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Related Tranches -->
+            {% if related_tranches %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                        </svg>
+                        Other Tranches
+                    </h3>
+                </div>
+                <ul class="divide-y divide-gray-100">
+                    {% for other in related_tranches %}
+                    <li>
+                        <a href="{% url 'tranches:tranche_detail' other.pk %}" class="block px-6 py-3 hover:bg-gray-50">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">#{{ other.sequence_number }}. {{ other.name|truncatechars:20 }}</p>
+                                    <p class="text-xs text-gray-500">{{ other.due_date|date:"d M Y" }}</p>
+                                </div>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                    {% if other.status == 'PAID' %}bg-green-100 text-green-800
+                                    {% elif other.status == 'SUBMITTED' %}bg-blue-100 text-blue-800
+                                    {% elif other.is_overdue %}bg-red-100 text-red-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ other.get_status_display }}
+                                </span>
+                            </div>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="text-sm font-semibold text-gray-900">Quick Actions</h3>
+                </div>
+                <div class="p-4 space-y-2">
+                    <a href="{% url 'tranches:tranche_add_requirement' tranche.pk %}" class="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Evidence Requirement
+                    </a>
+                    <a href="{% url 'not_detail' tranche.training_notification.pk %}" class="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                        View NOT
+                    </a>
+                    <hr class="my-2">
+                    <a href="{% url 'tranches:tranche_list' %}" class="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QC Modal -->
+<div id="qcModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="document.getElementById('qcModal').classList.add('hidden')"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form method="post" action="{% url 'tranches:tranche_complete_qc' tranche.pk %}">
+                {% csrf_token %}
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Complete Quality Check</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">QC Result</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="radio" name="qc_result" value="pass" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300" required>
+                                    <span class="ml-2 text-sm text-gray-700">Pass - Ready for submission</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="qc_result" value="fail" class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300">
+                                    <span class="ml-2 text-sm text-gray-700">Fail - Requires rework</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">QC Notes</label>
+                            <textarea name="qc_notes" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm" placeholder="Enter QC findings and notes..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                    <button type="submit" class="w-full sm:w-auto inline-flex justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                        Complete QC
+                    </button>
+                    <button type="button" onclick="document.getElementById('qcModal').classList.add('hidden')" class="w-full sm:w-auto inline-flex justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="document.getElementById('paymentModal').classList.add('hidden')"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form method="post" action="{% url 'tranches:tranche_record_payment' tranche.pk %}">
+                {% csrf_token %}
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Record Payment</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
+                            <input type="date" name="payment_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Amount Received (R)</label>
+                            <input type="number" name="payment_amount" step="0.01" value="{{ tranche.amount }}" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Payment Reference</label>
+                            <input type="text" name="payment_reference" placeholder="Bank reference or transaction ID" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                    <button type="submit" class="w-full sm:w-auto inline-flex justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                        Record Payment
+                    </button>
+                    <button type="button" onclick="document.getElementById('paymentModal').classList.add('hidden')" class="w-full sm:w-auto inline-flex justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

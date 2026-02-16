@@ -1,0 +1,150 @@
+{% extends 'base/app_layout.html' %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Trade Test Centre{% endblock %}
+
+{% block main_content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Header -->
+    <div>
+        <nav class="text-sm mb-2">
+            <a href="{% url 'trade_tests:dashboard' %}" class="text-primary-600 hover:text-primary-800">Trade Tests</a>
+            <span class="text-gray-400 mx-2">/</span>
+            <a href="{% url 'trade_tests:centre_list' %}" class="text-primary-600 hover:text-primary-800">Centres</a>
+            <span class="text-gray-400 mx-2">/</span>
+            <span class="text-gray-500">{% if form.instance.pk %}Edit{% else %}Add{% endif %}</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">{% if form.instance.pk %}Edit Trade Test Centre{% else %}Add Trade Test Centre{% endif %}</h1>
+    </div>
+
+    <!-- Form -->
+    <form method="post" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Centre Name *</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Centre Code *</label>
+                    {{ form.code }}
+                    {% if form.code.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.code.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Address Information -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Address</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+                    {{ form.address }}
+                    {% if form.address.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.address.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                        {{ form.city }}
+                        {% if form.city.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.city.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                        {{ form.province }}
+                        {% if form.province.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.province.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                        {{ form.postal_code }}
+                        {% if form.postal_code.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.postal_code.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accreditation Information -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Accreditation</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Accreditation Number</label>
+                    {{ form.accreditation_number }}
+                    {% if form.accreditation_number.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.accreditation_number.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Accreditation Expiry</label>
+                    {{ form.accreditation_expiry }}
+                    {% if form.accreditation_expiry.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.accreditation_expiry.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                    {{ form.contact_person }}
+                    {% if form.contact_person.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.contact_person.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+                    {{ form.contact_email }}
+                    {% if form.contact_email.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.contact_email.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+                    {{ form.contact_phone }}
+                    {% if form.contact_phone.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.contact_phone.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="px-6 py-5 border-b border-gray-100">
+            <div class="flex items-center">
+                {{ form.is_active }}
+                <label class="ml-2 text-sm font-medium text-gray-700">Active</label>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+            <a href="{% url 'trade_tests:centre_list' %}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition-colors">
+                {% if form.instance.pk %}Update{% else %}Create{% endif %} Centre
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

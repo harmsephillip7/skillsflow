@@ -1,0 +1,200 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block page_title %}{% if is_create %}Add{% else %}Edit{% endif %} Template Set{% endblock %}
+
+{% block main_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div>
+        <nav class="flex items-center text-sm text-gray-500 mb-2">
+            <a href="{% url 'admin:dashboard' %}" class="hover:text-primary-600">Admin</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <a href="{% url 'admin:templateset_list' %}" class="hover:text-primary-600">Template Sets</a>
+            <svg class="w-4 h-4 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="text-gray-700">{% if is_create %}Add{% else %}Edit{% endif %}</span>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">{% if is_create %}Add Template Set{% else %}Edit {{ object.name }}{% endif %}</h1>
+        <p class="text-gray-500 mt-1">{% if is_create %}Create a new project template set{% else %}Modify the template set configuration{% endif %}</p>
+    </div>
+    
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Form -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Basic Information -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900">Basic Information</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <label for="id_name" class="block text-sm font-medium text-gray-700 mb-1">Name <span class="text-red-500">*</span></label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="id_description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="id_parent_set" class="block text-sm font-medium text-gray-700 mb-1">Parent Set</label>
+                            {{ form.parent_set }}
+                            <p class="mt-1 text-xs text-gray-500">Inherit templates from another set (optional)</p>
+                            {% if form.parent_set.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.parent_set.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Applicability - Project Types -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900">Project Types</h3>
+                        <p class="text-sm text-gray-500">Select which project types this template set applies to (leave empty for all)</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {% for value, label in project_type_choices %}
+                            <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition">
+                                <input type="checkbox" name="project_types_choices" value="{{ value }}"
+                                       class="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300 rounded"
+                                       {% if value in form.project_types_choices.value %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700">{{ label }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Applicability - Funder Types -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900">Funder Types</h3>
+                        <p class="text-sm text-gray-500">Select which funder types this template set applies to (leave empty for all)</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {% for value, label in funder_type_choices %}
+                            <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition">
+                                <input type="checkbox" name="funder_types_choices" value="{{ value }}"
+                                       class="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300 rounded"
+                                       {% if value in form.funder_types_choices.value %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700">{{ label }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Applicability - Qualification Types -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900">Qualification Types</h3>
+                        <p class="text-sm text-gray-500">Select which qualification types this template set applies to (leave empty for all)</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {% for value, label in qualification_type_choices %}
+                            <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition">
+                                <input type="checkbox" name="qualification_types_choices" value="{{ value }}"
+                                       class="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300 rounded"
+                                       {% if value in form.qualification_types_choices.value %}checked{% endif %}>
+                                <span class="ml-2 text-sm text-gray-700">{{ label }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Duration Range -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900">Duration Range</h3>
+                        <p class="text-sm text-gray-500">Optional contract duration filter</p>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <label for="id_min_duration_months" class="block text-sm font-medium text-gray-700 mb-1">Minimum (months)</label>
+                            {{ form.min_duration_months }}
+                        </div>
+                        <div>
+                            <label for="id_max_duration_months" class="block text-sm font-medium text-gray-700 mb-1">Maximum (months)</label>
+                            {{ form.max_duration_months }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Settings -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900">Settings</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="auto_apply" value="true"
+                                   class="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300 rounded"
+                                   {% if form.auto_apply.value %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Auto-apply to matching projects</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="is_active" value="true"
+                                   class="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300 rounded"
+                                   {% if form.is_active.value %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">Active</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Form Errors -->
+                {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <div class="flex">
+                        <svg class="w-5 h-5 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div class="text-sm text-red-700">
+                            {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Actions -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 space-y-3">
+                        <button type="submit" 
+                                class="w-full flex items-center justify-center px-4 py-2.5 bg-rose-600 text-white font-medium rounded-lg hover:bg-rose-700 transition">
+                            <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            {% if is_create %}Create Template Set{% else %}Save Changes{% endif %}
+                        </button>
+                        <a href="{% if is_create %}{% url 'admin:templateset_list' %}{% else %}{% url 'admin:templateset_detail' pk=object.pk %}{% endif %}" 
+                           class="w-full flex items-center justify-center px-4 py-2.5 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

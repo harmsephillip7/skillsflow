@@ -1,0 +1,301 @@
+{% extends "base/app_layout.html" %}
+{% load static %}
+
+{% block title %}How to Get Moodle Token{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-gradient-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-book-reader me-2"></i>
+                        How to Generate a Moodle Web Services Token
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <p class="lead">Follow these steps to enable web services and generate an authentication token in your Moodle instance.</p>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Note:</strong> You must be a Moodle administrator to complete these steps.
+                    </div>
+
+                    <!-- Step 1 -->
+                    <div class="tutorial-step mb-4">
+                        <div class="step-header">
+                            <span class="step-number">1</span>
+                            <h5>Enable Web Services</h5>
+                        </div>
+                        <div class="step-content">
+                            <ol>
+                                <li>Log in to your Moodle site as an administrator</li>
+                                <li>Navigate to: <code>Site administration → Advanced features</code></li>
+                                <li>Check the box for <strong>"Enable web services"</strong></li>
+                                <li>Click <strong>"Save changes"</strong></li>
+                            </ol>
+                            <div class="mt-2">
+                                <img src="{% static 'img/tutorials/moodle_enable_ws.png' %}" 
+                                     alt="Enable Web Services" 
+                                     class="img-fluid border rounded"
+                                     onerror="this.style.display='none'">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="tutorial-step mb-4">
+                        <div class="step-header">
+                            <span class="step-number">2</span>
+                            <h5>Enable REST Protocol</h5>
+                        </div>
+                        <div class="step-content">
+                            <ol>
+                                <li>Go to: <code>Site administration → Server → Web services → Manage protocols</code></li>
+                                <li>Enable the <strong>"REST protocol"</strong> by clicking the eye icon</li>
+                                <li>The icon should turn to an open eye when enabled</li>
+                            </ol>
+                            <div class="alert alert-info mt-2">
+                                <i class="fas fa-info-circle me-2"></i>
+                                REST is the recommended protocol for web services integration.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="tutorial-step mb-4">
+                        <div class="step-header">
+                            <span class="step-number">3</span>
+                            <h5>Create External Service</h5>
+                        </div>
+                        <div class="step-content">
+                            <ol>
+                                <li>Navigate to: <code>Site administration → Server → Web services → External services</code></li>
+                                <li>Click <strong>"Add"</strong> to create a new service</li>
+                                <li>Fill in the details:
+                                    <ul>
+                                        <li><strong>Name:</strong> SkillsFlow Integration</li>
+                                        <li><strong>Short name:</strong> skillsflow</li>
+                                        <li><strong>Enabled:</strong> Yes</li>
+                                        <li><strong>Authorized users only:</strong> Yes (recommended)</li>
+                                    </ul>
+                                </li>
+                                <li>Click <strong>"Add service"</strong></li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="tutorial-step mb-4">
+                        <div class="step-header">
+                            <span class="step-number">4</span>
+                            <h5>Add Required Functions</h5>
+                        </div>
+                        <div class="step-content">
+                            <p>Click <strong>"Add functions"</strong> for your service and add these required functions:</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <ul class="small">
+                                        <li><code>core_webservice_get_site_info</code></li>
+                                        <li><code>core_course_get_courses</code></li>
+                                        <li><code>core_course_get_contents</code></li>
+                                        <li><code>core_enrol_get_enrolled_users</code></li>
+                                        <li><code>gradereport_user_get_grade_items</code></li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="small">
+                                        <li><code>mod_assign_get_grades</code></li>
+                                        <li><code>enrol_manual_enrol_users</code></li>
+                                        <li><code>core_user_create_users</code></li>
+                                        <li><code>core_user_get_users</code></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="alert alert-success mt-2">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Tip:</strong> Use the search box to quickly find each function.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 5 -->
+                    <div class="tutorial-step mb-4">
+                        <div class="step-header">
+                            <span class="step-number">5</span>
+                            <h5>Create Web Service User (Recommended)</h5>
+                        </div>
+                        <div class="step-content">
+                            <ol>
+                                <li>Go to: <code>Site administration → Users → Accounts → Add a new user</code></li>
+                                <li>Create a dedicated user:
+                                    <ul>
+                                        <li><strong>Username:</strong> skillsflow_api</li>
+                                        <li><strong>Email:</strong> api@yourcompany.com</li>
+                                        <li><strong>First name:</strong> SkillsFlow</li>
+                                        <li><strong>Last name:</strong> Integration</li>
+                                    </ul>
+                                </li>
+                                <li>Assign appropriate roles (Manager or Teacher role recommended)</li>
+                            </ol>
+                            <div class="alert alert-warning mt-2">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                <strong>Security Best Practice:</strong> Use a dedicated API user instead of your personal account.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 6 -->
+                    <div class="tutorial-step mb-4">
+                        <div class="step-header">
+                            <span class="step-number">6</span>
+                            <h5>Authorize User for Service</h5>
+                        </div>
+                        <div class="step-content">
+                            <ol>
+                                <li>Return to: <code>Site administration → Server → Web services → External services</code></li>
+                                <li>Click <strong>"Authorized users"</strong> for the SkillsFlow service</li>
+                                <li>Add the user you created in Step 5</li>
+                                <li>Click <strong>"Add"</strong></li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <!-- Step 7 -->
+                    <div class="tutorial-step mb-4">
+                        <div class="step-header">
+                            <span class="step-number">7</span>
+                            <h5>Generate Token</h5>
+                        </div>
+                        <div class="step-content">
+                            <ol>
+                                <li>Navigate to: <code>Site administration → Server → Web services → Manage tokens</code></li>
+                                <li>Click <strong>"Create token"</strong></li>
+                                <li>Select:
+                                    <ul>
+                                        <li><strong>User:</strong> skillsflow_api (or your API user)</li>
+                                        <li><strong>Service:</strong> SkillsFlow Integration</li>
+                                    </ul>
+                                </li>
+                                <li>Click <strong>"Save changes"</strong></li>
+                                <li><strong>Copy the generated token</strong> - you'll need this for the setup wizard</li>
+                            </ol>
+                            <div class="alert alert-danger mt-2">
+                                <i class="fas fa-key me-2"></i>
+                                <strong>Important:</strong> Copy the token now! You won't be able to see it again. Store it securely.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 8 -->
+                    <div class="tutorial-step mb-4">
+                        <div class="step-header">
+                            <span class="step-number">8</span>
+                            <h5>Complete Setup in SkillsFlow</h5>
+                        </div>
+                        <div class="step-content">
+                            <p>Now return to the SkillsFlow setup wizard and enter:</p>
+                            <ul>
+                                <li><strong>Moodle URL:</strong> Your Moodle site URL (e.g., https://moodle.yourcompany.com)</li>
+                                <li><strong>Web Services Token:</strong> The token you copied in Step 7</li>
+                            </ul>
+                            <p class="mt-3">
+                                <a href="{% url 'lms_sync:setup_wizard' %}" class="btn btn-primary">
+                                    <i class="fas fa-arrow-left me-2"></i>Return to Setup Wizard
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Troubleshooting -->
+                    <div class="card bg-light mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-tools me-2"></i>Troubleshooting
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <strong>Connection failed?</strong>
+                                <ul class="mb-0">
+                                    <li>Verify web services are enabled</li>
+                                    <li>Check that REST protocol is enabled</li>
+                                    <li>Ensure the token is copied correctly (no extra spaces)</li>
+                                    <li>Confirm the user has sufficient permissions</li>
+                                    <li>Check firewall settings allow connections from SkillsFlow</li>
+                                </ul>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Access denied errors?</strong>
+                                <ul class="mb-0">
+                                    <li>Verify all required functions are added to the service</li>
+                                    <li>Check that the user is authorized for the service</li>
+                                    <li>Ensure the user has appropriate role capabilities</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <strong>Need more help?</strong>
+                                <ul class="mb-0">
+                                    <li>Consult <a href="https://docs.moodle.org/en/Web_services" target="_blank">Moodle Web Services Documentation</a></li>
+                                    <li>Contact your IT administrator</li>
+                                    <li>Contact SkillsFlow support</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.tutorial-step {
+    border-left: 3px solid #007bff;
+    padding-left: 20px;
+    position: relative;
+}
+
+.step-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    background: #007bff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-right: 15px;
+    margin-left: -30px;
+}
+
+.step-content {
+    padding: 10px;
+}
+
+.step-content ol > li {
+    margin-bottom: 8px;
+}
+
+.step-content ul > li {
+    margin-bottom: 5px;
+}
+
+code {
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: #e83e8c;
+}
+</style>
+{% endblock %}

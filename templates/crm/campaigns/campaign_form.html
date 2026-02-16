@@ -1,0 +1,186 @@
+{% extends 'crm/crm_base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Edit Campaign{% else %}New Campaign{% endif %} - CRM - SkillsFlow{% endblock %}
+
+{% block page_title %}{% if form.instance.pk %}Edit Campaign{% else %}Create Campaign{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:dashboard' %}" class="text-gray-500 hover:text-gray-700">CRM</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <a href="{% url 'crm:campaign_list' %}" class="text-gray-500 hover:text-gray-700">Campaigns</a>
+</li>
+<li class="flex items-center">
+    <svg class="w-5 h-5 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-gray-700 font-medium">{% if form.instance.pk %}Edit{% else %}New{% endif %}</span>
+</li>
+{% endblock %}
+
+{% block crm_content %}
+<div class="max-w-3xl mx-auto">
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Basic Info -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Campaign Details</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label for="id_name" class="block text-sm font-medium text-gray-700 mb-1">Campaign Name *</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="id_campaign_type" class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                        {{ form.campaign_type }}
+                        {% if form.campaign_type.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.campaign_type.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="id_channel" class="block text-sm font-medium text-gray-700 mb-1">Channel *</label>
+                        {{ form.channel }}
+                        {% if form.channel.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.channel.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="id_brand" class="block text-sm font-medium text-gray-700 mb-1">Brand *</label>
+                        {{ form.brand }}
+                        {% if form.brand.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.brand.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="id_target_audience" class="block text-sm font-medium text-gray-700 mb-1">Target Audience</label>
+                        {{ form.target_audience }}
+                        {% if form.target_audience.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.target_audience.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Message Content -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Message Content</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label for="id_message_template" class="block text-sm font-medium text-gray-700 mb-1">Use Template (Optional)</label>
+                    {{ form.message_template }}
+                    <p class="mt-1 text-sm text-gray-500">Select a pre-approved template or write custom content below</p>
+                </div>
+                
+                <div id="email-subject" class="{% if form.instance.channel != 'email' %}hidden{% endif %}">
+                    <label for="id_subject" class="block text-sm font-medium text-gray-700 mb-1">Email Subject</label>
+                    {{ form.subject }}
+                    {% if form.subject.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.subject.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="id_content" class="block text-sm font-medium text-gray-700 mb-1">Message Content *</label>
+                    {{ form.content }}
+                    {% if form.content.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.content.errors.0 }}</p>
+                    {% endif %}
+                    <div class="mt-2 flex items-start space-x-4 text-sm text-gray-500">
+                        <div>
+                            <span class="font-medium">Available placeholders:</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <code class="px-2 py-0.5 bg-gray-100 rounded text-xs cursor-pointer" onclick="insertPlaceholder('{{first_name}}')">{{ '{{first_name}}' }}</code>
+                            <code class="px-2 py-0.5 bg-gray-100 rounded text-xs cursor-pointer" onclick="insertPlaceholder('{{last_name}}')">{{ '{{last_name}}' }}</code>
+                            <code class="px-2 py-0.5 bg-gray-100 rounded text-xs cursor-pointer" onclick="insertPlaceholder('{{full_name}}')">{{ '{{full_name}}' }}</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Scheduling -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Scheduling (Optional)</h3>
+            
+            <div>
+                <label for="id_scheduled_at" class="block text-sm font-medium text-gray-700 mb-1">Schedule Send</label>
+                {{ form.scheduled_at }}
+                <p class="mt-1 text-sm text-gray-500">Leave empty to send immediately after approval</p>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex justify-end space-x-3">
+            <a href="{% url 'crm:campaign_list' %}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                {% if form.instance.pk %}Save Changes{% else %}Create Campaign{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Show/hide email subject based on channel
+document.getElementById('id_channel').addEventListener('change', function() {
+    const subjectField = document.getElementById('email-subject');
+    if (this.value === 'email') {
+        subjectField.classList.remove('hidden');
+    } else {
+        subjectField.classList.add('hidden');
+    }
+});
+
+// Insert placeholder at cursor
+function insertPlaceholder(placeholder) {
+    const textarea = document.getElementById('id_content');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    textarea.value = text.substring(0, start) + placeholder + text.substring(end);
+    textarea.selectionStart = textarea.selectionEnd = start + placeholder.length;
+    textarea.focus();
+}
+
+// Load template content when selected
+document.getElementById('id_message_template').addEventListener('change', async function() {
+    if (!this.value) return;
+    
+    try {
+        const response = await fetch(`{% url 'crm:template_preview' 0 %}`.replace('0', this.value));
+        const data = await response.json();
+        
+        document.getElementById('id_content').value = data.original_content;
+        if (data.subject) {
+            document.getElementById('id_subject').value = data.subject;
+        }
+    } catch (error) {
+        console.error('Error loading template:', error);
+    }
+});
+</script>
+{% endblock %}

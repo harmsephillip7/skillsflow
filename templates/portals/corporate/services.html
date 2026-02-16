@@ -1,0 +1,172 @@
+{% extends 'base/app_layout.html' %}
+{% load static %}
+
+{% block title %}My Services - Corporate Portal{% endblock %}
+
+{% block page_header %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">My Services</h1>
+        <p class="mt-1 text-sm text-gray-500">Track your service subscriptions and deliverables</p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+        <a href="{% url 'portals:corporate_dashboard' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if no_client %}
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+    <i class="fas fa-exclamation-triangle text-amber-500 text-4xl mb-3"></i>
+    <h3 class="text-lg font-semibold text-amber-800">No Corporate Account Linked</h3>
+    <p class="text-amber-700 mt-2">Your user account is not linked to a corporate client.</p>
+</div>
+{% else %}
+
+<div class="space-y-6">
+    <!-- Filter Tabs -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div class="border-b border-gray-200">
+            <nav class="flex -mb-px px-4">
+                <a href="?status=all" class="py-4 px-6 text-sm font-medium {% if status_filter == 'all' %}border-b-2 border-primary-500 text-primary-600{% else %}text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+                    All Services
+                    <span class="ml-2 px-2 py-0.5 text-xs rounded-full {% if status_filter == 'all' %}bg-primary-100 text-primary-600{% else %}bg-gray-100 text-gray-600{% endif %}">{{ status_counts.all }}</span>
+                </a>
+                <a href="?status=ACTIVE" class="py-4 px-6 text-sm font-medium {% if status_filter == 'ACTIVE' %}border-b-2 border-primary-500 text-primary-600{% else %}text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+                    Active
+                    <span class="ml-2 px-2 py-0.5 text-xs rounded-full {% if status_filter == 'ACTIVE' %}bg-green-100 text-green-600{% else %}bg-gray-100 text-gray-600{% endif %}">{{ status_counts.ACTIVE }}</span>
+                </a>
+                <a href="?status=PENDING" class="py-4 px-6 text-sm font-medium {% if status_filter == 'PENDING' %}border-b-2 border-primary-500 text-primary-600{% else %}text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+                    Pending
+                    <span class="ml-2 px-2 py-0.5 text-xs rounded-full {% if status_filter == 'PENDING' %}bg-amber-100 text-amber-600{% else %}bg-gray-100 text-gray-600{% endif %}">{{ status_counts.PENDING }}</span>
+                </a>
+                <a href="?status=ON_HOLD" class="py-4 px-6 text-sm font-medium {% if status_filter == 'ON_HOLD' %}border-b-2 border-primary-500 text-primary-600{% else %}text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+                    On Hold
+                    <span class="ml-2 px-2 py-0.5 text-xs rounded-full {% if status_filter == 'ON_HOLD' %}bg-gray-100 text-gray-600{% else %}bg-gray-100 text-gray-600{% endif %}">{{ status_counts.ON_HOLD }}</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Services List -->
+    <div class="grid grid-cols-1 gap-6">
+        {% for sub in subscriptions %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <!-- Service Header -->
+            <div class="px-6 py-4 border-b border-gray-100">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h3 class="text-lg font-semibold text-gray-900">{{ sub.subscription.service.name }}</h3>
+                            {% if sub.subscription.status == 'ACTIVE' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Active
+                            </span>
+                            {% elif sub.subscription.status == 'PENDING' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                Pending Setup
+                            </span>
+                            {% elif sub.subscription.status == 'ON_HOLD' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                On Hold
+                            </span>
+                            {% endif %}
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1">{{ sub.subscription.service.category.name }} • {{ sub.subscription.service.get_service_type_display }}</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        {% if sub.health == 'GREEN' %}
+                        <div class="flex items-center text-green-600">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            <span class="text-sm font-medium">On Track</span>
+                        </div>
+                        {% elif sub.health == 'AMBER' %}
+                        <div class="flex items-center text-amber-600">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <span class="text-sm font-medium">At Risk</span>
+                        </div>
+                        {% else %}
+                        <div class="flex items-center text-red-600">
+                            <i class="fas fa-times-circle mr-1"></i>
+                            <span class="text-sm font-medium">Critical</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress & Details -->
+            <div class="px-6 py-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <!-- Progress -->
+                    <div class="md:col-span-2">
+                        <div class="flex items-center justify-between text-sm mb-2">
+                            <span class="text-gray-500">Overall Progress</span>
+                            <span class="font-medium text-gray-900">{{ sub.progress }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="{% if sub.health == 'GREEN' %}bg-green-500{% elif sub.health == 'AMBER' %}bg-amber-500{% else %}bg-red-500{% endif %} h-3 rounded-full transition-all" style="width: {{ sub.progress }}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            {% if sub.milestones %}{{ sub.milestones|length }} milestones{% endif %}
+                        </p>
+                    </div>
+
+                    <!-- Key Info -->
+                    <div>
+                        <p class="text-xs text-gray-500">Start Date</p>
+                        <p class="font-medium text-gray-900">{{ sub.subscription.start_date|date:"d M Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">Consultant</p>
+                        <p class="font-medium text-gray-900">{{ sub.subscription.assigned_consultant.get_full_name|default:"Not assigned" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Milestones Preview -->
+            {% if sub.milestones %}
+            <div class="px-6 pb-4">
+                <p class="text-sm font-medium text-gray-700 mb-3">Deliverables</p>
+                <div class="flex flex-wrap gap-2">
+                    {% for milestone in sub.milestones|slice:":5" %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium {% if milestone.status == 'COMPLETED' %}bg-green-100 text-green-800{% elif milestone.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800{% elif milestone.status == 'BLOCKED' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-700{% endif %}">
+                        {% if milestone.status == 'COMPLETED' %}<i class="fas fa-check mr-1"></i>{% elif milestone.status == 'IN_PROGRESS' %}<i class="fas fa-spinner mr-1"></i>{% elif milestone.status == 'BLOCKED' %}<i class="fas fa-ban mr-1"></i>{% endif %}
+                        {{ milestone.name|truncatewords:4 }}
+                    </span>
+                    {% endfor %}
+                    {% if sub.milestones|length > 5 %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        +{{ sub.milestones|length|add:"-5" }} more
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <a href="{% url 'portals:corporate_service_detail' sub.subscription.id %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition">
+                    <i class="fas fa-eye mr-2"></i>View Details
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+            <i class="fas fa-briefcase text-4xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900">No Services Found</h3>
+            <p class="text-gray-500 mt-1">{% if status_filter != 'all' %}No services match this filter.{% else %}You don't have any service subscriptions yet.{% endif %}</p>
+            {% if status_filter != 'all' %}
+            <a href="?status=all" class="mt-4 inline-flex items-center text-primary-600 hover:text-primary-700">
+                <i class="fas fa-arrow-left mr-2"></i>View all services
+            </a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
