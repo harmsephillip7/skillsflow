@@ -77,6 +77,44 @@ class User(AbstractUser):
         return check_user_permission(self, permission_code)
 
 
+class UserTOTPDevice(models.Model):
+    """
+    Stores TOTP (Time-based One-Time Password) configuration for two-factor authentication.
+    Users can enable Google Authenticator or compatible apps for additional security.
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='totp_device'
+    )
+    secret = models.CharField(
+        max_length=32,
+        help_text="Base32-encoded TOTP secret"
+    )
+    is_confirmed = models.BooleanField(
+        default=False,
+        help_text="Whether the device has been verified by the user"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether 2FA is currently enabled for this user"
+    )
+    backup_codes = models.TextField(
+        blank=True,
+        help_text="Comma-separated backup codes for account recovery"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    last_used = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "User TOTP Device"
+        verbose_name_plural = "User TOTP Devices"
+
+    def __str__(self):
+        return f"TOTP Device for {self.user.email}"
+
+
 class FacilitatorProfile(models.Model):
     """
     Facilitator-specific profile with campus assignments.

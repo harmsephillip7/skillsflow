@@ -32,6 +32,9 @@ urlpatterns = [
     # Core authentication (SSO)
     path('', include('core.urls', namespace='core')),
     
+    # API Authentication (JWT + 2FA)
+    path('api/auth/', include('core.api_auth_urls')),
+    
     # Django auth views (password reset, etc.)
     path('accounts/', include('django.contrib.auth.urls')),
     

@@ -468,3 +468,31 @@ def profile_view(request):
         pass
     
     return render(request, 'auth/profile.html', context)
+
+
+class TwoFASetupView(LoginRequiredMixin, TemplateView):
+    """
+    Two-Factor Authentication Setup Page
+    Allows users to enable 2FA on their account
+    """
+    template_name = 'auth/two_fa_setup.html'
+    login_url = '/login/'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user
+        return context
+
+
+class TwoFASettingsView(LoginRequiredMixin, TemplateView):
+    """
+    Two-Factor Authentication Settings Page
+    Shows 2FA status and allows management of backup codes
+    """
+    template_name = 'auth/two_fa_settings.html'
+    login_url = '/login/'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user
+        return context

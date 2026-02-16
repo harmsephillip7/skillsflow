@@ -112,6 +112,10 @@ urlpatterns = [
     # Profile
     path('profile/', views.profile_view, name='profile'),
     
+    # Two-Factor Authentication
+    path('2fa/setup/', views.TwoFASetupView.as_view(), name='setup_2fa'),
+    path('2fa/settings/', views.TwoFASettingsView.as_view(), name='2fa_settings'),
+    
     # =====================================================
     # TASK HUB
     # =====================================================
