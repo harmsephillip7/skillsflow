@@ -71,6 +71,11 @@ urlpatterns = [
     # Leads
     path('leads/', views.LeadListView.as_view(), name='lead_list'),
     path('leads/add/', views.LeadCreateView.as_view(), name='lead_create'),
+    path('leads/import/', views.LeadImportView.as_view(), name='lead_import'),
+    path('leads/bulk-update/', views.bulk_update_leads, name='bulk_update_leads'),
+    path('leads/check-duplicate/', views.check_duplicate_lead, name='check_duplicate_lead'),
+    path('leads/duplicates/', views.DuplicateManagementView.as_view(), name='duplicate_management'),
+    path('leads/merge/', views.merge_leads, name='merge_leads'),
     path('leads/<int:pk>/', views.LeadDetailView.as_view(), name='lead_detail'),
     path('leads/<int:pk>/edit/', views.LeadUpdateView.as_view(), name='lead_update'),
     

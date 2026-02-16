@@ -22,6 +22,18 @@
 
 {% block page_actions %}
 <div class="flex items-center space-x-3">
+    <a href="{% url 'crm:duplicate_management' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Find Duplicates
+    </a>
+    <a href="{% url 'crm:lead_import' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        Import Leads
+    </a>
     <a href="{% url 'crm:bulk_messaging' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
@@ -136,10 +148,65 @@
     
     <!-- Leads Table -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- Bulk Actions Bar (hidden by default) -->
+        <div id="bulkActionsBar" class="hidden bg-primary-50 border-b border-primary-100 px-6 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="text-sm font-medium text-primary-700">
+                        <span id="selectedCount">0</span> leads selected
+                    </span>
+                    <button type="button" onclick="selectAllLeads()" class="text-sm text-primary-600 hover:text-primary-700 underline">
+                        Select all on this page
+                    </button>
+                    <button type="button" onclick="clearSelection()" class="text-sm text-gray-500 hover:text-gray-700 underline">
+                        Clear selection
+                    </button>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <!-- Bulk Status Change -->
+                    <div class="relative">
+                        <select id="bulkStatusSelect" onchange="bulkChangeStatus(this.value)" 
+                                class="pl-3 pr-8 py-1.5 text-sm border border-primary-300 rounded-md bg-white focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Change Status...</option>
+                            {% for value, label in statuses %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Bulk Assign Agent -->
+                    <div class="relative">
+                        <select id="bulkAssignSelect" onchange="bulkAssignAgent(this.value)"
+                                class="pl-3 pr-8 py-1.5 text-sm border border-primary-300 rounded-md bg-white focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Assign to...</option>
+                            {% for agent in agents %}
+                            <option value="{{ agent.id }}">{{ agent.get_full_name|default:agent.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Bulk Add to Pipeline -->
+                    <div class="relative">
+                        <select id="bulkPipelineSelect" onchange="bulkAddToPipeline(this.value)"
+                                class="pl-3 pr-8 py-1.5 text-sm border border-primary-300 rounded-md bg-white focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Add to Pipeline...</option>
+                            {% for pipeline in pipelines %}
+                            <option value="{{ pipeline.id }}">{{ pipeline.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
+                        <th class="px-4 py-3 text-left">
+                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"
+                                   class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                        </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lead</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
@@ -152,7 +219,11 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for lead in leads %}
-                    <tr class="hover:bg-gray-50 transition-colors">
+                    <tr class="hover:bg-gray-50 transition-colors" data-lead-id="{{ lead.pk }}">
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <input type="checkbox" class="lead-checkbox h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                                   value="{{ lead.pk }}" onchange="updateBulkSelection()">
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10">
@@ -232,7 +303,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="px-6 py-12 text-center">
+                        <td colspan="9" class="px-6 py-12 text-center">
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                             </svg>
@@ -303,4 +374,179 @@
     </div>
     
 </div>
+
+<!-- Bulk Actions JavaScript -->
+<script>
+const selectedLeads = new Set();
+
+function updateBulkSelection() {
+    const checkboxes = document.querySelectorAll('.lead-checkbox');
+    selectedLeads.clear();
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            selectedLeads.add(cb.value);
+        }
+    });
+    
+    const bar = document.getElementById('bulkActionsBar');
+    const countEl = document.getElementById('selectedCount');
+    const selectAllCb = document.getElementById('selectAllCheckbox');
+    
+    if (selectedLeads.size > 0) {
+        bar.classList.remove('hidden');
+        countEl.textContent = selectedLeads.size;
+    } else {
+        bar.classList.add('hidden');
+    }
+    
+    // Update select all checkbox state
+    selectAllCb.checked = checkboxes.length > 0 && [...checkboxes].every(cb => cb.checked);
+    selectAllCb.indeterminate = selectedLeads.size > 0 && selectedLeads.size < checkboxes.length;
+}
+
+function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.lead-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateBulkSelection();
+}
+
+function selectAllLeads() {
+    const checkboxes = document.querySelectorAll('.lead-checkbox');
+    checkboxes.forEach(cb => cb.checked = true);
+    updateBulkSelection();
+}
+
+function clearSelection() {
+    const checkboxes = document.querySelectorAll('.lead-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    document.getElementById('selectAllCheckbox').checked = false;
+    updateBulkSelection();
+}
+
+async function bulkChangeStatus(status) {
+    if (!status || selectedLeads.size === 0) return;
+    
+    const leadIds = [...selectedLeads];
+    const confirmed = confirm(`Change status to "${status}" for ${leadIds.length} leads?`);
+    if (!confirmed) {
+        document.getElementById('bulkStatusSelect').value = '';
+        return;
+    }
+    
+    try {
+        const response = await fetch('{% url "crm:bulk_update_leads" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                lead_ids: leadIds,
+                action: 'status',
+                value: status
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            showToast(`Updated ${data.updated} leads`, 'success');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || 'Update failed', 'error');
+        }
+    } catch (error) {
+        showToast('An error occurred', 'error');
+    }
+    
+    document.getElementById('bulkStatusSelect').value = '';
+}
+
+async function bulkAssignAgent(agentId) {
+    if (!agentId || selectedLeads.size === 0) return;
+    
+    const leadIds = [...selectedLeads];
+    const confirmed = confirm(`Assign ${leadIds.length} leads to selected agent?`);
+    if (!confirmed) {
+        document.getElementById('bulkAssignSelect').value = '';
+        return;
+    }
+    
+    try {
+        const response = await fetch('{% url "crm:bulk_update_leads" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                lead_ids: leadIds,
+                action: 'assign',
+                value: agentId
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            showToast(`Assigned ${data.updated} leads`, 'success');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || 'Assignment failed', 'error');
+        }
+    } catch (error) {
+        showToast('An error occurred', 'error');
+    }
+    
+    document.getElementById('bulkAssignSelect').value = '';
+}
+
+async function bulkAddToPipeline(pipelineId) {
+    if (!pipelineId || selectedLeads.size === 0) return;
+    
+    const leadIds = [...selectedLeads];
+    const confirmed = confirm(`Add ${leadIds.length} leads to selected pipeline?`);
+    if (!confirmed) {
+        document.getElementById('bulkPipelineSelect').value = '';
+        return;
+    }
+    
+    try {
+        const response = await fetch('{% url "crm:bulk_update_leads" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                lead_ids: leadIds,
+                action: 'pipeline',
+                value: pipelineId
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            showToast(`Added ${data.updated} leads to pipeline`, 'success');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(data.error || 'Failed to add to pipeline', 'error');
+        }
+    } catch (error) {
+        showToast('An error occurred', 'error');
+    }
+    
+    document.getElementById('bulkPipelineSelect').value = '';
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 ${
+        type === 'success' ? 'bg-green-600' : 'bg-red-600'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+</script>
 {% endblock %}

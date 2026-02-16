@@ -49,8 +49,9 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
-                        <input type="tel" name="phone" value="{{ form.phone.value|default:'' }}" required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                        <input type="tel" name="phone" id="id_phone" value="{{ form.phone.value|default:'' }}" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
+                               onblur="checkForDuplicates()">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Phone (Secondary)</label>
@@ -59,8 +60,9 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input type="email" name="email" value="{{ form.email.value|default:'' }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                        <input type="email" name="email" id="id_email" value="{{ form.email.value|default:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
+                               onblur="checkForDuplicates()">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
@@ -73,6 +75,25 @@
                                    class="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                             <span class="ml-2 text-sm text-gray-700">Prefers WhatsApp communication</span>
                         </label>
+                    </div>
+                    
+                    <!-- Duplicate Warning -->
+                    <div id="duplicate-warning" class="col-span-2 hidden">
+                        <div class="bg-amber-50 border border-amber-300 rounded-lg p-4">
+                            <div class="flex items-start gap-3">
+                                <svg class="w-6 h-6 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-amber-800">Potential Duplicate Found!</h4>
+                                    <p class="text-sm text-amber-700 mt-1">A lead with similar contact information already exists in the system:</p>
+                                    <div id="duplicate-list" class="mt-3 space-y-2"></div>
+                                    <p class="text-xs text-amber-600 mt-3">
+                                        You can still create this lead, but consider opening the existing lead instead.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -303,5 +324,92 @@ document.addEventListener('DOMContentLoaded', function() {
     leadTypeSelect.addEventListener('change', toggleSchoolLeaverSection);
     toggleSchoolLeaverSection(); // Initial state
 });
+
+// Duplicate Detection
+let duplicateCheckTimeout = null;
+let lastCheckedValues = { phone: '', email: '' };
+
+async function checkForDuplicates() {
+    const phone = document.getElementById('id_phone')?.value?.trim() || '';
+    const email = document.getElementById('id_email')?.value?.trim() || '';
+    
+    // Don't check if nothing has changed
+    if (phone === lastCheckedValues.phone && email === lastCheckedValues.email) {
+        return;
+    }
+    
+    // Don't check if both are empty
+    if (!phone && !email) {
+        hideDuplicateWarning();
+        return;
+    }
+    
+    // Debounce the check
+    if (duplicateCheckTimeout) {
+        clearTimeout(duplicateCheckTimeout);
+    }
+    
+    duplicateCheckTimeout = setTimeout(async () => {
+        lastCheckedValues = { phone, email };
+        
+        try {
+            const response = await fetch("{% url 'crm:check_duplicate_lead' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    phone: phone,
+                    email: email,
+                    first_name: document.querySelector('input[name="first_name"]')?.value || '',
+                    last_name: document.querySelector('input[name="last_name"]')?.value || '',
+                    exclude_id: {{ object.pk|default:'null' }}
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.has_duplicates && data.duplicates.length > 0) {
+                showDuplicateWarning(data.duplicates);
+            } else {
+                hideDuplicateWarning();
+            }
+        } catch (error) {
+            console.error('Duplicate check error:', error);
+        }
+    }, 500);
+}
+
+function showDuplicateWarning(duplicates) {
+    const warningDiv = document.getElementById('duplicate-warning');
+    const listDiv = document.getElementById('duplicate-list');
+    
+    listDiv.innerHTML = duplicates.map(dup => `
+        <div class="flex items-center justify-between p-2 bg-white rounded border border-amber-200">
+            <div>
+                <a href="/crm/leads/${dup.id}/" target="_blank" class="font-medium text-amber-900 hover:text-blue-600">
+                    ${dup.name}
+                </a>
+                <span class="px-2 py-0.5 ml-2 text-xs font-medium rounded bg-amber-100 text-amber-800">
+                    ${dup.status}
+                </span>
+                <div class="text-xs text-amber-600 mt-1">
+                    ${dup.match_reasons.join(' • ')}
+                </div>
+            </div>
+            <div class="text-xs text-amber-500">
+                ${dup.phone || dup.email || ''}
+            </div>
+        </div>
+    `).join('');
+    
+    warningDiv.classList.remove('hidden');
+}
+
+function hideDuplicateWarning() {
+    const warningDiv = document.getElementById('duplicate-warning');
+    warningDiv.classList.add('hidden');
+}
 </script>
 {% endblock %}

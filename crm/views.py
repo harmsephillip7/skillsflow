@@ -6,6 +6,7 @@ import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth import get_user_model
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView
 from django.contrib import messages
@@ -18,6 +19,8 @@ from datetime import timedelta, date
 from .models import Lead, LeadSource, LeadActivity, Pipeline, Application
 from core.context_processors import get_selected_campus
 from core.mixins import CampusFilterMixin
+
+User = get_user_model()
 
 
 class CRMAccessMixin(UserPassesTestMixin):
@@ -108,6 +111,18 @@ class CRMDashboardView(LoginRequiredMixin, CRMAccessMixin, TemplateView):
             next_follow_up__date__lt=today,
             status__in=['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION']
         ).count()
+        
+        # Today's Follow-ups List (for widget)
+        context['todays_followups'] = leads.filter(
+            next_follow_up__date=today,
+            status__in=['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION']
+        ).select_related('source', 'assigned_to').order_by('next_follow_up')[:10]
+        
+        # Overdue Follow-ups List
+        context['overdue_followups'] = leads.filter(
+            next_follow_up__date__lt=today,
+            status__in=['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION']
+        ).select_related('source', 'assigned_to').order_by('next_follow_up')[:10]
         
         # My Leads (for sales reps)
         if not user.is_superuser:
@@ -226,6 +241,14 @@ class LeadListView(LoginRequiredMixin, CRMAccessMixin, CampusFilterMixin, ListVi
             'priority': self.request.GET.get('priority', ''),
             'filter': self.request.GET.get('filter', ''),
         }
+        # For bulk actions
+        context['agents'] = User.objects.filter(
+            is_active=True
+        ).exclude(
+            is_superuser=False, staff_profile__isnull=True
+        ).order_by('first_name', 'last_name')
+        context['pipelines'] = Pipeline.objects.filter(is_active=True)
+        context['today'] = timezone.now().date()
         return context
 
 
@@ -431,6 +454,204 @@ class LeadUpdateView(LoginRequiredMixin, CRMAccessMixin, UpdateView):
         return redirect('crm:lead_detail', pk=lead.pk)
 
 
+class LeadImportView(LoginRequiredMixin, CRMAccessMixin, TemplateView):
+    """
+    Import leads from CSV/Excel file
+    """
+    template_name = 'crm/lead_import.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['sources'] = LeadSource.objects.filter(is_active=True)
+        context['pipelines'] = Pipeline.objects.filter(is_active=True)
+        context['lead_fields'] = [
+            ('first_name', 'First Name', True),
+            ('last_name', 'Last Name', True),
+            ('email', 'Email', False),
+            ('phone', 'Phone', True),
+            ('phone_secondary', 'Secondary Phone', False),
+            ('whatsapp_number', 'WhatsApp Number', False),
+            ('date_of_birth', 'Date of Birth', False),
+            ('lead_type', 'Lead Type (SCHOOL_LEAVER/ADULT/CORPORATE)', False),
+            ('parent_name', 'Parent/Guardian Name', False),
+            ('parent_phone', 'Parent/Guardian Phone', False),
+            ('parent_email', 'Parent/Guardian Email', False),
+            ('school_name', 'School Name', False),
+            ('grade', 'Grade', False),
+            ('expected_matric_year', 'Expected Matric Year', False),
+            ('highest_qualification', 'Highest Qualification', False),
+            ('employment_status', 'Employment Status', False),
+            ('employer_name', 'Employer Name', False),
+            ('notes', 'Notes', False),
+        ]
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        import csv
+        import io
+        from openpyxl import load_workbook
+        
+        file = request.FILES.get('file')
+        if not file:
+            messages.error(request, 'Please upload a file.')
+            return redirect('crm:lead_import')
+        
+        # Get settings
+        source_id = request.POST.get('source')
+        pipeline_id = request.POST.get('pipeline')
+        column_mapping = json.loads(request.POST.get('column_mapping', '{}'))
+        skip_duplicates = request.POST.get('skip_duplicates') == 'on'
+        
+        source = LeadSource.objects.filter(pk=source_id).first() if source_id else None
+        pipeline = Pipeline.objects.filter(pk=pipeline_id, is_active=True).first() if pipeline_id else None
+        
+        # Parse file
+        rows = []
+        filename = file.name.lower()
+        
+        try:
+            if filename.endswith('.csv'):
+                decoded = file.read().decode('utf-8-sig')
+                reader = csv.DictReader(io.StringIO(decoded))
+                rows = list(reader)
+            elif filename.endswith(('.xlsx', '.xls')):
+                wb = load_workbook(file, read_only=True)
+                sheet = wb.active
+                headers = [cell.value for cell in next(sheet.iter_rows(min_row=1, max_row=1))]
+                for row in sheet.iter_rows(min_row=2, values_only=True):
+                    row_dict = dict(zip(headers, row))
+                    rows.append(row_dict)
+            else:
+                messages.error(request, 'Unsupported file format. Please upload CSV or Excel file.')
+                return redirect('crm:lead_import')
+        except Exception as e:
+            messages.error(request, f'Error reading file: {str(e)}')
+            return redirect('crm:lead_import')
+        
+        # Import leads
+        created = 0
+        skipped = 0
+        errors = []
+        
+        # Get user's campus
+        user_campus = None
+        if hasattr(request.user, 'profile') and request.user.profile and request.user.profile.campus:
+            user_campus = request.user.profile.campus
+        
+        from .services.pipeline import PipelineService
+        pipeline_service = PipelineService()
+        
+        for i, row in enumerate(rows, start=2):
+            try:
+                # Map columns
+                lead_data = {}
+                for file_col, lead_field in column_mapping.items():
+                    if lead_field and file_col in row:
+                        value = row[file_col]
+                        if value is not None:
+                            lead_data[lead_field] = str(value).strip() if value else ''
+                
+                # Validate required fields
+                if not lead_data.get('first_name') or not lead_data.get('phone'):
+                    errors.append(f'Row {i}: Missing required field (first_name or phone)')
+                    continue
+                
+                # Check for duplicates
+                phone = lead_data.get('phone', '').strip()
+                email = lead_data.get('email', '').strip()
+                
+                if skip_duplicates:
+                    existing = Lead.objects.filter(
+                        Q(phone=phone) | (Q(email=email) if email else Q())
+                    ).first()
+                    if existing:
+                        skipped += 1
+                        continue
+                
+                # Create lead
+                lead = Lead(
+                    first_name=lead_data.get('first_name', ''),
+                    last_name=lead_data.get('last_name', ''),
+                    email=email if email else None,
+                    phone=phone,
+                    phone_secondary=lead_data.get('phone_secondary', ''),
+                    whatsapp_number=lead_data.get('whatsapp_number', ''),
+                    lead_type=lead_data.get('lead_type', 'ADULT'),
+                    parent_name=lead_data.get('parent_name', ''),
+                    parent_phone=lead_data.get('parent_phone', ''),
+                    parent_email=lead_data.get('parent_email', ''),
+                    school_name=lead_data.get('school_name', ''),
+                    grade=lead_data.get('grade', ''),
+                    highest_qualification=lead_data.get('highest_qualification', ''),
+                    employment_status=lead_data.get('employment_status', ''),
+                    employer_name=lead_data.get('employer_name', ''),
+                    notes=lead_data.get('notes', ''),
+                    source=source,
+                    campus=user_campus,
+                    assigned_to=request.user,
+                    status='NEW',
+                )
+                
+                # Handle date of birth
+                dob = lead_data.get('date_of_birth', '')
+                if dob:
+                    try:
+                        from dateutil import parser
+                        lead.date_of_birth = parser.parse(dob).date()
+                    except:
+                        pass
+                
+                # Handle expected matric year
+                matric_year = lead_data.get('expected_matric_year', '')
+                if matric_year:
+                    try:
+                        lead.expected_matric_year = int(matric_year)
+                    except:
+                        pass
+                
+                lead.save()
+                
+                # Log activity
+                LeadActivity.objects.create(
+                    lead=lead,
+                    activity_type='STATUS_CHANGE',
+                    description=f'Lead imported from {filename}',
+                    created_by=request.user
+                )
+                
+                # Add to pipeline if specified
+                if pipeline:
+                    try:
+                        pipeline_service.assign_pipeline(lead, pipeline, request.user)
+                    except:
+                        pass
+                
+                created += 1
+                
+            except Exception as e:
+                errors.append(f'Row {i}: {str(e)}')
+        
+        # Summary message
+        msg = f'Import complete: {created} leads created'
+        if skipped:
+            msg += f', {skipped} duplicates skipped'
+        if errors:
+            msg += f', {len(errors)} errors'
+            
+        if created > 0:
+            messages.success(request, msg)
+        else:
+            messages.warning(request, msg)
+            
+        if errors and len(errors) <= 10:
+            for error in errors:
+                messages.error(request, error)
+        elif errors:
+            messages.error(request, f'First 10 errors: {"; ".join(errors[:10])}')
+        
+        return redirect('crm:lead_list')
+
+
 @login_required
 def lead_quick_status(request, pk):
     """AJAX endpoint to quickly update lead status"""
@@ -460,6 +681,84 @@ def lead_quick_status(request, pk):
         'new_status': new_status,
         'status_display': lead.get_status_display()
     })
+
+
+@login_required
+@require_POST
+def bulk_update_leads(request):
+    """Bulk update multiple leads - status, assignment, or pipeline"""
+    try:
+        data = json.loads(request.body)
+        lead_ids = data.get('lead_ids', [])
+        action = data.get('action')
+        value = data.get('value')
+        
+        if not lead_ids or not action or not value:
+            return JsonResponse({'success': False, 'error': 'Missing required parameters'}, status=400)
+        
+        leads = Lead.objects.filter(pk__in=lead_ids)
+        updated_count = 0
+        
+        if action == 'status':
+            if value not in dict(Lead.STATUS_CHOICES):
+                return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
+            
+            for lead in leads:
+                old_status = lead.status
+                lead.status = value
+                lead.save()
+                # Log activity
+                LeadActivity.objects.create(
+                    lead=lead,
+                    activity_type='STATUS_CHANGE',
+                    description=f'Bulk status change from {old_status} to {value}',
+                    created_by=request.user
+                )
+                updated_count += 1
+                
+        elif action == 'assign':
+            agent = User.objects.filter(pk=value, is_active=True).first()
+            if not agent:
+                return JsonResponse({'success': False, 'error': 'Invalid agent'}, status=400)
+            
+            for lead in leads:
+                old_agent = lead.assigned_to
+                lead.assigned_to = agent
+                lead.save()
+                # Log activity
+                LeadActivity.objects.create(
+                    lead=lead,
+                    activity_type='ASSIGNMENT',
+                    description=f'Bulk assigned to {agent.get_full_name() or agent.username}' + 
+                                (f' from {old_agent.get_full_name() or old_agent.username}' if old_agent else ''),
+                    created_by=request.user
+                )
+                updated_count += 1
+                
+        elif action == 'pipeline':
+            pipeline = Pipeline.objects.filter(pk=value, is_active=True).first()
+            if not pipeline:
+                return JsonResponse({'success': False, 'error': 'Invalid pipeline'}, status=400)
+            
+            from .services.pipeline import PipelineService
+            pipeline_service = PipelineService()
+            
+            for lead in leads:
+                try:
+                    pipeline_service.assign_pipeline(lead, pipeline, request.user)
+                    updated_count += 1
+                except Exception as e:
+                    # Lead might already be in pipeline, continue with others
+                    pass
+        else:
+            return JsonResponse({'success': False, 'error': 'Invalid action'}, status=400)
+        
+        return JsonResponse({'success': True, 'updated': updated_count})
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 @login_required
@@ -3250,3 +3549,120 @@ class LeadPipelineAssignmentView(LoginRequiredMixin, CRMAccessMixin, TemplateVie
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
+
+# =============================================================================
+# DUPLICATE DETECTION VIEWS
+# =============================================================================
+
+@login_required
+@require_POST
+def check_duplicate_lead(request):
+    """
+    AJAX endpoint to check for duplicate leads based on phone/email.
+    Called during lead creation to warn about potential duplicates.
+    """
+    from crm.services.duplicates import DuplicateDetectionService
+    
+    try:
+        data = json.loads(request.body)
+        phone = data.get('phone', '').strip()
+        email = data.get('email', '').strip()
+        first_name = data.get('first_name', '').strip()
+        last_name = data.get('last_name', '').strip()
+        exclude_id = data.get('exclude_id')  # For edit forms
+        
+        duplicates = DuplicateDetectionService.find_duplicates(
+            phone=phone,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            exclude_lead_id=exclude_id
+        )
+        
+        # Format response
+        results = []
+        for dup in duplicates[:5]:  # Limit to top 5 matches
+            results.append({
+                'id': dup['lead_id'],
+                'name': dup['name'],
+                'phone': dup['phone'],
+                'email': dup['email'],
+                'status': dup['status'],
+                'source': dup['source'],
+                'assigned_to': dup['assigned_to'],
+                'match_reasons': dup['match_reasons'],
+                'match_score': dup['match_score'],
+                'created_at': dup['created_at'].strftime('%Y-%m-%d') if dup['created_at'] else None
+            })
+        
+        has_duplicates = len(results) > 0 and results[0]['match_score'] >= 40
+        
+        return JsonResponse({
+            'has_duplicates': has_duplicates,
+            'duplicates': results,
+            'message': f'Found {len(results)} potential duplicate(s)' if has_duplicates else 'No duplicates found'
+        })
+    
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+class DuplicateManagementView(LoginRequiredMixin, CRMAccessMixin, TemplateView):
+    """
+    View for finding and managing duplicate leads.
+    """
+    template_name = 'crm/duplicate_management.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from crm.services.duplicates import DuplicateDetectionService
+        
+        # Get potential duplicate groups
+        duplicate_groups = DuplicateDetectionService.find_all_potential_duplicates(limit=50)
+        
+        context['duplicate_groups'] = duplicate_groups
+        context['total_groups'] = len(duplicate_groups)
+        context['total_duplicates'] = sum(g['count'] for g in duplicate_groups)
+        
+        return context
+
+
+@login_required
+@require_POST  
+def merge_leads(request):
+    """
+    Merge duplicate leads into a primary lead.
+    """
+    from crm.services.duplicates import DuplicateDetectionService
+    
+    try:
+        data = json.loads(request.body)
+        primary_id = data.get('primary_id')
+        duplicate_ids = data.get('duplicate_ids', [])
+        
+        if not primary_id:
+            return JsonResponse({'error': 'Primary lead ID is required'}, status=400)
+        
+        if not duplicate_ids:
+            return JsonResponse({'error': 'At least one duplicate lead ID is required'}, status=400)
+        
+        result = DuplicateDetectionService.merge_leads(
+            primary_lead_id=primary_id,
+            duplicate_lead_ids=duplicate_ids,
+            user=request.user
+        )
+        
+        return JsonResponse({
+            'status': 'ok',
+            'message': f'Successfully merged {result["merged_count"]} duplicate(s) into lead #{primary_id}',
+            **result
+        })
+    
+    except Lead.DoesNotExist:
+        return JsonResponse({'error': 'Lead not found'}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

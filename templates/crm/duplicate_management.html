@@ -1,0 +1,306 @@
+{% extends 'crm/base_crm.html' %}
+{% load static %}
+
+{% block title %}Duplicate Lead Management{% endblock %}
+
+{% block page_header %}
+<div class="flex justify-between items-center">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900">Duplicate Lead Management</h1>
+        <p class="text-slate-600 mt-1">Find and merge duplicate leads to keep your database clean</p>
+    </div>
+    <div class="flex items-center gap-4">
+        <div class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg">
+            <span class="font-semibold">{{ total_groups }}</span> potential duplicate groups
+        </div>
+        <div class="bg-orange-100 text-orange-800 px-4 py-2 rounded-lg">
+            <span class="font-semibold">{{ total_duplicates }}</span> total duplicate leads
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    {% if duplicate_groups %}
+        <!-- Instructions -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-start gap-3">
+                <svg class="w-6 h-6 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div>
+                    <h3 class="font-semibold text-blue-900">How to merge duplicates</h3>
+                    <p class="text-blue-800 text-sm mt-1">
+                        1. Review each duplicate group below<br>
+                        2. Select the PRIMARY lead (the one to keep)<br>
+                        3. Select which duplicates to merge into it<br>
+                        4. Click "Merge Selected" - activities and documents will be transferred to the primary lead
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Duplicate Groups -->
+        {% for group in duplicate_groups %}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" data-group-index="{{ forloop.counter0 }}">
+            <!-- Group Header -->
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium 
+                            {% if group.type == 'phone' %}bg-purple-100 text-purple-800{% else %}bg-green-100 text-green-800{% endif %}">
+                            {{ group.type|title }} Match
+                        </span>
+                        <span class="text-slate-600 font-mono text-sm">{{ group.match_value }}</span>
+                    </div>
+                    <span class="text-sm text-slate-500">{{ group.count }} leads</span>
+                </div>
+            </div>
+            
+            <!-- Lead Cards -->
+            <div class="p-6">
+                <div class="grid gap-4">
+                    {% for lead in group.leads %}
+                    <div class="flex items-center gap-4 p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                        <!-- Primary Selection Radio -->
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" 
+                                   name="primary_{{ forloop.parentloop.counter0 }}" 
+                                   value="{{ lead.id }}"
+                                   class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                                   {% if forloop.first %}checked{% endif %}
+                                   onchange="updatePrimarySelection({{ forloop.parentloop.counter0 }}, {{ lead.id }})">
+                            <span class="text-xs text-slate-500 uppercase tracking-wide">Primary</span>
+                        </label>
+                        
+                        <!-- Merge Checkbox -->
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" 
+                                   name="merge_{{ forloop.parentloop.counter0 }}" 
+                                   value="{{ lead.id }}"
+                                   class="merge-checkbox w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500"
+                                   data-group="{{ forloop.parentloop.counter0 }}"
+                                   {% if not forloop.first %}checked{% endif %}>
+                            <span class="text-xs text-slate-500 uppercase tracking-wide">Merge</span>
+                        </label>
+                        
+                        <!-- Lead Info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <a href="{% url 'crm:lead_detail' lead.id %}" class="font-semibold text-slate-900 hover:text-blue-600" target="_blank">
+                                    {{ lead.first_name }} {{ lead.last_name }}
+                                </a>
+                                <span class="px-2 py-0.5 rounded text-xs font-medium
+                                    {% if lead.status == 'NEW' %}bg-blue-100 text-blue-800
+                                    {% elif lead.status == 'CONTACTED' %}bg-cyan-100 text-cyan-800
+                                    {% elif lead.status == 'QUALIFIED' %}bg-green-100 text-green-800
+                                    {% elif lead.status == 'ENROLLED' %}bg-emerald-100 text-emerald-800
+                                    {% else %}bg-slate-100 text-slate-800{% endif %}">
+                                    {{ lead.status }}
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-4 mt-1 text-sm text-slate-500">
+                                {% if lead.phone %}
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                                    </svg>
+                                    {{ lead.phone }}
+                                </span>
+                                {% endif %}
+                                {% if lead.email %}
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                    {{ lead.email }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Lead ID -->
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400">ID: {{ lead.id }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Merge Button -->
+                <div class="mt-4 flex justify-end">
+                    <button type="button" 
+                            onclick="mergeGroup({{ forloop.counter0 }})"
+                            class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                        </svg>
+                        Merge Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <!-- No Duplicates Found -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+            <div class="flex flex-col items-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-900">No Duplicates Found</h3>
+                <p class="text-slate-600 mt-2">Your lead database is clean! No potential duplicates were detected.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Merge Confirmation Modal -->
+<div id="mergeModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+        <div class="p-6 border-b border-slate-200">
+            <h3 class="text-lg font-semibold text-slate-900">Confirm Merge</h3>
+        </div>
+        <div class="p-6">
+            <p class="text-slate-600">
+                You are about to merge <span id="mergeCount" class="font-semibold text-slate-900">0</span> duplicate(s) 
+                into lead <span id="mergePrimaryName" class="font-semibold text-slate-900"></span>.
+            </p>
+            <div class="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p class="text-amber-800 text-sm">
+                    <strong>This action cannot be undone.</strong> All activities and documents from the duplicates will be transferred to the primary lead.
+                </p>
+            </div>
+        </div>
+        <div class="p-6 border-t border-slate-200 flex justify-end gap-3">
+            <button type="button" onclick="closeMergeModal()" class="px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+                Cancel
+            </button>
+            <button type="button" id="confirmMergeBtn" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                Confirm Merge
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentMergeGroup = null;
+    let currentPrimaryId = null;
+    let currentDuplicateIds = [];
+    
+    function updatePrimarySelection(groupIndex, leadId) {
+        // Uncheck the merge checkbox for the primary lead
+        const mergeCheckboxes = document.querySelectorAll(`input[name="merge_${groupIndex}"]`);
+        mergeCheckboxes.forEach(cb => {
+            if (parseInt(cb.value) === leadId) {
+                cb.checked = false;
+            }
+        });
+    }
+    
+    function mergeGroup(groupIndex) {
+        // Get the primary lead
+        const primaryRadio = document.querySelector(`input[name="primary_${groupIndex}"]:checked`);
+        if (!primaryRadio) {
+            alert('Please select a primary lead');
+            return;
+        }
+        currentPrimaryId = parseInt(primaryRadio.value);
+        
+        // Get the duplicates to merge
+        const mergeCheckboxes = document.querySelectorAll(`input[name="merge_${groupIndex}"]:checked`);
+        currentDuplicateIds = Array.from(mergeCheckboxes).map(cb => parseInt(cb.value)).filter(id => id !== currentPrimaryId);
+        
+        if (currentDuplicateIds.length === 0) {
+            alert('Please select at least one duplicate to merge');
+            return;
+        }
+        
+        currentMergeGroup = groupIndex;
+        
+        // Show confirmation modal
+        document.getElementById('mergeCount').textContent = currentDuplicateIds.length;
+        document.getElementById('mergePrimaryName').textContent = `#${currentPrimaryId}`;
+        document.getElementById('mergeModal').classList.remove('hidden');
+        document.getElementById('mergeModal').classList.add('flex');
+    }
+    
+    function closeMergeModal() {
+        document.getElementById('mergeModal').classList.add('hidden');
+        document.getElementById('mergeModal').classList.remove('flex');
+        currentMergeGroup = null;
+        currentPrimaryId = null;
+        currentDuplicateIds = [];
+    }
+    
+    document.getElementById('confirmMergeBtn').addEventListener('click', async function() {
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<svg class="animate-spin w-5 h-5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" class="opacity-25"></circle><path fill="currentColor" class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Merging...';
+        
+        try {
+            const response = await fetch("{% url 'crm:merge_leads' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    primary_id: currentPrimaryId,
+                    duplicate_ids: currentDuplicateIds
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'ok') {
+                // Success - remove the group from the page
+                const groupElement = document.querySelector(`[data-group-index="${currentMergeGroup}"]`);
+                if (groupElement) {
+                    groupElement.remove();
+                }
+                
+                closeMergeModal();
+                
+                // Show success message
+                showToast(`Successfully merged ${data.merged_count} duplicate(s)`, 'success');
+            } else {
+                throw new Error(data.error || 'Merge failed');
+            }
+        } catch (error) {
+            console.error('Merge error:', error);
+            showToast(error.message || 'Failed to merge leads', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Confirm Merge';
+        }
+    });
+    
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-600 text-white' : 
+            type === 'error' ? 'bg-red-600 text-white' : 
+            'bg-slate-800 text-white'
+        }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 4000);
+    }
+    
+    // Close modal on backdrop click
+    document.getElementById('mergeModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeMergeModal();
+        }
+    });
+</script>
+{% endblock %}

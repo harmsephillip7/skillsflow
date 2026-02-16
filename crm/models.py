@@ -860,6 +860,7 @@ class Lead(TenantAwareModel):
         ('ENROLLED', 'Enrolled'),
         ('LOST', 'Lost'),
         ('ALUMNI', 'Alumni'),
+        ('MERGED', 'Merged Duplicate'),
     ]
     
     PRIORITY_CHOICES = [
@@ -1147,6 +1148,23 @@ class Lead(TenantAwareModel):
     
     # Tags for segmentation
     tags = models.JSONField(default=list, blank=True)
+    
+    # Duplicate Merge Tracking
+    merged_into = models.ForeignKey(
+        'self',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='merged_duplicates',
+        help_text="If this lead was merged, points to the primary lead"
+    )
+    merged_at = models.DateTimeField(null=True, blank=True)
+    merged_by = models.ForeignKey(
+        User,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='merged_leads',
+        help_text="User who performed the merge"
+    )
     
     class Meta:
         ordering = ['-created_at']

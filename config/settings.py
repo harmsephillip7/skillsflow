@@ -6,6 +6,7 @@ Production settings should override via environment variables.
 from pathlib import Path
 import os
 from datetime import timedelta
+from celery.schedules import crontab
 
 # Load environment variables from .env file (for local development)
 from dotenv import load_dotenv
@@ -252,6 +253,27 @@ CELERY_BEAT_SCHEDULE = {
     'process-scheduled-reports': {
         'task': 'reporting.tasks.process_scheduled_reports',
         'schedule': timedelta(hours=1),
+    },
+    # CRM Automation Tasks
+    'process-scheduled-communications': {
+        'task': 'crm.tasks.process_scheduled_communications',
+        'schedule': timedelta(minutes=15),  # Every 15 minutes
+    },
+    'update-lead-scores': {
+        'task': 'crm.tasks.update_lead_scores',
+        'schedule': timedelta(hours=24),  # Daily
+    },
+    'send-followup-reminders': {
+        'task': 'crm.tasks.send_followup_reminders',
+        'schedule': crontab(hour=7, minute=0),  # 7 AM daily
+    },
+    'process-pipeline-automation': {
+        'task': 'crm.tasks.process_pipeline_automation',
+        'schedule': timedelta(hours=6),  # Every 6 hours
+    },
+    'check-stale-leads': {
+        'task': 'crm.tasks.check_stale_leads',
+        'schedule': timedelta(hours=24),  # Daily
     },
 }
 
