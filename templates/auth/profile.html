@@ -211,6 +211,32 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">Security</h2>
                     <div class="space-y-3">
+                        <a id="enable2faLink" href="{% url 'core:setup_2fa' %}" class="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                                    </svg>
+                                </div>
+                                <span id="enable2faLabel" class="font-medium text-gray-700">Enable 2FA</span>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                        <a id="manage2faLink" href="{% url 'core:2fa_settings' %}" class="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 16v-2m8-6h-2M6 12H4m12.364-6.364l-1.414 1.414M7.05 16.95l-1.414 1.414m0-12.728L7.05 7.05m9.9 9.9l1.414 1.414"/>
+                                    </svg>
+                                </div>
+                                <span class="font-medium text-gray-700">Manage 2FA</span>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
                         <a href="{% url 'password_change' %}" class="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
                             <div class="flex items-center space-x-3">
                                 <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -267,4 +293,38 @@
         </div>
     </main>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const enableLink = document.getElementById('enable2faLink');
+        const enableLabel = document.getElementById('enable2faLabel');
+        const manageLink = document.getElementById('manage2faLink');
+
+        if (!enableLink || !manageLink || !enableLabel) return;
+
+        fetch('/api/auth/2fa/status/', { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(data => {
+                const isEnabled = Boolean(data && data.is_enabled);
+
+                if (isEnabled) {
+                    enableLabel.textContent = '2FA Enabled';
+                    enableLink.classList.add('opacity-60', 'cursor-default');
+                    enableLink.setAttribute('aria-disabled', 'true');
+                    enableLink.addEventListener('click', (e) => e.preventDefault());
+                    manageLink.classList.remove('opacity-60', 'cursor-not-allowed');
+                    manageLink.setAttribute('aria-disabled', 'false');
+                } else {
+                    manageLink.classList.add('opacity-60', 'cursor-not-allowed');
+                    manageLink.setAttribute('aria-disabled', 'true');
+                    manageLink.addEventListener('click', (e) => e.preventDefault());
+                    enableLink.classList.remove('opacity-60', 'cursor-default');
+                    enableLink.setAttribute('aria-disabled', 'false');
+                }
+            })
+            .catch(() => {
+                // Keep default links if status check fails
+            });
+    });
+</script>
 {% endblock %}
