@@ -14,6 +14,7 @@ from . import scanner_views
 from . import webform_views
 from . import webform_settings_views
 from . import marketing_dashboard_views
+from . import settings_views
 
 app_name = 'crm'
 
@@ -200,4 +201,10 @@ urlpatterns = [
     
     # Lead Pipeline Assignment API
     path('api/leads/<int:lead_id>/pipeline/', views.LeadPipelineAssignmentView.as_view(), name='lead_pipeline_assignment'),
+    
+    # CRM Settings (User-friendly admin replacement)
+    path('settings/', settings_views.CRMSettingsView.as_view(), name='crm_settings'),
+    path('settings/api/lead-sources/', settings_views.LeadSourceAPIView.as_view(), name='settings_lead_sources_api'),
+    path('settings/api/required-documents/', settings_views.RequiredDocumentAPIView.as_view(), name='settings_required_documents_api'),
+    path('settings/api/required-documents/reorder/', settings_views.RequiredDocumentReorderView.as_view(), name='settings_required_documents_reorder'),
 ]

@@ -1,0 +1,622 @@
+{% extends 'crm/crm_fullscreen_base.html' %}
+{% load static %}
+
+{% block crm_content %}
+<div class="p-6" x-data="crmSettings()">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">CRM Settings</h1>
+                <p class="text-sm text-gray-500 mt-1">Configure lead sources, required documents, and other CRM settings</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-6 border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8">
+            <button @click="activeTab = 'lead-sources'" 
+                    :class="activeTab === 'lead-sources' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                <svg class="w-5 h-5 inline-block mr-2 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+                </svg>
+                Lead Sources
+            </button>
+            <button @click="activeTab = 'required-documents'" 
+                    :class="activeTab === 'required-documents' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                <svg class="w-5 h-5 inline-block mr-2 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Required Documents
+            </button>
+        </nav>
+    </div>
+
+    <!-- Lead Sources Tab -->
+    <div x-show="activeTab === 'lead-sources'" x-cloak>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Lead Sources</h2>
+                        <p class="text-sm text-gray-500">Define where your leads come from for tracking and reporting</p>
+                    </div>
+                    <button @click="showAddSourceModal = true" 
+                            class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Source
+                    </button>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leads</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <template x-for="source in leadSources" :key="source.id">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900" x-text="source.name"></div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <code class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded" x-text="source.code"></code>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-500 max-w-xs truncate" x-text="source.description || '-'"></div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800" x-text="source.lead_count"></span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span x-show="source.is_active" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                                    <span x-show="!source.is_active" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Inactive</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button @click="editSource(source)" class="text-primary-600 hover:text-primary-900 mr-3">Edit</button>
+                                    <button @click="deleteSource(source)" 
+                                            x-show="source.lead_count === 0"
+                                            class="text-red-600 hover:text-red-900">Delete</button>
+                                    <button @click="toggleSourceActive(source)" 
+                                            x-show="source.lead_count > 0"
+                                            :class="source.is_active ? 'text-amber-600 hover:text-amber-900' : 'text-green-600 hover:text-green-900'"
+                                            x-text="source.is_active ? 'Deactivate' : 'Activate'"></button>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr x-show="leadSources.length === 0">
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+                                </svg>
+                                <p class="mt-2 text-sm">No lead sources configured yet</p>
+                                <button @click="showAddSourceModal = true" class="mt-3 text-primary-600 hover:text-primary-700 font-medium text-sm">Add your first lead source</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Required Documents Tab -->
+    <div x-show="activeTab === 'required-documents'" x-cloak>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Required Documents</h2>
+                        <p class="text-sm text-gray-500">Configure which documents are required for enrollment compliance checks</p>
+                    </div>
+                    <button @click="showAddDocumentModal = true" 
+                            class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Document Type
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="space-y-3" id="document-list">
+                    <template x-for="(doc, index) in requiredDocuments" :key="doc.id">
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+                            <div class="flex items-center space-x-4">
+                                <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white rounded-lg border border-gray-200">
+                                    <span class="text-sm font-medium text-gray-500" x-text="index + 1"></span>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-900" x-text="doc.display_name"></h3>
+                                    <p class="text-xs text-gray-500" x-text="doc.description || 'No description'"></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" 
+                                           :checked="doc.is_required" 
+                                           @change="toggleDocumentRequired(doc)"
+                                           class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                                    <span class="ml-2 text-sm text-gray-600" x-text="doc.is_required ? 'Required' : 'Optional'"></span>
+                                </label>
+                                <button @click="editDocument(doc)" class="p-2 text-gray-400 hover:text-primary-600 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button @click="deleteDocument(doc)" class="p-2 text-gray-400 hover:text-red-600 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                    <div x-show="requiredDocuments.length === 0" class="text-center py-12 text-gray-500">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p class="mt-2 text-sm">No required documents configured</p>
+                        <button @click="showAddDocumentModal = true" class="mt-3 text-primary-600 hover:text-primary-700 font-medium text-sm">Add your first required document</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Info Card -->
+        <div class="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-blue-800">About Compliance Checks</h3>
+                    <div class="mt-2 text-sm text-blue-700">
+                        <p>Documents marked as <strong>Required</strong> will be checked during the daily compliance scan. Enrollments missing required documents will appear in the Compliance Alerts dashboard.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Lead Source Modal -->
+    <div x-show="showAddSourceModal || showEditSourceModal" 
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         aria-labelledby="modal-title" 
+         role="dialog" 
+         aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="showAddSourceModal || showEditSourceModal" 
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+                 @click="closeSourceModal()"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div x-show="showAddSourceModal || showEditSourceModal"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form @submit.prevent="saveSource()">
+                    <div class="bg-white px-6 pt-5 pb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="showEditSourceModal ? 'Edit Lead Source' : 'Add Lead Source'"></h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Name <span class="text-red-500">*</span></label>
+                                <input type="text" 
+                                       x-model="sourceForm.name" 
+                                       required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                       placeholder="e.g., Website, Walk-in, WhatsApp">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <textarea x-model="sourceForm.description" 
+                                          rows="2"
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                          placeholder="Optional description"></textarea>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" 
+                                       x-model="sourceForm.is_active" 
+                                       id="source-active"
+                                       class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                <label for="source-active" class="ml-2 text-sm text-gray-700">Active</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                        <button type="button" 
+                                @click="closeSourceModal()"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                :disabled="saving"
+                                class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50">
+                            <span x-show="!saving" x-text="showEditSourceModal ? 'Save Changes' : 'Add Source'"></span>
+                            <span x-show="saving">Saving...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Document Modal -->
+    <div x-show="showAddDocumentModal || showEditDocumentModal" 
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         aria-labelledby="modal-title" 
+         role="dialog" 
+         aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="showAddDocumentModal || showEditDocumentModal" 
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+                 @click="closeDocumentModal()"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div x-show="showAddDocumentModal || showEditDocumentModal"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form @submit.prevent="saveDocument()">
+                    <div class="bg-white px-6 pt-5 pb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="showEditDocumentModal ? 'Edit Required Document' : 'Add Required Document'"></h3>
+                        
+                        <div class="space-y-4">
+                            <div x-show="!showEditDocumentModal">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Document Type <span class="text-red-500">*</span></label>
+                                <select x-model="documentForm.document_type" 
+                                        required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                    <option value="">Select a document type</option>
+                                    <template x-for="[value, label] in documentTypeChoices" :key="value">
+                                        <option :value="value" x-text="label"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div x-show="showEditDocumentModal">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
+                                <div class="px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-700" x-text="documentForm.display_name"></div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <textarea x-model="documentForm.description" 
+                                          rows="2"
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                          placeholder="Description shown to users"></textarea>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" 
+                                       x-model="documentForm.is_required" 
+                                       id="doc-required"
+                                       class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                <label for="doc-required" class="ml-2 text-sm text-gray-700">Required for compliance</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                        <button type="button" 
+                                @click="closeDocumentModal()"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                :disabled="saving"
+                                class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50">
+                            <span x-show="!saving" x-text="showEditDocumentModal ? 'Save Changes' : 'Add Document'"></span>
+                            <span x-show="saving">Saving...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div x-show="toast.show" 
+         x-cloak
+         x-transition:enter="transform ease-out duration-300 transition"
+         x-transition:enter-start="translate-y-2 opacity-0"
+         x-transition:enter-end="translate-y-0 opacity-100"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed bottom-4 right-4 z-50">
+        <div :class="toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'" 
+             class="rounded-lg px-4 py-3 text-white shadow-lg flex items-center space-x-3">
+            <svg x-show="toast.type === 'success'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <svg x-show="toast.type === 'error'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            <span x-text="toast.message"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+function crmSettings() {
+    return {
+        activeTab: '{{ active_tab }}',
+        
+        // Lead Sources
+        leadSources: {{ lead_sources|safe }},
+        showAddSourceModal: false,
+        showEditSourceModal: false,
+        sourceForm: {
+            id: null,
+            name: '',
+            description: '',
+            is_active: true
+        },
+        
+        // Required Documents
+        requiredDocuments: {{ required_documents|safe }},
+        documentTypeChoices: {{ document_type_choices|safe }},
+        showAddDocumentModal: false,
+        showEditDocumentModal: false,
+        documentForm: {
+            id: null,
+            document_type: '',
+            display_name: '',
+            description: '',
+            is_required: true,
+            order: 0
+        },
+        
+        // UI State
+        saving: false,
+        toast: {
+            show: false,
+            message: '',
+            type: 'success'
+        },
+        
+        // Lead Source Methods
+        editSource(source) {
+            this.sourceForm = { ...source };
+            this.showEditSourceModal = true;
+        },
+        
+        closeSourceModal() {
+            this.showAddSourceModal = false;
+            this.showEditSourceModal = false;
+            this.sourceForm = { id: null, name: '', description: '', is_active: true };
+        },
+        
+        async saveSource() {
+            this.saving = true;
+            try {
+                const isEdit = this.showEditSourceModal;
+                const response = await fetch('{% url "crm:settings_lead_sources_api" %}', {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(this.sourceForm)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (isEdit) {
+                        const index = this.leadSources.findIndex(s => s.id === data.source.id);
+                        if (index !== -1) {
+                            this.leadSources[index] = data.source;
+                        }
+                    } else {
+                        this.leadSources.push(data.source);
+                    }
+                    this.closeSourceModal();
+                    this.showToast(isEdit ? 'Lead source updated' : 'Lead source created', 'success');
+                } else {
+                    this.showToast(data.error || 'Failed to save', 'error');
+                }
+            } catch (error) {
+                this.showToast('An error occurred', 'error');
+            }
+            this.saving = false;
+        },
+        
+        async deleteSource(source) {
+            if (!confirm(`Are you sure you want to delete "${source.name}"?`)) return;
+            
+            try {
+                const response = await fetch('{% url "crm:settings_lead_sources_api" %}', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ id: source.id })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.leadSources = this.leadSources.filter(s => s.id !== source.id);
+                    this.showToast('Lead source deleted', 'success');
+                } else {
+                    this.showToast(data.error || 'Failed to delete', 'error');
+                }
+            } catch (error) {
+                this.showToast('An error occurred', 'error');
+            }
+        },
+        
+        async toggleSourceActive(source) {
+            source.is_active = !source.is_active;
+            try {
+                const response = await fetch('{% url "crm:settings_lead_sources_api" %}', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ id: source.id, is_active: source.is_active })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showToast(`Lead source ${source.is_active ? 'activated' : 'deactivated'}`, 'success');
+                } else {
+                    source.is_active = !source.is_active;
+                    this.showToast(data.error || 'Failed to update', 'error');
+                }
+            } catch (error) {
+                source.is_active = !source.is_active;
+                this.showToast('An error occurred', 'error');
+            }
+        },
+        
+        // Required Document Methods
+        editDocument(doc) {
+            this.documentForm = { ...doc };
+            this.showEditDocumentModal = true;
+        },
+        
+        closeDocumentModal() {
+            this.showAddDocumentModal = false;
+            this.showEditDocumentModal = false;
+            this.documentForm = { id: null, document_type: '', display_name: '', description: '', is_required: true, order: 0 };
+        },
+        
+        async saveDocument() {
+            this.saving = true;
+            try {
+                const isEdit = this.showEditDocumentModal;
+                const response = await fetch('{% url "crm:settings_required_documents_api" %}', {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(this.documentForm)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (isEdit) {
+                        const index = this.requiredDocuments.findIndex(d => d.id === data.config.id);
+                        if (index !== -1) {
+                            this.requiredDocuments[index] = data.config;
+                        }
+                    } else {
+                        this.requiredDocuments.push(data.config);
+                    }
+                    this.closeDocumentModal();
+                    this.showToast(isEdit ? 'Document updated' : 'Document added', 'success');
+                } else {
+                    this.showToast(data.error || 'Failed to save', 'error');
+                }
+            } catch (error) {
+                this.showToast('An error occurred', 'error');
+            }
+            this.saving = false;
+        },
+        
+        async deleteDocument(doc) {
+            if (!confirm(`Are you sure you want to remove "${doc.display_name}" from required documents?`)) return;
+            
+            try {
+                const response = await fetch('{% url "crm:settings_required_documents_api" %}', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ id: doc.id })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.requiredDocuments = this.requiredDocuments.filter(d => d.id !== doc.id);
+                    this.showToast('Document removed', 'success');
+                } else {
+                    this.showToast(data.error || 'Failed to delete', 'error');
+                }
+            } catch (error) {
+                this.showToast('An error occurred', 'error');
+            }
+        },
+        
+        async toggleDocumentRequired(doc) {
+            doc.is_required = !doc.is_required;
+            try {
+                const response = await fetch('{% url "crm:settings_required_documents_api" %}', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ id: doc.id, is_required: doc.is_required })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    doc.is_required = !doc.is_required;
+                    this.showToast(data.error || 'Failed to update', 'error');
+                }
+            } catch (error) {
+                doc.is_required = !doc.is_required;
+                this.showToast('An error occurred', 'error');
+            }
+        },
+        
+        // Toast
+        showToast(message, type = 'success') {
+            this.toast = { show: true, message, type };
+            setTimeout(() => {
+                this.toast.show = false;
+            }, 3000);
+        }
+    }
+}
+</script>
+{% endblock %}
