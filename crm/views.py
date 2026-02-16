@@ -303,7 +303,7 @@ class LeadDetailView(LoginRequiredMixin, CRMAccessMixin, DetailView):
         from intakes.models import Intake
         context['qualifications'] = Qualification.objects.filter(is_active=True).order_by('title')
         context['intakes'] = Intake.objects.filter(
-            is_open_for_applications=True,
+            status='ACTIVE',
             start_date__gte=date.today()
         ).order_by('start_date')[:20]
         
