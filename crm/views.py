@@ -2192,3 +2192,418 @@ class LeadPreApproveView(LoginRequiredMixin, CRMAccessMixin, TemplateView):
             traceback.print_exc()
             return JsonResponse({'error': str(e)}, status=500)
 
+
+# =============================================================================
+# COMPLIANCE ALERTS DASHBOARD
+# =============================================================================
+
+class ComplianceAlertsDashboardView(LoginRequiredMixin, CRMAccessMixin, TemplateView):
+    """
+    Dashboard showing compliance alerts for enrollments.
+    Campus-scoped with ability to resolve alerts.
+    """
+    template_name = 'crm/compliance_alerts_dashboard.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .models import ComplianceAlert, SalesEnrollmentRecord
+        from tenants.models import Campus
+        
+        # Get filter parameters
+        campus_id = self.request.GET.get('campus')
+        alert_type = self.request.GET.get('alert_type')
+        show_resolved = self.request.GET.get('show_resolved') == 'true'
+        
+        # Base queryset
+        alerts = ComplianceAlert.objects.select_related(
+            'enrollment_record',
+            'enrollment_record__enrollment',
+            'enrollment_record__enrollment__learner',
+            'enrollment_record__sales_person',
+            'campus'
+        ).order_by('-created_at')
+        
+        # Campus scoping
+        user = self.request.user
+        selected_campus = get_selected_campus(self.request)
+        
+        if selected_campus:
+            alerts = alerts.filter(campus=selected_campus)
+        elif not user.is_superuser:
+            # Non-superusers see only their campus
+            if hasattr(user, 'profile') and user.profile and user.profile.campus:
+                alerts = alerts.filter(campus=user.profile.campus)
+        
+        # Additional filters
+        if campus_id:
+            alerts = alerts.filter(campus_id=campus_id)
+        if alert_type:
+            alerts = alerts.filter(alert_type=alert_type)
+        if not show_resolved:
+            alerts = alerts.filter(resolved=False)
+        
+        # Stats
+        context['stats'] = {
+            'total_open': alerts.filter(resolved=False).count(),
+            'missing_docs': alerts.filter(resolved=False, alert_type='MISSING_DOCUMENTS').count(),
+            'quality_rejected': alerts.filter(resolved=False, alert_type='QUALITY_REJECTED').count(),
+        }
+        
+        context['alerts'] = alerts[:100]  # Limit to 100 most recent
+        context['campuses'] = Campus.objects.filter(is_active=True)
+        context['selected_campus'] = campus_id
+        context['selected_alert_type'] = alert_type
+        context['show_resolved'] = show_resolved
+        
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        """Handle alert resolution"""
+        from .models import ComplianceAlert
+        import json
+        
+        try:
+            data = json.loads(request.body)
+            alert_id = data.get('alert_id')
+            action = data.get('action')
+            notes = data.get('notes', '')
+            
+            if action == 'resolve':
+                alert = get_object_or_404(ComplianceAlert, pk=alert_id)
+                alert.resolve(user=request.user, notes=notes)
+                return JsonResponse({
+                    'status': 'ok',
+                    'message': 'Alert resolved successfully'
+                })
+            
+            return JsonResponse({'error': 'Invalid action'}, status=400)
+        
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+# =============================================================================
+# SALES COMMISSION DASHBOARD
+# =============================================================================
+
+class SalesCommissionDashboardView(LoginRequiredMixin, CRMAccessMixin, TemplateView):
+    """
+    Dashboard showing sales enrollment records for commission calculation.
+    Campus-scoped with Excel export functionality.
+    """
+    template_name = 'crm/sales_commission_dashboard.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .models import SalesEnrollmentRecord
+        from tenants.models import Campus
+        from django.db.models import Count, Sum, Case, When, IntegerField
+        from core.models import User
+        
+        # Get filter parameters
+        month = self.request.GET.get('month', timezone.now().strftime('%Y-%m'))
+        campus_id = self.request.GET.get('campus')
+        sales_person_id = self.request.GET.get('sales_person')
+        
+        # Base queryset
+        records = SalesEnrollmentRecord.objects.select_related(
+            'enrollment',
+            'enrollment__learner',
+            'sales_person',
+            'campus'
+        )
+        
+        # Campus scoping
+        user = self.request.user
+        selected_campus = get_selected_campus(self.request)
+        
+        if selected_campus:
+            records = records.filter(campus=selected_campus)
+        elif not user.is_superuser:
+            if hasattr(user, 'profile') and user.profile and user.profile.campus:
+                records = records.filter(campus=user.profile.campus)
+        
+        # Additional filters
+        if month:
+            records = records.filter(month_period=month)
+        if campus_id:
+            records = records.filter(campus_id=campus_id)
+        if sales_person_id:
+            records = records.filter(sales_person_id=sales_person_id)
+        
+        # Aggregate by sales person
+        sales_stats = records.values(
+            'sales_person__id',
+            'sales_person__first_name',
+            'sales_person__last_name',
+            'sales_person__email'
+        ).annotate(
+            total_enrollments=Count('id'),
+            docs_complete=Count('id', filter=Q(documents_uploaded_complete=True)),
+            quality_approved=Count('id', filter=Q(documents_quality_approved=True)),
+            pop_received=Count('id', filter=Q(proof_of_payment_received=True)),
+            private_count=Count('id', filter=Q(funding_type__in=['PRIVATE_UPFRONT', 'PRIVATE_PMT_AGREEMENT'])),
+            bursary_count=Count('id', filter=Q(funding_type__in=['GOVERNMENT_BURSARY', 'CORPORATE_BURSARY', 'DG_BURSARY'])),
+            commission_eligible=Count('id', filter=Q(
+                documents_uploaded_complete=True,
+                documents_quality_approved=True,
+                proof_of_payment_received=True,
+                funding_type__in=['PRIVATE_UPFRONT', 'PRIVATE_PMT_AGREEMENT']
+            ))
+        ).order_by('-total_enrollments')
+        
+        # Overall stats
+        overall_stats = {
+            'total_enrollments': records.count(),
+            'total_eligible': records.filter(
+                documents_uploaded_complete=True,
+                documents_quality_approved=True,
+                proof_of_payment_received=True,
+                funding_type__in=['PRIVATE_UPFRONT', 'PRIVATE_PMT_AGREEMENT']
+            ).count(),
+            'total_bursary': records.filter(
+                funding_type__in=['GOVERNMENT_BURSARY', 'CORPORATE_BURSARY', 'DG_BURSARY']
+            ).count(),
+        }
+        
+        # Get available months (last 12 months)
+        months = []
+        current = timezone.now().date()
+        for i in range(12):
+            m = current.replace(day=1) - timedelta(days=i*30)
+            months.append(m.strftime('%Y-%m'))
+        
+        context['sales_stats'] = list(sales_stats)
+        context['overall_stats'] = overall_stats
+        context['records'] = records[:200]  # For detailed view
+        context['campuses'] = Campus.objects.filter(is_active=True)
+        context['months'] = sorted(set(months), reverse=True)
+        context['selected_month'] = month
+        context['selected_campus'] = campus_id
+        context['selected_sales_person'] = sales_person_id
+        
+        # Get sales people for filter
+        context['sales_people'] = User.objects.filter(
+            is_active=True,
+            sales_enrollment_records__isnull=False
+        ).distinct()
+        
+        return context
+
+
+class SalesCommissionExportView(LoginRequiredMixin, CRMAccessMixin, TemplateView):
+    """Export sales commission data to Excel"""
+    
+    def get(self, request, *args, **kwargs):
+        from .models import SalesEnrollmentRecord
+        import csv
+        from django.http import HttpResponse
+        
+        month = request.GET.get('month', timezone.now().strftime('%Y-%m'))
+        campus_id = request.GET.get('campus')
+        
+        # Build queryset
+        records = SalesEnrollmentRecord.objects.select_related(
+            'enrollment',
+            'enrollment__learner',
+            'sales_person',
+            'campus'
+        ).filter(month_period=month)
+        
+        # Campus scoping
+        user = request.user
+        selected_campus = get_selected_campus(request)
+        
+        if selected_campus:
+            records = records.filter(campus=selected_campus)
+        elif campus_id:
+            records = records.filter(campus_id=campus_id)
+        elif not user.is_superuser:
+            if hasattr(user, 'profile') and user.profile and user.profile.campus:
+                records = records.filter(campus=user.profile.campus)
+        
+        # Create CSV response
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="sales_commission_{month}.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow([
+            'Enrollment Number',
+            'Learner Name',
+            'Sales Person',
+            'Campus',
+            'Enrollment Date',
+            'Funding Type',
+            'Docs Complete',
+            'Quality Approved',
+            'POP Received',
+            'Commission Eligible'
+        ])
+        
+        for record in records:
+            learner_name = record.enrollment.learner.get_full_name() if record.enrollment and record.enrollment.learner else 'N/A'
+            enrollment_number = record.enrollment.enrollment_number if record.enrollment else 'N/A'
+            
+            writer.writerow([
+                enrollment_number,
+                learner_name,
+                record.sales_person.get_full_name() if record.sales_person else 'N/A',
+                record.campus.name if record.campus else 'N/A',
+                record.enrollment_date,
+                record.get_funding_type_display(),
+                'Yes' if record.documents_uploaded_complete else 'No',
+                'Yes' if record.documents_quality_approved else 'No',
+                'Yes' if record.proof_of_payment_received else 'No',
+                'Yes' if record.commission_eligible else 'No'
+            ])
+        
+        return response
+
+
+# =============================================================================
+# LEAD SALES ASSIGNMENT API
+# =============================================================================
+
+class LeadSalesAssignmentView(LoginRequiredMixin, CRMAccessMixin, TemplateView):
+    """API for managing lead sales assignments"""
+    
+    def get(self, request, lead_id):
+        """Get current sales assignments for a lead"""
+        from .models import Lead, LeadSalesAssignment
+        
+        lead = get_object_or_404(Lead, pk=lead_id)
+        assignments = LeadSalesAssignment.objects.filter(
+            lead=lead,
+            is_active=True
+        ).select_related('sales_person')
+        
+        return JsonResponse({
+            'assignments': [{
+                'id': a.pk,
+                'sales_person_id': a.sales_person.pk,
+                'sales_person_name': a.sales_person.get_full_name(),
+                'is_primary': a.is_primary,
+                'assigned_date': a.assigned_date.isoformat()
+            } for a in assignments]
+        })
+    
+    def post(self, request, lead_id):
+        """Add or update sales assignment"""
+        from .models import Lead, LeadSalesAssignment
+        from core.models import User
+        import json
+        
+        try:
+            data = json.loads(request.body)
+            lead = get_object_or_404(Lead, pk=lead_id)
+            sales_person_id = data.get('sales_person_id')
+            is_primary = data.get('is_primary', False)
+            
+            sales_person = get_object_or_404(User, pk=sales_person_id)
+            
+            assignment, created = LeadSalesAssignment.objects.update_or_create(
+                lead=lead,
+                sales_person=sales_person,
+                defaults={
+                    'is_primary': is_primary,
+                    'assigned_by': request.user,
+                    'is_active': True
+                }
+            )
+            
+            action = 'assigned' if created else 'updated'
+            
+            return JsonResponse({
+                'status': 'ok',
+                'message': f'Sales person {action} successfully',
+                'assignment_id': assignment.pk
+            })
+        
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    def delete(self, request, lead_id):
+        """Remove sales assignment"""
+        from .models import Lead, LeadSalesAssignment
+        import json
+        
+        try:
+            data = json.loads(request.body)
+            assignment_id = data.get('assignment_id')
+            
+            assignment = get_object_or_404(LeadSalesAssignment, pk=assignment_id, lead_id=lead_id)
+            assignment.is_active = False
+            assignment.save()
+            
+            return JsonResponse({
+                'status': 'ok',
+                'message': 'Assignment removed'
+            })
+        
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+# =============================================================================
+# LEAD PIPELINE ASSIGNMENT API
+# =============================================================================
+
+class LeadPipelineAssignmentView(LoginRequiredMixin, CRMAccessMixin, TemplateView):
+    """API for assigning leads to pipelines"""
+    
+    def post(self, request, lead_id):
+        """Assign lead to a pipeline"""
+        from .models import Lead, Pipeline, PipelineStage
+        import json
+        
+        try:
+            data = json.loads(request.body)
+            lead = get_object_or_404(Lead, pk=lead_id)
+            pipeline_id = data.get('pipeline_id')
+            
+            pipeline = get_object_or_404(Pipeline, pk=pipeline_id)
+            
+            # Get entry stage for the pipeline
+            entry_stage = pipeline.stages.filter(is_entry_stage=True).first()
+            if not entry_stage:
+                entry_stage = pipeline.stages.order_by('order').first()
+            
+            # Assign lead to pipeline
+            lead.pipeline = pipeline
+            if entry_stage:
+                lead.current_stage = entry_stage
+                lead.stage_entered_at = timezone.now()
+            lead.save()
+            
+            # Log activity
+            LeadActivity.objects.create(
+                lead=lead,
+                activity_type='STAGE_CHANGE',
+                description=f'Assigned to pipeline: {pipeline.name}',
+                created_by=request.user
+            )
+            
+            return JsonResponse({
+                'status': 'ok',
+                'message': f'Lead assigned to {pipeline.name}',
+                'pipeline': {
+                    'id': pipeline.pk,
+                    'name': pipeline.name
+                },
+                'stage': {
+                    'id': entry_stage.pk if entry_stage else None,
+                    'name': entry_stage.name if entry_stage else None
+                }
+            })
+        
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+

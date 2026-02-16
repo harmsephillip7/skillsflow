@@ -1836,6 +1836,7 @@ class LeadDocument(AuditedModel):
         ('BANK_CONFIRM', 'Bank Confirmation'),
         ('PARENT_ID', 'Parent/Guardian ID'),
         ('PARENT_CONSENT', 'Parent/Guardian Consent'),
+        ('PROOF_OF_PAYMENT', 'Proof of Payment'),
         ('OTHER', 'Other Document'),
     ]
     
@@ -2614,3 +2615,449 @@ class ContentPost(models.Model):
             platform=self.platform
         ).aggregate(avg=Avg('engagement_rate'))['avg'] or 0
         return self.engagement_rate > avg_rate * 1.5
+
+
+# =============================================================================
+# SECONDARY CONTACT MODEL - For tracking related contacts
+# =============================================================================
+
+class SecondaryContact(AuditedModel):
+    """
+    Secondary contacts for leads - parents, employers, spouses, etc.
+    Migrated to Learner upon conversion.
+    """
+    RELATIONSHIP_TYPES = [
+        ('FATHER', 'Father'),
+        ('MOTHER', 'Mother'),
+        ('SPOUSE', 'Spouse'),
+        ('EMPLOYER', 'Employer'),
+        ('GIRLFRIEND', 'Girlfriend'),
+        ('BOYFRIEND', 'Boyfriend'),
+        ('GUARDIAN', 'Guardian'),
+        ('SIBLING', 'Sibling'),
+        ('OTHER', 'Other'),
+    ]
+    
+    lead = models.ForeignKey(
+        Lead,
+        on_delete=models.CASCADE,
+        related_name='secondary_contacts'
+    )
+    
+    # Contact Details
+    name = models.CharField(max_length=200)
+    relationship = models.CharField(max_length=20, choices=RELATIONSHIP_TYPES)
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    
+    # Additional info
+    company_name = models.CharField(max_length=200, blank=True, help_text="For employer contacts")
+    job_title = models.CharField(max_length=100, blank=True, help_text="Contact's job title")
+    notes = models.TextField(blank=True)
+    
+    # Primary contact flag
+    is_primary = models.BooleanField(default=False, help_text="Primary contact for this relationship type")
+    
+    class Meta:
+        ordering = ['-is_primary', 'relationship', 'name']
+        verbose_name = 'Secondary Contact'
+        verbose_name_plural = 'Secondary Contacts'
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_relationship_display()}) - {self.lead.get_full_name()}"
+
+
+# =============================================================================
+# EDUCATION HISTORY MODELS - Detailed education tracking
+# =============================================================================
+
+class EducationHistory(AuditedModel):
+    """
+    Detailed education history for leads.
+    Tracks schools, colleges, qualifications obtained.
+    """
+    INSTITUTION_TYPES = [
+        ('PRIMARY', 'Primary School'),
+        ('HIGH_SCHOOL', 'High School'),
+        ('COLLEGE', 'College'),
+        ('UNIVERSITY', 'University'),
+        ('TVET', 'TVET College'),
+        ('OTHER', 'Other'),
+    ]
+    
+    lead = models.ForeignKey(
+        Lead,
+        on_delete=models.CASCADE,
+        related_name='education_history'
+    )
+    
+    # Institution
+    institution_type = models.CharField(max_length=20, choices=INSTITUTION_TYPES)
+    institution_name = models.CharField(max_length=200)
+    
+    # Timeline
+    year_started = models.PositiveIntegerField(null=True, blank=True)
+    year_completed = models.PositiveIntegerField(null=True, blank=True)
+    is_current = models.BooleanField(default=False)
+    
+    # Qualification
+    qualification_obtained = models.CharField(max_length=200, blank=True, help_text="e.g., Matric, N6, Diploma")
+    nqf_level = models.CharField(max_length=5, blank=True, help_text="NQF Level achieved")
+    
+    # Additional
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-year_completed', '-year_started']
+        verbose_name = 'Education History'
+        verbose_name_plural = 'Education Histories'
+    
+    def __str__(self):
+        return f"{self.lead.get_full_name()} - {self.institution_name} ({self.get_institution_type_display()})"
+
+
+class SubjectGrade(AuditedModel):
+    """
+    Individual subject grades for education history.
+    Supports Math/Math Lit distinction for qualification eligibility.
+    """
+    SUBJECT_TYPES = [
+        ('MATHEMATICS', 'Mathematics'),
+        ('MATH_LITERACY', 'Mathematical Literacy'),
+        ('ENGLISH', 'English'),
+        ('AFRIKAANS', 'Afrikaans'),
+        ('PHYSICAL_SCIENCE', 'Physical Science'),
+        ('LIFE_SCIENCE', 'Life Science'),
+        ('ACCOUNTING', 'Accounting'),
+        ('BUSINESS_STUDIES', 'Business Studies'),
+        ('ECONOMICS', 'Economics'),
+        ('GEOGRAPHY', 'Geography'),
+        ('HISTORY', 'History'),
+        ('LIFE_ORIENTATION', 'Life Orientation'),
+        ('CAT', 'Computer Applications Technology'),
+        ('IT', 'Information Technology'),
+        ('OTHER', 'Other'),
+    ]
+    
+    education = models.ForeignKey(
+        EducationHistory,
+        on_delete=models.CASCADE,
+        related_name='subjects'
+    )
+    
+    # Subject
+    subject_type = models.CharField(max_length=30, choices=SUBJECT_TYPES)
+    subject_name = models.CharField(max_length=100, blank=True, help_text="Custom subject name if OTHER")
+    
+    # Grade
+    mark_percentage = models.PositiveIntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Percentage achieved (0-100)"
+    )
+    level = models.CharField(max_length=10, blank=True, help_text="Level achieved (1-7) or grade symbol")
+    
+    class Meta:
+        ordering = ['subject_type']
+        verbose_name = 'Subject Grade'
+        verbose_name_plural = 'Subject Grades'
+    
+    def __str__(self):
+        subject = self.subject_name if self.subject_type == 'OTHER' else self.get_subject_type_display()
+        return f"{subject}: {self.mark_percentage}%" if self.mark_percentage else subject
+
+
+# =============================================================================
+# LEAD INTEREST MODEL - Track qualification interests
+# =============================================================================
+
+class LeadInterest(AuditedModel):
+    """
+    Track lead interests in qualifications/programmes.
+    Supports primary, secondary, and other interest levels.
+    """
+    INTEREST_TYPES = [
+        ('PRIMARY', 'Primary Interest'),
+        ('SECONDARY', 'Secondary Interest'),
+        ('OTHER', 'Other Interest'),
+    ]
+    
+    PROGRAMME_TYPES = [
+        ('QUALIFICATION', 'Full Qualification'),
+        ('SKILLS_PROGRAMME', 'Skills Programme'),
+        ('LEARNERSHIP', 'Learnership'),
+        ('ARPL', 'ARPL (Recognition of Prior Learning)'),
+        ('SHORT_COURSE', 'Short Course'),
+    ]
+    
+    lead = models.ForeignKey(
+        Lead,
+        on_delete=models.CASCADE,
+        related_name='interests'
+    )
+    
+    qualification = models.ForeignKey(
+        'academics.Qualification',
+        on_delete=models.CASCADE,
+        related_name='lead_interests'
+    )
+    
+    interest_type = models.CharField(max_length=20, choices=INTEREST_TYPES, default='PRIMARY')
+    programme_type = models.CharField(max_length=20, choices=PROGRAMME_TYPES, default='QUALIFICATION')
+    
+    # Additional
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['interest_type', 'created_at']
+        unique_together = ['lead', 'qualification']
+        verbose_name = 'Lead Interest'
+        verbose_name_plural = 'Lead Interests'
+    
+    def __str__(self):
+        return f"{self.lead.get_full_name()} - {self.qualification.name} ({self.get_interest_type_display()})"
+
+
+# =============================================================================
+# LEAD SALES ASSIGNMENT MODEL - Multi-salesperson assignment
+# =============================================================================
+
+class LeadSalesAssignment(AuditedModel):
+    """
+    Track multiple sales people assigned to a lead.
+    One must be marked as primary for commission purposes.
+    """
+    lead = models.ForeignKey(
+        Lead,
+        on_delete=models.CASCADE,
+        related_name='sales_assignments'
+    )
+    
+    sales_person = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='lead_assignments'
+    )
+    
+    is_primary = models.BooleanField(
+        default=False,
+        help_text="Primary sales person receives commission"
+    )
+    
+    assigned_date = models.DateTimeField(auto_now_add=True)
+    assigned_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='sales_assignments_made'
+    )
+    
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['-is_primary', '-assigned_date']
+        unique_together = ['lead', 'sales_person']
+        verbose_name = 'Lead Sales Assignment'
+        verbose_name_plural = 'Lead Sales Assignments'
+    
+    def __str__(self):
+        primary = " (Primary)" if self.is_primary else ""
+        return f"{self.lead.get_full_name()} → {self.sales_person.get_full_name()}{primary}"
+    
+    def save(self, *args, **kwargs):
+        # Ensure only one primary per lead
+        if self.is_primary:
+            LeadSalesAssignment.objects.filter(
+                lead=self.lead,
+                is_primary=True
+            ).exclude(pk=self.pk).update(is_primary=False)
+        super().save(*args, **kwargs)
+
+
+# =============================================================================
+# SALES ENROLLMENT TRACKING FOR COMMISSION
+# =============================================================================
+
+class SalesEnrollmentRecord(AuditedModel):
+    """
+    Tracks enrollments for sales commission purposes.
+    Links enrollment to sales person with compliance tracking.
+    """
+    FUNDING_TYPE_CHOICES = [
+        ('PRIVATE_UPFRONT', 'Private - Upfront Payment'),
+        ('PRIVATE_PMT_AGREEMENT', 'Private - Payment Agreement'),
+        ('GOVERNMENT_BURSARY', 'Government Bursary'),
+        ('CORPORATE_BURSARY', 'Corporate Bursary'),
+        ('DG_BURSARY', 'DG Bursary'),
+    ]
+    
+    # Link to enrollment
+    enrollment = models.ForeignKey(
+        'intakes.IntakeEnrollment',
+        on_delete=models.CASCADE,
+        related_name='sales_records'
+    )
+    
+    # Sales attribution
+    sales_person = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='sales_enrollment_records'
+    )
+    is_primary_agent = models.BooleanField(
+        default=True,
+        help_text="Primary agent receives full commission"
+    )
+    
+    # Campus for scoping
+    campus = models.ForeignKey(
+        Campus,
+        on_delete=models.CASCADE,
+        related_name='sales_enrollment_records'
+    )
+    
+    # Dates
+    enrollment_date = models.DateField()
+    month_period = models.CharField(max_length=7, help_text="YYYY-MM format for reporting")
+    
+    # Funding (determines commission eligibility)
+    funding_type = models.CharField(max_length=25, choices=FUNDING_TYPE_CHOICES)
+    
+    # Compliance status
+    documents_uploaded_complete = models.BooleanField(
+        default=False,
+        help_text="All required documents uploaded"
+    )
+    documents_quality_approved = models.BooleanField(
+        default=False,
+        help_text="All documents passed quality check"
+    )
+    proof_of_payment_received = models.BooleanField(
+        default=False,
+        help_text="Any proof of payment uploaded"
+    )
+    
+    # Compliance issues (JSON for details)
+    compliance_issues = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of compliance issues: [{type: 'MISSING_DOC', doc_type: 'ID_COPY'}]"
+    )
+    
+    # Tracking
+    last_compliance_check = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-enrollment_date', 'sales_person']
+        verbose_name = 'Sales Enrollment Record'
+        verbose_name_plural = 'Sales Enrollment Records'
+        indexes = [
+            models.Index(fields=['month_period', 'sales_person']),
+            models.Index(fields=['campus', 'month_period']),
+        ]
+    
+    def __str__(self):
+        return f"{self.enrollment} - {self.sales_person.get_full_name()} ({self.month_period})"
+    
+    @property
+    def is_bursary(self):
+        """Check if this is a bursary enrollment (no commission)"""
+        return self.funding_type in ['GOVERNMENT_BURSARY', 'CORPORATE_BURSARY', 'DG_BURSARY']
+    
+    @property
+    def commission_eligible(self):
+        """
+        Check if enrollment qualifies for commission.
+        Requires: docs complete + quality approved + POP received + NOT bursary
+        """
+        if self.is_bursary:
+            return False
+        return (
+            self.documents_uploaded_complete and
+            self.documents_quality_approved and
+            self.proof_of_payment_received
+        )
+    
+    def save(self, *args, **kwargs):
+        # Auto-set month_period from enrollment_date
+        if self.enrollment_date and not self.month_period:
+            self.month_period = self.enrollment_date.strftime('%Y-%m')
+        super().save(*args, **kwargs)
+
+
+# =============================================================================
+# COMPLIANCE ALERT MODEL - Track document issues
+# =============================================================================
+
+class ComplianceAlert(AuditedModel):
+    """
+    Tracks compliance issues for enrollments.
+    Used to alert sales and admin managers via dashboard.
+    """
+    ALERT_TYPES = [
+        ('MISSING_DOCUMENTS', 'Missing Documents'),
+        ('QUALITY_REJECTED', 'Document Quality Rejected'),
+    ]
+    
+    enrollment_record = models.ForeignKey(
+        SalesEnrollmentRecord,
+        on_delete=models.CASCADE,
+        related_name='compliance_alerts'
+    )
+    
+    alert_type = models.CharField(max_length=30, choices=ALERT_TYPES)
+    
+    # Details
+    details = models.JSONField(
+        default=list,
+        help_text="List of issues: [{doc_type: 'ID_COPY', issue: 'Missing'}]"
+    )
+    
+    # Campus for scoping
+    campus = models.ForeignKey(
+        Campus,
+        on_delete=models.CASCADE,
+        related_name='compliance_alerts'
+    )
+    
+    # Resolution
+    resolved = models.BooleanField(default=False)
+    resolved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='resolved_alerts'
+    )
+    resolved_date = models.DateTimeField(null=True, blank=True)
+    resolution_notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Compliance Alert'
+        verbose_name_plural = 'Compliance Alerts'
+        indexes = [
+            models.Index(fields=['campus', 'resolved']),
+            models.Index(fields=['alert_type', 'resolved']),
+        ]
+    
+    def __str__(self):
+        status = "Resolved" if self.resolved else "Open"
+        return f"{self.get_alert_type_display()} - {self.enrollment_record} ({status})"
+    
+    def resolve(self, user, notes=''):
+        """Mark alert as resolved."""
+        self.resolved = True
+        self.resolved_by = user
+        self.resolved_date = timezone.now()
+        self.resolution_notes = notes
+        self.save()
+    
+    @property
+    def days_outstanding(self):
+        """Days since alert was created."""
+        if self.resolved:
+            return 0
+        delta = timezone.now() - self.created_at
+        return delta.days

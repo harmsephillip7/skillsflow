@@ -220,6 +220,13 @@ class Learner(TenantAwareModel):
     financial_hold = models.BooleanField(default=False)
     financial_hold_reason = models.TextField(blank=True)
     
+    # Sage Intacct Integration
+    sage_customer_id = models.CharField(
+        max_length=50,
+        null=True, blank=True,
+        help_text='Sage Intacct Customer ID for payment integration'
+    )
+    
     # Photo
     photo = models.ImageField(upload_to='learner_photos/', null=True, blank=True)
     
@@ -302,6 +309,7 @@ class Document(AuditedModel):
         ('CV', 'Curriculum Vitae'),
         ('PROOF_ADDRESS', 'Proof of Address'),
         ('BANK_CONFIRM', 'Bank Confirmation'),
+        ('PROOF_OF_PAYMENT', 'Proof of Payment'),
         ('OTHER', 'Other'),
     ]
     

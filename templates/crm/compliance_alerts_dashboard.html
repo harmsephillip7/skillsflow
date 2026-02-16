@@ -1,0 +1,273 @@
+{% extends 'crm/crm_fullscreen_base.html' %}
+{% load static %}
+
+{% block title %}Compliance Alerts - CRM{% endblock %}
+
+{% block crm_content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Compliance Alerts</h1>
+            <p class="text-sm text-gray-500 mt-1">Monitor document compliance issues for enrollments</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <!-- Filters -->
+            <select id="campusFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                <option value="">All Campuses</option>
+                {% for campus in campuses %}
+                <option value="{{ campus.id }}" {% if selected_campus == campus.id|stringformat:"s" %}selected{% endif %}>{{ campus.name }}</option>
+                {% endfor %}
+            </select>
+            <select id="alertTypeFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500">
+                <option value="">All Types</option>
+                <option value="MISSING_DOCUMENTS" {% if selected_alert_type == 'MISSING_DOCUMENTS' %}selected{% endif %}>Missing Documents</option>
+                <option value="QUALITY_REJECTED" {% if selected_alert_type == 'QUALITY_REJECTED' %}selected{% endif %}>Quality Rejected</option>
+            </select>
+            <label class="flex items-center text-sm text-gray-600">
+                <input type="checkbox" id="showResolved" class="mr-2 rounded text-primary-600 focus:ring-primary-500" {% if show_resolved %}checked{% endif %}>
+                Show Resolved
+            </label>
+            <button onclick="applyFilters()" class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700">
+                Apply
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div class="flex items-center">
+                <div class="p-3 bg-red-100 rounded-lg">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Open Alerts</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.total_open }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div class="flex items-center">
+                <div class="p-3 bg-orange-100 rounded-lg">
+                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Missing Documents</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.missing_docs }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div class="flex items-center">
+                <div class="p-3 bg-yellow-100 rounded-lg">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Quality Rejected</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.quality_rejected }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Learner</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales Person</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campus</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alert Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issues</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Open</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for alert in alerts %}
+                    <tr class="hover:bg-gray-50 {% if alert.resolved %}opacity-60{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                {% if alert.enrollment_record.enrollment.learner %}
+                                    {{ alert.enrollment_record.enrollment.learner.get_full_name }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                {% if alert.enrollment_record.enrollment %}
+                                    {{ alert.enrollment_record.enrollment.enrollment_number }}
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {% if alert.enrollment_record.sales_person %}
+                                {{ alert.enrollment_record.sales_person.get_full_name }}
+                            {% else %}
+                                Unassigned
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {{ alert.campus.name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if alert.alert_type == 'MISSING_DOCUMENTS' %}
+                            <span class="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
+                                Missing Documents
+                            </span>
+                            {% else %}
+                            <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                                Quality Rejected
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-wrap gap-1">
+                                {% for issue in alert.details %}
+                                <span class="px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded">
+                                    {{ issue.doc_type }}
+                                </span>
+                                {% empty %}
+                                <span class="text-sm text-gray-400">-</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if alert.resolved %}
+                            <span class="text-sm text-gray-400">-</span>
+                            {% else %}
+                            <span class="text-sm {% if alert.days_outstanding > 7 %}text-red-600 font-semibold{% elif alert.days_outstanding > 3 %}text-orange-600{% else %}text-gray-600{% endif %}">
+                                {{ alert.days_outstanding }} days
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if alert.resolved %}
+                            <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                Resolved
+                            </span>
+                            {% else %}
+                            <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                                Open
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            {% if not alert.resolved %}
+                            <button onclick="resolveAlert({{ alert.pk }})" class="text-primary-600 hover:text-primary-900 text-sm font-medium">
+                                Resolve
+                            </button>
+                            {% else %}
+                            <span class="text-xs text-gray-400">
+                                by {{ alert.resolved_by.get_full_name|default:"System" }}
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p class="mt-2 font-medium">No compliance alerts found</p>
+                            <p class="text-sm">All enrollments are compliant!</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Resolve Modal -->
+<div id="resolveModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black opacity-50" onclick="closeResolveModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Resolve Alert</h3>
+            <textarea id="resolveNotes" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500" placeholder="Resolution notes (optional)..."></textarea>
+            <div class="flex justify-end space-x-3 mt-4">
+                <button onclick="closeResolveModal()" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+                    Cancel
+                </button>
+                <button onclick="confirmResolve()" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg">
+                    Resolve
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentAlertId = null;
+
+function applyFilters() {
+    const campus = document.getElementById('campusFilter').value;
+    const alertType = document.getElementById('alertTypeFilter').value;
+    const showResolved = document.getElementById('showResolved').checked;
+    
+    const params = new URLSearchParams();
+    if (campus) params.set('campus', campus);
+    if (alertType) params.set('alert_type', alertType);
+    if (showResolved) params.set('show_resolved', 'true');
+    
+    window.location.href = '{% url "crm:compliance_alerts" %}?' + params.toString();
+}
+
+function resolveAlert(alertId) {
+    currentAlertId = alertId;
+    document.getElementById('resolveModal').classList.remove('hidden');
+}
+
+function closeResolveModal() {
+    currentAlertId = null;
+    document.getElementById('resolveModal').classList.add('hidden');
+    document.getElementById('resolveNotes').value = '';
+}
+
+async function confirmResolve() {
+    if (!currentAlertId) return;
+    
+    const notes = document.getElementById('resolveNotes').value;
+    
+    try {
+        const response = await fetch('{% url "crm:compliance_alerts" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                alert_id: currentAlertId,
+                action: 'resolve',
+                notes: notes
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'ok') {
+            window.location.reload();
+        } else {
+            alert(data.error || 'Failed to resolve alert');
+        }
+    } catch (err) {
+        alert('Error resolving alert: ' + err.message);
+    }
+    
+    closeResolveModal();
+}
+</script>
+{% endblock %}

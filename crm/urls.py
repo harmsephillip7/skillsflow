@@ -187,4 +187,17 @@ urlpatterns = [
     path('api/scan-card/', scanner_views.scan_card_api, name='scan_card_api'),
     path('api/create-lead-from-scan/', scanner_views.create_lead_from_scan, name='create_lead_from_scan'),
     path('api/create-leads-batch/', scanner_views.create_leads_batch, name='create_leads_batch'),
+    
+    # Compliance Alerts Dashboard
+    path('compliance-alerts/', views.ComplianceAlertsDashboardView.as_view(), name='compliance_alerts'),
+    
+    # Sales Commission Dashboard
+    path('commission-dashboard/', views.SalesCommissionDashboardView.as_view(), name='commission_dashboard'),
+    path('commission-dashboard/export/', views.SalesCommissionExportView.as_view(), name='commission_export'),
+    
+    # Lead Sales Assignment API
+    path('api/leads/<int:lead_id>/sales-assignments/', views.LeadSalesAssignmentView.as_view(), name='lead_sales_assignments'),
+    
+    # Lead Pipeline Assignment API
+    path('api/leads/<int:lead_id>/pipeline/', views.LeadPipelineAssignmentView.as_view(), name='lead_pipeline_assignment'),
 ]

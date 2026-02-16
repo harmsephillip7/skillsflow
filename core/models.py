@@ -3760,3 +3760,60 @@ class UserAuthSession(models.Model):
         self.revoked_at = timezone.now()
         self.revoke_reason = reason[:64]
         self.save(update_fields=['revoked_at', 'revoke_reason'])
+
+
+# =============================================================================
+# REQUIRED DOCUMENT CONFIGURATION - Global compliance settings
+# =============================================================================
+
+class RequiredDocumentConfig(models.Model):
+    """
+    Global configuration for required documents for enrollment compliance.
+    Admin-editable list of document types required for all enrollments.
+    """
+    DOCUMENT_TYPES = [
+        ('ID_COPY', 'ID Copy / Passport'),
+        ('MATRIC', 'Matric Certificate'),
+        ('PROOF_ADDRESS', 'Proof of Address'),
+        ('QUALIFICATION', 'Prior Qualification'),
+        ('CV', 'Curriculum Vitae'),
+        ('BANK_CONFIRM', 'Bank Confirmation'),
+        ('PROOF_OF_PAYMENT', 'Proof of Payment'),
+        ('PARENT_ID', 'Parent/Guardian ID'),
+        ('PARENT_CONSENT', 'Parent/Guardian Consent'),
+    ]
+    
+    document_type = models.CharField(
+        max_length=30,
+        choices=DOCUMENT_TYPES,
+        unique=True
+    )
+    
+    is_required = models.BooleanField(
+        default=True,
+        help_text="Whether this document is required for enrollment"
+    )
+    
+    description = models.TextField(
+        blank=True,
+        help_text="Description shown to users"
+    )
+    
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text="Display order"
+    )
+    
+    class Meta:
+        ordering = ['order', 'document_type']
+        verbose_name = 'Required Document Config'
+        verbose_name_plural = 'Required Document Configs'
+    
+    def __str__(self):
+        status = "Required" if self.is_required else "Optional"
+        return f"{self.get_document_type_display()} ({status})"
+    
+    @classmethod
+    def get_required_types(cls):
+        """Get list of required document type codes."""
+        return list(cls.objects.filter(is_required=True).values_list('document_type', flat=True))

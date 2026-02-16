@@ -7,7 +7,9 @@ from .models import (
     WhatsAppConfig, WhatsAppMessage, WhatsAppIntakeForm, WhatsAppIntakeSession,
     Pipeline, PipelineStage, StageBlueprint, CommunicationCycle, LeadEngagement, 
     AgentNotification, PreApprovalLetter,
-    WebFormSource, WebFormMapping, WebFormSubmission
+    WebFormSource, WebFormMapping, WebFormSubmission,
+    SecondaryContact, EducationHistory, SubjectGrade, LeadInterest,
+    LeadSalesAssignment, SalesEnrollmentRecord, ComplianceAlert
 )
 
 
@@ -230,5 +232,76 @@ class WebFormSubmissionAdmin(admin.ModelAdmin):
     
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
+
+
+# =============================================================================
+# NEW CRM ENHANCEMENT MODELS
+# =============================================================================
+
+@admin.register(SecondaryContact)
+class SecondaryContactAdmin(admin.ModelAdmin):
+    """Admin for secondary contacts."""
+    list_display = ['name', 'relationship', 'lead', 'phone', 'email', 'is_primary']
+    list_filter = ['relationship', 'is_primary']
+    search_fields = ['name', 'phone', 'email', 'lead__first_name', 'lead__last_name']
+    raw_id_fields = ['lead']
+
+
+class SubjectGradeInline(admin.TabularInline):
+    """Inline for subject grades within education history."""
+    model = SubjectGrade
+    extra = 1
+    fields = ['subject_type', 'subject_name', 'mark_percentage', 'level']
+
+
+@admin.register(EducationHistory)
+class EducationHistoryAdmin(admin.ModelAdmin):
+    """Admin for education history."""
+    list_display = ['lead', 'institution_type', 'institution_name', 'year_completed', 'qualification_obtained']
+    list_filter = ['institution_type', 'is_current']
+    search_fields = ['institution_name', 'lead__first_name', 'lead__last_name']
+    raw_id_fields = ['lead']
+    inlines = [SubjectGradeInline]
+
+
+@admin.register(LeadInterest)
+class LeadInterestAdmin(admin.ModelAdmin):
+    """Admin for lead interests."""
+    list_display = ['lead', 'qualification', 'interest_type', 'programme_type', 'is_active']
+    list_filter = ['interest_type', 'programme_type', 'is_active']
+    search_fields = ['lead__first_name', 'lead__last_name', 'qualification__name']
+    raw_id_fields = ['lead', 'qualification']
+
+
+@admin.register(LeadSalesAssignment)
+class LeadSalesAssignmentAdmin(admin.ModelAdmin):
+    """Admin for lead sales assignments."""
+    list_display = ['lead', 'sales_person', 'is_primary', 'assigned_date', 'is_active']
+    list_filter = ['is_primary', 'is_active']
+    search_fields = ['lead__first_name', 'lead__last_name', 'sales_person__first_name', 'sales_person__last_name']
+    raw_id_fields = ['lead', 'sales_person', 'assigned_by']
+
+
+@admin.register(SalesEnrollmentRecord)
+class SalesEnrollmentRecordAdmin(admin.ModelAdmin):
+    """Admin for sales enrollment records."""
+    list_display = ['enrollment', 'sales_person', 'campus', 'month_period', 'funding_type', 
+                    'documents_uploaded_complete', 'documents_quality_approved', 
+                    'proof_of_payment_received', 'commission_eligible']
+    list_filter = ['month_period', 'campus', 'funding_type', 'documents_uploaded_complete', 
+                   'documents_quality_approved', 'proof_of_payment_received']
+    search_fields = ['enrollment__enrollment_number', 'sales_person__first_name', 'sales_person__last_name']
+    raw_id_fields = ['enrollment', 'sales_person', 'campus']
+    date_hierarchy = 'enrollment_date'
+
+
+@admin.register(ComplianceAlert)
+class ComplianceAlertAdmin(admin.ModelAdmin):
+    """Admin for compliance alerts."""
+    list_display = ['enrollment_record', 'alert_type', 'campus', 'resolved', 'days_outstanding', 'created_at']
+    list_filter = ['alert_type', 'resolved', 'campus']
+    search_fields = ['enrollment_record__enrollment__enrollment_number']
+    raw_id_fields = ['enrollment_record', 'campus', 'resolved_by']
+    date_hierarchy = 'created_at'
 
 

@@ -6,7 +6,8 @@ from .models import (
     TrancheSchedule, TrancheEvidenceRequirement, TrancheEvidence, TrancheSubmission, TrancheComment,
     AccessRequest, AccessRequestSection, AccessRequestSectionChoice,
     TrainingNotification, NOTQualificationStipendRate,
-    NOTDeliverableEvidenceRequirement, NOTDeliverableEvidence
+    NOTDeliverableEvidenceRequirement, NOTDeliverableEvidence,
+    RequiredDocumentConfig
 )
 from .not_automation import NOTTaskTemplate
 
@@ -28,6 +29,7 @@ admin.site.register(Role)
 admin.site.register(UserRole)
 admin.site.register(AuditLog)
 admin.site.register(SystemConfiguration)
+admin.site.register(RequiredDocumentConfig)
 
 
 @admin.register(FacilitatorProfile)

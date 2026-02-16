@@ -608,6 +608,11 @@ class IntakeEnrollment(AuditedModel):
     ]
     
     FUNDING_TYPE_CHOICES = [
+        ('PRIVATE_UPFRONT', 'Private - Upfront Payment'),
+        ('PRIVATE_PMT_AGREEMENT', 'Private - Payment Agreement'),
+        ('GOVERNMENT_BURSARY', 'Government Bursary'),
+        ('CORPORATE_BURSARY', 'Corporate Bursary'),
+        ('DG_BURSARY', 'DG Bursary'),
         ('SELF_FUNDED', 'Self-Funded'),
         ('PARENT_FUNDED', 'Parent/Guardian Funded'),
         ('EMPLOYER_FUNDED', 'Employer Funded'),
