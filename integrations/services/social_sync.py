@@ -538,7 +538,11 @@ def sync_social_analytics_task():
     
     Syncs all active brand accounts for yesterday's data.
     """
-    from celery import shared_task
+    try:
+        from celery import shared_task
+    except ImportError:
+        logger.warning("Celery not available, cannot create sync task")
+        return None
     
     @shared_task(name='sync_social_analytics')
     def _task():
@@ -567,7 +571,11 @@ def backfill_brand_analytics_task(brand_id: str, platform: str, start_date_str: 
         platform: Platform to backfill
         start_date_str: Optional start date (YYYY-MM-DD)
     """
-    from celery import shared_task
+    try:
+        from celery import shared_task
+    except ImportError:
+        logger.warning("Celery not available, cannot create backfill task")
+        return None
     
     @shared_task(name='backfill_brand_analytics')
     def _task(brand_id, platform, start_date_str):

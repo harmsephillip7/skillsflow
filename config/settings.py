@@ -6,7 +6,14 @@ Production settings should override via environment variables.
 from pathlib import Path
 import os
 from datetime import timedelta
-from celery.schedules import crontab
+
+# Celery import - conditional for serverless environments
+try:
+    from celery.schedules import crontab
+    CELERY_AVAILABLE = True
+except ImportError:
+    CELERY_AVAILABLE = False
+    crontab = None
 
 # Load environment variables from .env file (for local development)
 from dotenv import load_dotenv
@@ -232,50 +239,53 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 
-# Celery Beat Schedule
-CELERY_BEAT_SCHEDULE = {
-    'sync-moodle-enrollments': {
-        'task': 'lms_sync.tasks.sync_all_enrollments',
-        'schedule': timedelta(hours=1),
-    },
-    'sync-moodle-grades': {
-        'task': 'lms_sync.tasks.sync_all_grades',
-        'schedule': timedelta(hours=6),
-    },
-    'check-overdue-invoices': {
-        'task': 'finance.tasks.mark_overdue_invoices',
-        'schedule': timedelta(hours=24),
-    },
-    'send-payment-reminders': {
-        'task': 'finance.tasks.send_payment_reminders',
-        'schedule': timedelta(hours=24),
-    },
-    'process-scheduled-reports': {
-        'task': 'reporting.tasks.process_scheduled_reports',
-        'schedule': timedelta(hours=1),
-    },
-    # CRM Automation Tasks
-    'process-scheduled-communications': {
-        'task': 'crm.tasks.process_scheduled_communications',
-        'schedule': timedelta(minutes=15),  # Every 15 minutes
-    },
-    'update-lead-scores': {
-        'task': 'crm.tasks.update_lead_scores',
-        'schedule': timedelta(hours=24),  # Daily
-    },
-    'send-followup-reminders': {
-        'task': 'crm.tasks.send_followup_reminders',
-        'schedule': crontab(hour=7, minute=0),  # 7 AM daily
-    },
-    'process-pipeline-automation': {
-        'task': 'crm.tasks.process_pipeline_automation',
-        'schedule': timedelta(hours=6),  # Every 6 hours
-    },
-    'check-stale-leads': {
-        'task': 'crm.tasks.check_stale_leads',
-        'schedule': timedelta(hours=24),  # Daily
-    },
-}
+# Celery Beat Schedule - only define if Celery is available
+if CELERY_AVAILABLE:
+    CELERY_BEAT_SCHEDULE = {
+        'sync-moodle-enrollments': {
+            'task': 'lms_sync.tasks.sync_all_enrollments',
+            'schedule': timedelta(hours=1),
+        },
+        'sync-moodle-grades': {
+            'task': 'lms_sync.tasks.sync_all_grades',
+            'schedule': timedelta(hours=6),
+        },
+        'check-overdue-invoices': {
+            'task': 'finance.tasks.mark_overdue_invoices',
+            'schedule': timedelta(hours=24),
+        },
+        'send-payment-reminders': {
+            'task': 'finance.tasks.send_payment_reminders',
+            'schedule': timedelta(hours=24),
+        },
+        'process-scheduled-reports': {
+            'task': 'reporting.tasks.process_scheduled_reports',
+            'schedule': timedelta(hours=1),
+        },
+        # CRM Automation Tasks
+        'process-scheduled-communications': {
+            'task': 'crm.tasks.process_scheduled_communications',
+            'schedule': timedelta(minutes=15),  # Every 15 minutes
+        },
+        'update-lead-scores': {
+            'task': 'crm.tasks.update_lead_scores',
+            'schedule': timedelta(hours=24),  # Daily
+        },
+        'send-followup-reminders': {
+            'task': 'crm.tasks.send_followup_reminders',
+            'schedule': crontab(hour=7, minute=0),  # 7 AM daily
+        },
+        'process-pipeline-automation': {
+            'task': 'crm.tasks.process_pipeline_automation',
+            'schedule': timedelta(hours=6),  # Every 6 hours
+        },
+        'check-stale-leads': {
+            'task': 'crm.tasks.check_stale_leads',
+            'schedule': timedelta(hours=24),  # Daily
+        },
+    }
+else:
+    CELERY_BEAT_SCHEDULE = {}
 
 
 # =====================================================

@@ -8,10 +8,23 @@ Automated tasks for CRM operations including:
 - Pipeline automation
 """
 import logging
-from celery import shared_task
 from django.utils import timezone
 from django.db.models import Q
 from datetime import timedelta
+
+# Make Celery import conditional for serverless environments
+try:
+    from celery import shared_task
+    CELERY_AVAILABLE = True
+except ImportError:
+    CELERY_AVAILABLE = False
+    # Create a no-op decorator for when Celery is not available
+    def shared_task(*args, **kwargs):
+        def decorator(func):
+            return func
+        if len(args) == 1 and callable(args[0]):
+            return args[0]
+        return decorator
 
 logger = logging.getLogger(__name__)
 
