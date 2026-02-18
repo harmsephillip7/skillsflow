@@ -141,6 +141,11 @@ urlpatterns = [
     # Logbooks
     path('officer/logbooks/', workplace_officer_views.logbook_list, name='officer_logbooks'),
     path('officer/logbooks/<int:logbook_id>/sign/', workplace_officer_views.logbook_sign, name='officer_logbook_sign'),
+    # Site Visits
+    path('officer/site-visits/', workplace_officer_views.site_visit_list, name='officer_site_visits'),
+    path('officer/site-visits/<int:host_id>/', workplace_officer_views.site_visit_detail, name='officer_site_visit_detail'),
+    path('officer/site-visits/schedule/<int:placement_id>/', workplace_officer_views.site_visit_schedule, name='officer_site_visit_schedule'),
+    path('officer/site-visits/complete/<int:visit_id>/', workplace_officer_views.site_visit_complete, name='officer_site_visit_complete'),
     # Messages
     path('officer/messages/', workplace_officer_views.messages_inbox, name='officer_messages'),
     path('officer/messages/<int:thread_id>/', workplace_officer_views.message_thread, name='officer_thread'),
@@ -207,4 +212,27 @@ urlpatterns = [
     # Staff Portal URLs
     # =====================================================
     path('staff/', views.StaffDashboardView.as_view(), name='staff_dashboard'),
+    path('staff/leave/', views.StaffLeaveView.as_view(), name='staff_leave'),
+    path('staff/documents/', views.StaffDocumentsView.as_view(), name='staff_documents'),
+    path('staff/profile/', views.StaffProfileView.as_view(), name='staff_profile'),
+    
+    # =====================================================
+    # Batch Assessment Capture (Facilitator)
+    # =====================================================
+    path('facilitator/batch-assess/<int:schedule_id>/', views.BatchAssessView.as_view(), name='batch_assess'),
+    path('facilitator/today-assessments/', views.FacilitatorTodayAssessmentsView.as_view(), name='facilitator_today_assessments'),
+    
+    # =====================================================
+    # Student Assessment Calendar
+    # =====================================================
+    path('student/assessment-calendar/', views.StudentAssessmentCalendarView.as_view(), name='student_assessment_calendar'),
+    
+    # =====================================================
+    # Parent/Guardian Portal URLs
+    # =====================================================
+    path('parent/login/', views.ParentLoginView.as_view(), name='parent_login'),
+    path('parent/', views.ParentDashboardView.as_view(), name='parent_dashboard'),
+    path('parent/schedule/', views.ParentAssessmentScheduleView.as_view(), name='parent_schedule'),
+    path('parent/results/', views.ParentResultsView.as_view(), name='parent_results'),
+    path('parent/logout/', views.ParentLogoutView.as_view(), name='parent_logout'),
 ]

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Change</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .change-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 20px;
+            background: #fef3c7;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .date-box {
+            text-align: center;
+        }
+        .date-label {
+            font-size: 12px;
+            color: #92400e;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .date-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+        .arrow {
+            font-size: 24px;
+            color: #d97706;
+        }
+        .details {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .details-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .details-row:last-child {
+            border-bottom: none;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>📅 Schedule Change</h1>
+            </div>
+            
+            <div class="content">
+                <p>Dear {{ guardian.first_name }},</p>
+                
+                <p>An assessment has been rescheduled for <strong>{{ learner.first_name }}</strong>:</p>
+                
+                <div class="change-box">
+                    <div class="date-box">
+                        <div class="date-label">Was</div>
+                        <div class="date-value" style="text-decoration: line-through; color: #94a3b8;">
+                            {{ old_date|date:"d M" }}
+                        </div>
+                    </div>
+                    <div class="arrow">→</div>
+                    <div class="date-box">
+                        <div class="date-label">Now</div>
+                        <div class="date-value">{{ new_date|date:"d M Y" }}</div>
+                    </div>
+                </div>
+                
+                <div class="details">
+                    <div class="details-row">
+                        <span>Assessment</span>
+                        <strong>{{ activity.title }}</strong>
+                    </div>
+                    <div class="details-row">
+                        <span>Module</span>
+                        <span>{{ activity.module.name }}</span>
+                    </div>
+                    {% if schedule.venue %}
+                    <div class="details-row">
+                        <span>Venue</span>
+                        <span>{{ schedule.venue.name }}</span>
+                    </div>
+                    {% endif %}
+                    {% if schedule.scheduled_time_start %}
+                    <div class="details-row">
+                        <span>Time</span>
+                        <span>{{ schedule.scheduled_time_start|time:"H:i" }}{% if schedule.scheduled_time_end %} - {{ schedule.scheduled_time_end|time:"H:i" }}{% endif %}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <p>Please ensure {{ learner.first_name }} is prepared for the new date.</p>
+            </div>
+            
+            <div class="footer">
+                <p>This email was sent by SkillsFlow on behalf of your training provider.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

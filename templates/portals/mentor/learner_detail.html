@@ -1,0 +1,315 @@
+{% extends "portals/mentor/base.html" %}
+{% load static %}
+
+{% block page_title %}{{ learner.get_full_name }} - Mentor Portal{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="welcome-section">
+            <nav aria-label="breadcrumb" class="mb-2">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'portals:mentor_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'portals:mentor_learners' %}">My Learners</a></li>
+                    <li class="breadcrumb-item active">{{ learner.get_full_name }}</li>
+                </ol>
+            </nav>
+            <h1><i class="fas fa-user-graduate me-2"></i>{{ learner.get_full_name }}</h1>
+            <p class="text-muted">{{ placement.enrollment.qualification.title|default:"Workplace Placement" }}</p>
+        </div>
+        <div class="quick-actions">
+            <a href="{% url 'portals:mentor_learners' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+            <a href="{% url 'portals:mentor_attendance_entry' placement.id %}" class="btn btn-primary">
+                <i class="fas fa-clock me-1"></i>Record Attendance
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column - Learner Info -->
+        <div class="col-lg-4">
+            <!-- Profile Card -->
+            <div class="dashboard-card mb-4">
+                <div class="card-body text-center">
+                    <div class="learner-avatar mx-auto mb-3" style="width: 100px; height: 100px;">
+                        {% if learner.profile_picture %}
+                        <img src="{{ learner.profile_picture.url }}" alt="" 
+                             style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                        {% else %}
+                        <div class="avatar-placeholder" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; color: white; font-weight: 600; font-size: 2rem;">
+                            {{ learner.first_name.0 }}{{ learner.last_name.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <h4 class="mb-1">{{ learner.get_full_name }}</h4>
+                    <p class="text-muted mb-3">{{ learner.learner_number|default:"Learner" }}</p>
+                    
+                    <!-- Status Badge -->
+                    {% if placement.status == 'ACTIVE' %}
+                    <span class="badge badge-success"><i class="fas fa-check-circle me-1"></i>Active Placement</span>
+                    {% elif placement.status == 'COMPLETED' %}
+                    <span class="badge badge-info"><i class="fas fa-trophy me-1"></i>Completed</span>
+                    {% elif placement.status == 'TERMINATED' %}
+                    <span class="badge badge-danger"><i class="fas fa-times-circle me-1"></i>Terminated</span>
+                    {% else %}
+                    <span class="badge badge-secondary">{{ placement.get_status_display }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="dashboard-card mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0"><i class="fas fa-address-card me-2"></i>Contact Information</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        {% if learner.id_number %}
+                        <li class="mb-3">
+                            <small class="text-muted d-block">ID Number</small>
+                            <span>{{ learner.id_number }}</span>
+                        </li>
+                        {% endif %}
+                        {% if learner.email %}
+                        <li class="mb-3">
+                            <small class="text-muted d-block">Email</small>
+                            <a href="mailto:{{ learner.email }}">{{ learner.email }}</a>
+                        </li>
+                        {% endif %}
+                        {% if learner.phone_number %}
+                        <li class="mb-3">
+                            <small class="text-muted d-block">Phone</small>
+                            <a href="tel:{{ learner.phone_number }}">{{ learner.phone_number }}</a>
+                        </li>
+                        {% endif %}
+                        {% if placement.start_date %}
+                        <li class="mb-3">
+                            <small class="text-muted d-block">Placement Start</small>
+                            <span>{{ placement.start_date|date:"d M Y" }}</span>
+                        </li>
+                        {% endif %}
+                        {% if placement.end_date %}
+                        <li class="mb-0">
+                            <small class="text-muted d-block">Placement End</small>
+                            <span>{{ placement.end_date|date:"d M Y" }}</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="dashboard-card">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'portals:mentor_attendance_entry' placement.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-clock me-2"></i>Record Attendance
+                        </a>
+                        <a href="{% url 'portals:mentor_logbooks' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-book me-2"></i>View/Sign Logbook
+                        </a>
+                        <a href="{% url 'portals:mentor_modules' placement.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-tasks me-2"></i>Module Sign-off
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Details -->
+        <div class="col-lg-8">
+            <!-- Recent Attendance -->
+            <div class="dashboard-card mb-4">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Recent Attendance</h5>
+                    <a href="{% url 'portals:mentor_attendance_entry' placement.id %}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_attendance %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Time In</th>
+                                    <th>Time Out</th>
+                                    <th>Hours</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for att in recent_attendance|slice:":10" %}
+                                <tr>
+                                    <td>{{ att.date|date:"d M Y" }}</td>
+                                    <td>
+                                        {% if att.attendance_type == 'PRESENT' %}
+                                        <span class="badge badge-success">Present</span>
+                                        {% elif att.attendance_type == 'ABSENT' %}
+                                        <span class="badge badge-danger">Absent</span>
+                                        {% elif att.attendance_type == 'LATE' %}
+                                        <span class="badge badge-warning">Late</span>
+                                        {% elif att.attendance_type == 'LEAVE' %}
+                                        <span class="badge badge-info">Leave</span>
+                                        {% else %}
+                                        <span class="badge badge-secondary">{{ att.get_attendance_type_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ att.time_in|default:"-" }}</td>
+                                    <td>{{ att.time_out|default:"-" }}</td>
+                                    <td>{{ att.hours_worked|default:"-" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No attendance records yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Module Completions -->
+            <div class="dashboard-card mb-4">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Module Progress</h5>
+                    <a href="{% url 'portals:mentor_modules' placement.id %}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if module_completions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Module</th>
+                                    <th>Completed</th>
+                                    <th>Mentor Sign-off</th>
+                                    <th>Facilitator Sign-off</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mc in module_completions|slice:":5" %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ mc.module_code }}</strong>
+                                        <br><small class="text-muted">{{ mc.module_name }}</small>
+                                    </td>
+                                    <td>{{ mc.completed_date|date:"d M Y"|default:"-" }}</td>
+                                    <td>
+                                        {% if mc.mentor_signed %}
+                                        <span class="badge badge-success"><i class="fas fa-check"></i> Signed</span>
+                                        {% else %}
+                                        <span class="badge badge-warning">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if mc.facilitator_signed %}
+                                        <span class="badge badge-success"><i class="fas fa-check"></i> Signed</span>
+                                        {% else %}
+                                        <span class="badge badge-secondary">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-clipboard-list fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No module completions yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Logbook Entries -->
+            <div class="dashboard-card mb-4">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-book me-2"></i>Logbook Entries</h5>
+                    <a href="{% url 'portals:mentor_logbooks' %}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if logbook_entries %}
+                    <div class="list-group list-group-flush">
+                        {% for entry in logbook_entries|slice:":5" %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ entry.get_month_display }} {{ entry.year }}</strong>
+                                    <br><small class="text-muted">Hours: {{ entry.total_hours|default:"0" }}</small>
+                                </div>
+                                <div>
+                                    {% if entry.mentor_signed %}
+                                    <span class="badge badge-success"><i class="fas fa-signature me-1"></i>Signed</span>
+                                    {% else %}
+                                    <span class="badge badge-warning">Pending Signature</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-book-open fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No logbook entries yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Disciplinary Records -->
+            {% if disciplinary_records %}
+            <div class="dashboard-card">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Disciplinary Records</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for record in disciplinary_records %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ record.case_number }}</strong>
+                                    <br><small class="text-muted">Opened: {{ record.opened_date|date:"d M Y" }}</small>
+                                    {% if record.notes %}
+                                    <p class="mb-0 mt-1 small">{{ record.notes|truncatewords:20 }}</p>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% if record.status == 'OPEN' %}
+                                    <span class="badge badge-warning">Open</span>
+                                    {% elif record.status == 'RESOLVED' %}
+                                    <span class="badge badge-success">Resolved</span>
+                                    {% elif record.status == 'ESCALATED' %}
+                                    <span class="badge badge-danger">Escalated</span>
+                                    {% else %}
+                                    <span class="badge badge-secondary">{{ record.status }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

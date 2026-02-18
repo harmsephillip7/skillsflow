@@ -1,0 +1,28 @@
+Weekly Progress Report - {{ learner.first_name }} {{ learner.last_name }}
+================================================================================
+
+Dear {{ guardian.first_name }},
+
+Here's {{ learner.first_name }}'s progress this week:
+
+Overall Progress: {{ progress_percentage }}%
+Competent: {{ competent_count }} / {{ total_count }} assessments
+
+{% if recent_results %}
+THIS WEEK'S RESULTS
+-------------------
+{% for result in recent_results %}
+- {{ result.activity.title }}: {% if result.result == 'C' %}COMPETENT{% else %}NOT YET COMPETENT{% endif %} ({{ result.assessment_date|date:"d M Y" }})
+{% endfor %}
+{% endif %}
+
+{% if upcoming_assessments %}
+UPCOMING ASSESSMENTS
+--------------------
+{% for schedule in upcoming_assessments %}
+- {{ schedule.scheduled_date|date:"d M Y" }}: {{ schedule.activity.title }} ({{ schedule.activity.module.name }})
+{% endfor %}
+{% endif %}
+
+---
+This email was sent by SkillsFlow on behalf of your training provider.

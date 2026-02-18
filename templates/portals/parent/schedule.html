@@ -1,0 +1,84 @@
+{% extends "portals/parent/base.html" %}
+
+{% block title %}Assessment Schedule{% endblock %}
+
+{% block content %}
+<h4 class="mb-4">
+    <i class="fas fa-calendar-alt text-primary me-2"></i>
+    Assessment Schedule
+</h4>
+
+{% if schedules %}
+<div class="card">
+    <div class="card-body p-0">
+        {% regroup schedules by scheduled_date.month as month_list %}
+        {% for month in month_list %}
+        <div class="px-3 py-2 bg-light border-bottom">
+            <strong>{{ month.grouper|date:"F Y" }}</strong>
+        </div>
+        {% for schedule in month.list %}
+        <div class="assessment-item px-3">
+            <div class="assessment-icon {% if schedule.scheduled_date < today %}competent{% else %}upcoming{% endif %}">
+                <i class="fas fa-clipboard-check"></i>
+            </div>
+            <div class="assessment-details">
+                <div class="assessment-name">{{ schedule.activity.name }}</div>
+                <div class="assessment-meta">
+                    <i class="fas fa-book-open me-1"></i>{{ schedule.activity.module.name|default:"Module" }}
+                    {% if schedule.venue %}
+                    <span class="mx-2">|</span>
+                    <i class="fas fa-map-marker-alt me-1"></i>{{ schedule.venue.name }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="text-end">
+                <div class="fw-semibold {% if schedule.scheduled_date >= today %}text-primary{% else %}text-muted{% endif %}">
+                    {{ schedule.scheduled_date|date:"d M" }}
+                </div>
+                <small class="text-muted">
+                    {% if schedule.scheduled_time_start %}
+                    {{ schedule.scheduled_time_start|time:"H:i" }}
+                    {% if schedule.scheduled_time_end %} - {{ schedule.scheduled_time_end|time:"H:i" }}{% endif %}
+                    {% else %}
+                    Time TBC
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <i class="fas fa-calendar-times"></i>
+            <h5>No Scheduled Assessments</h5>
+            <p class="text-muted">There are no assessments scheduled at this time.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Legend -->
+<div class="card mt-3">
+    <div class="card-body">
+        <h6 class="mb-3">Legend</h6>
+        <div class="d-flex gap-4">
+            <div class="d-flex align-items-center gap-2">
+                <div class="assessment-icon upcoming" style="width: 30px; height: 30px; font-size: 0.9rem;">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+                <small>Upcoming</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="assessment-icon competent" style="width: 30px; height: 30px; font-size: 0.9rem;">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+                <small>Past</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

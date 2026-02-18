@@ -1,0 +1,29 @@
+Assessment Result for {{ learner.first_name }} {{ learner.last_name }}
+================================================================================
+
+Dear {{ guardian.first_name }},
+
+An assessment has been completed for {{ learner.first_name }}. Here are the details:
+
+Result: {% if is_competent %}COMPETENT{% else %}NOT YET COMPETENT{% endif %}
+
+Assessment Details:
+- Assessment: {{ activity.title }}
+- Module: {{ activity.module.name }}
+- Date: {{ result.assessment_date|date:"d F Y" }}
+{% if result.assessor %}- Assessor: {{ result.assessor.get_full_name }}{% endif %}
+
+{% if not is_competent %}
+Don't worry – this is a normal part of the learning process. {{ learner.first_name }} will have the opportunity to be reassessed once they've had more practice.
+{% else %}
+Congratulations! {{ learner.first_name }} has successfully demonstrated competence in this assessment.
+{% endif %}
+
+View full progress report: {{ portal_url }}
+
+{% if access_code %}
+Your Portal Access Code: {{ access_code }}
+{% endif %}
+
+---
+This email was sent by SkillsFlow on behalf of your training provider.

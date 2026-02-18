@@ -1,0 +1,1099 @@
+{% extends "portals/base_portal.html" %}
+{% load static %}
+
+{% block portal_title %}Batch Assessment - {{ activity.name }}{% endblock %}
+
+{% block extra_head %}
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="{% static 'manifest.json' %}">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+    /* Mobile-first batch assessment styles */
+    .batch-assess-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 1rem;
+        padding-bottom: 100px; /* Space for fixed footer */
+    }
+    
+    /* Header section */
+    .assess-header {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+    
+    .assess-header h4 {
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    .assess-header .module-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.85rem;
+        display: inline-block;
+        margin-top: 0.5rem;
+    }
+    
+    .progress-bar-container {
+        background: rgba(255,255,255,0.2);
+        height: 8px;
+        border-radius: 4px;
+        margin-top: 1rem;
+        overflow: hidden;
+    }
+    
+    .progress-bar-fill {
+        height: 100%;
+        background: white;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+    
+    .progress-text {
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+        opacity: 0.9;
+    }
+    
+    /* Swipeable card container */
+    .card-stack {
+        position: relative;
+        min-height: 450px;
+        perspective: 1000px;
+    }
+    
+    /* Learner card */
+    .learner-card {
+        position: absolute;
+        width: 100%;
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        overflow: hidden;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        touch-action: pan-y;
+        cursor: grab;
+    }
+    
+    .learner-card:active {
+        cursor: grabbing;
+    }
+    
+    .learner-card.hidden {
+        display: none;
+    }
+    
+    .learner-card.swiped-left {
+        transform: translateX(-150%) rotate(-15deg);
+        opacity: 0;
+    }
+    
+    .learner-card.swiped-right {
+        transform: translateX(150%) rotate(15deg);
+        opacity: 0;
+    }
+    
+    .card-photo {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+    }
+    
+    .card-photo-placeholder {
+        width: 100%;
+        height: 200px;
+        background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        color: #94a3b8;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .learner-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+    
+    .learner-id {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .attempt-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: #f1f5f9;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+    
+    .attempt-badge.has-attempts {
+        background: #fef3c7;
+        color: #d97706;
+    }
+    
+    .previous-result {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f8fafc;
+        border-radius: 0.5rem;
+        border-left: 3px solid #94a3b8;
+    }
+    
+    .previous-result.c {
+        border-left-color: #10b981;
+        background: #ecfdf5;
+    }
+    
+    .previous-result.nyc {
+        border-left-color: #ef4444;
+        background: #fef2f2;
+    }
+    
+    /* Assessment buttons */
+    .assess-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .assess-btn {
+        flex: 1;
+        padding: 1.25rem;
+        border: none;
+        border-radius: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .assess-btn i {
+        font-size: 2rem;
+    }
+    
+    .btn-competent {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+    }
+    
+    .btn-competent:hover, .btn-competent:active {
+        transform: scale(1.02);
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+    
+    .btn-nyc {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+    }
+    
+    .btn-nyc:hover, .btn-nyc:active {
+        transform: scale(1.02);
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    }
+    
+    .btn-absent {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+    }
+    
+    .btn-absent:hover, .btn-absent:active {
+        transform: scale(1.02);
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+    }
+    
+    .btn-skip {
+        flex: 0.5;
+        background: #e2e8f0;
+        color: #64748b;
+    }
+    
+    /* Evidence capture button */
+    .evidence-section {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .evidence-btn {
+        width: 100%;
+        padding: 0.75rem;
+        background: #f1f5f9;
+        border: 2px dashed #cbd5e1;
+        border-radius: 0.5rem;
+        color: #64748b;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .evidence-btn:hover {
+        background: #e2e8f0;
+        border-color: #94a3b8;
+    }
+    
+    .evidence-preview {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        flex-wrap: wrap;
+    }
+    
+    .evidence-thumb {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 0.5rem;
+        border: 2px solid #e2e8f0;
+    }
+    
+    /* Comments input */
+    .comments-section {
+        margin-top: 1rem;
+    }
+    
+    .comments-input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        font-size: 0.9rem;
+        resize: none;
+        min-height: 60px;
+    }
+    
+    .comments-input:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    
+    /* Fixed footer with navigation */
+    .batch-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        padding: 1rem;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 100;
+    }
+    
+    .nav-btn {
+        padding: 0.75rem 1.5rem;
+        background: #f1f5f9;
+        border: none;
+        border-radius: 0.5rem;
+        color: #64748b;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-btn:hover {
+        background: #e2e8f0;
+    }
+    
+    .nav-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .complete-btn {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: white;
+        padding: 0.75rem 2rem;
+    }
+    
+    .complete-btn:hover {
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+    
+    /* Offline indicator */
+    .offline-banner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: #f59e0b;
+        color: white;
+        text-align: center;
+        padding: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        z-index: 1001;
+        display: none;
+    }
+    
+    .offline-banner.visible {
+        display: block;
+    }
+    
+    /* Sync indicator */
+    .sync-indicator {
+        position: fixed;
+        top: 60px;
+        right: 1rem;
+        background: white;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        z-index: 100;
+    }
+    
+    .sync-indicator.syncing i {
+        animation: spin 1s linear infinite;
+    }
+    
+    .sync-indicator.success {
+        color: #10b981;
+    }
+    
+    .sync-indicator.error {
+        color: #ef4444;
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Signature modal */
+    .signature-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1002;
+        padding: 1rem;
+        display: none;
+    }
+    
+    .signature-modal.visible {
+        display: flex;
+    }
+    
+    .signature-content {
+        background: white;
+        border-radius: 1rem;
+        width: 100%;
+        max-width: 500px;
+        padding: 1.5rem;
+    }
+    
+    .signature-canvas {
+        width: 100%;
+        height: 200px;
+        border: 2px solid #e2e8f0;
+        border-radius: 0.5rem;
+        touch-action: none;
+    }
+    
+    /* Toast notifications */
+    .toast-container {
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1003;
+    }
+    
+    .toast {
+        background: #1e293b;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 2rem;
+        margin-bottom: 0.5rem;
+        animation: slideUp 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .toast.success {
+        background: #10b981;
+    }
+    
+    .toast.error {
+        background: #ef4444;
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Desktop adjustments */
+    @media (min-width: 768px) {
+        .batch-assess-container {
+            padding: 2rem;
+        }
+        
+        .card-stack {
+            min-height: 500px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Offline Banner -->
+<div id="offlineBanner" class="offline-banner">
+    <i class="fas fa-wifi-slash"></i> You're offline - changes will sync when connected
+</div>
+
+<!-- Sync Indicator -->
+<div id="syncIndicator" class="sync-indicator" style="display: none;">
+    <i class="fas fa-sync"></i>
+    <span>Syncing...</span>
+</div>
+
+<div class="batch-assess-container">
+    <!-- Assessment Header -->
+    <div class="assess-header">
+        <a href="{% url 'portals:facilitator_today_assessments' %}" class="text-white text-decoration-none mb-2 d-block">
+            <i class="fas fa-arrow-left me-2"></i> Back
+        </a>
+        <h4>{{ activity.name }}</h4>
+        <span class="module-badge">
+            <i class="fas fa-book me-1"></i> {{ activity.module.name|default:"Module" }}
+        </span>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <span><i class="fas fa-users me-1"></i> {{ cohort.name }}</span>
+            <span><i class="fas fa-calendar me-1"></i> {{ schedule.scheduled_date|date:"d M Y" }}</span>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="progress-bar-container">
+            <div id="progressBar" class="progress-bar-fill" style="width: {{ assessed_count|default:0 }}%;"></div>
+        </div>
+        <div class="progress-text">
+            <span id="assessedCount">{{ assessed_count }}</span> / {{ total_count }} assessed
+        </div>
+    </div>
+    
+    <!-- Card Stack -->
+    <div class="card-stack" id="cardStack">
+        {% for item in learners %}
+        <div class="learner-card {% if not forloop.first %}hidden{% endif %}" 
+             data-enrollment-id="{{ item.enrollment.id }}"
+             data-learner-id="{{ item.learner.id }}"
+             data-index="{{ forloop.counter0 }}">
+            
+            <!-- Learner Photo -->
+            {% if item.learner.photo %}
+            <img src="{{ item.learner.photo.url }}" alt="{{ item.learner.full_name }}" class="card-photo">
+            {% else %}
+            <div class="card-photo-placeholder">
+                <i class="fas fa-user"></i>
+            </div>
+            {% endif %}
+            
+            <div class="card-body">
+                <div class="learner-name">{{ item.learner.full_name }}</div>
+                <div class="learner-id">
+                    <i class="fas fa-id-card me-1"></i> {{ item.learner.learner_number|default:"No ID" }}
+                </div>
+                
+                <!-- Attempt Badge -->
+                <span class="attempt-badge {% if item.attempt_count > 0 %}has-attempts{% endif %}">
+                    <i class="fas fa-redo"></i>
+                    Attempt {{ item.attempt_count|add:1 }}
+                </span>
+                
+                <!-- Previous Result (if any) -->
+                {% if item.existing_result %}
+                <div class="previous-result {% if item.existing_result.result == 'C' %}c{% else %}nyc{% endif %}">
+                    <strong>Previous Result:</strong> 
+                    {% if item.existing_result.result == 'C' %}
+                    <span class="text-success"><i class="fas fa-check-circle"></i> Competent</span>
+                    {% else %}
+                    <span class="text-danger"><i class="fas fa-times-circle"></i> Not Yet Competent</span>
+                    {% endif %}
+                    <div class="text-muted small mt-1">
+                        {{ item.existing_result.assessment_date|date:"d M Y" }}
+                        {% if item.existing_result.comments %}
+                        - {{ item.existing_result.comments|truncatewords:10 }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Evidence Section -->
+                <div class="evidence-section">
+                    <button type="button" class="evidence-btn" onclick="captureEvidence({{ item.enrollment.id }})">
+                        <i class="fas fa-camera"></i> Capture Evidence Photo
+                    </button>
+                    <div class="evidence-preview" id="evidence-{{ item.enrollment.id }}"></div>
+                </div>
+                
+                <!-- Comments -->
+                <div class="comments-section">
+                    <textarea class="comments-input" 
+                              id="comments-{{ item.enrollment.id }}"
+                              placeholder="Add comments (optional)..."></textarea>
+                </div>
+                
+                <!-- Assessment Buttons -->
+                <div class="assess-buttons">
+                    <button type="button" class="assess-btn btn-competent" 
+                            onclick="assessLearner({{ item.enrollment.id }}, 'C')">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Competent</span>
+                    </button>
+                    <button type="button" class="assess-btn btn-nyc"
+                            onclick="assessLearner({{ item.enrollment.id }}, 'NYC')">
+                        <i class="fas fa-times-circle"></i>
+                        <span>NYC</span>
+                    </button>
+                </div>
+                
+                <div class="assess-buttons mt-2">
+                    <button type="button" class="assess-btn btn-absent"
+                            onclick="assessLearner({{ item.enrollment.id }}, 'ABS')">
+                        <i class="fas fa-user-slash"></i>
+                        <span>Absent</span>
+                    </button>
+                    <button type="button" class="assess-btn btn-skip"
+                            onclick="skipLearner()">
+                        <i class="fas fa-forward"></i>
+                        <span>Skip</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-5">
+            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+            <h5>All learners assessed!</h5>
+            <p class="text-muted">No more learners to assess for this activity.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Fixed Footer -->
+<div class="batch-footer">
+    <button type="button" class="nav-btn" id="prevBtn" onclick="previousCard()" disabled>
+        <i class="fas fa-chevron-left"></i> Previous
+    </button>
+    <span class="text-muted" id="cardCounter">1 / {{ total_count }}</span>
+    <button type="button" class="nav-btn complete-btn" id="completeBtn" onclick="completeSession()">
+        <i class="fas fa-signature me-1"></i> Sign & Complete
+    </button>
+</div>
+
+<!-- Signature Modal -->
+<div id="signatureModal" class="signature-modal">
+    <div class="signature-content">
+        <h5 class="mb-3"><i class="fas fa-signature me-2"></i>Sign Assessment Session</h5>
+        <p class="text-muted small mb-3">
+            I confirm that all assessments captured in this session are accurate and were conducted according to assessment criteria.
+        </p>
+        <canvas id="signatureCanvas" class="signature-canvas"></canvas>
+        <div class="d-flex gap-2 mt-3">
+            <button type="button" class="btn btn-outline-secondary flex-fill" onclick="clearSignature()">
+                <i class="fas fa-eraser"></i> Clear
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="closeSignatureModal()">
+                Cancel
+            </button>
+            <button type="button" class="btn btn-primary flex-fill" onclick="submitSignature()">
+                <i class="fas fa-check"></i> Submit
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Hidden file input for evidence -->
+<input type="file" id="evidenceInput" accept="image/*" capture="environment" style="display: none;">
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Assessment data
+const scheduleId = {{ schedule.id }};
+const activityId = {{ activity.id }};
+const totalLearners = {{ total_count }};
+let currentIndex = 0;
+let assessedResults = {};
+let pendingEvidence = {};
+let isOnline = navigator.onLine;
+
+// DOM Elements
+const cardStack = document.getElementById('cardStack');
+const cards = document.querySelectorAll('.learner-card');
+const progressBar = document.getElementById('progressBar');
+const assessedCount = document.getElementById('assessedCount');
+const cardCounter = document.getElementById('cardCounter');
+const prevBtn = document.getElementById('prevBtn');
+const offlineBanner = document.getElementById('offlineBanner');
+const syncIndicator = document.getElementById('syncIndicator');
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateNavigationState();
+    setupOfflineDetection();
+    loadCachedResults();
+    setupSwipeGestures();
+});
+
+// Offline detection
+function setupOfflineDetection() {
+    window.addEventListener('online', () => {
+        isOnline = true;
+        offlineBanner.classList.remove('visible');
+        syncPendingResults();
+    });
+    
+    window.addEventListener('offline', () => {
+        isOnline = false;
+        offlineBanner.classList.add('visible');
+    });
+    
+    if (!navigator.onLine) {
+        offlineBanner.classList.add('visible');
+    }
+}
+
+// Swipe gesture support
+function setupSwipeGestures() {
+    cards.forEach(card => {
+        let startX = 0;
+        let currentX = 0;
+        let isDragging = false;
+        
+        card.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isDragging = true;
+        });
+        
+        card.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            currentX = e.touches[0].clientX - startX;
+            card.style.transform = `translateX(${currentX}px) rotate(${currentX * 0.05}deg)`;
+        });
+        
+        card.addEventListener('touchend', () => {
+            isDragging = false;
+            if (Math.abs(currentX) > 100) {
+                // Swiped far enough
+                if (currentX > 0) {
+                    // Swipe right = Competent
+                    const enrollmentId = card.dataset.enrollmentId;
+                    assessLearner(parseInt(enrollmentId), 'C');
+                } else {
+                    // Swipe left = NYC
+                    const enrollmentId = card.dataset.enrollmentId;
+                    assessLearner(parseInt(enrollmentId), 'NYC');
+                }
+            } else {
+                // Reset position
+                card.style.transform = '';
+            }
+            currentX = 0;
+        });
+    });
+}
+
+// Assess learner
+async function assessLearner(enrollmentId, result) {
+    const card = document.querySelector(`[data-enrollment-id="${enrollmentId}"]`);
+    const comments = document.getElementById(`comments-${enrollmentId}`)?.value || '';
+    
+    // Store result
+    assessedResults[enrollmentId] = {
+        enrollment_id: enrollmentId,
+        activity_id: activityId,
+        result: result,
+        comments: comments,
+        timestamp: new Date().toISOString(),
+        evidence: pendingEvidence[enrollmentId] || []
+    };
+    
+    // Animate card out
+    if (result === 'C') {
+        card.classList.add('swiped-right');
+    } else {
+        card.classList.add('swiped-left');
+    }
+    
+    // Save to local storage for offline support
+    saveCachedResults();
+    
+    // Try to sync immediately if online
+    if (isOnline) {
+        quickSave(enrollmentId, result, comments);
+    }
+    
+    // Show toast
+    showToast(result === 'C' ? 'Marked Competent' : result === 'NYC' ? 'Marked Not Yet Competent' : 'Marked Absent', 
+              result === 'C' ? 'success' : '');
+    
+    // Move to next card
+    setTimeout(() => {
+        moveToNextCard();
+    }, 300);
+}
+
+// Quick save to server
+async function quickSave(enrollmentId, result, comments) {
+    try {
+        const response = await fetch('{% url "assessments:api_quick_save" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                schedule_id: scheduleId,
+                enrollment_id: enrollmentId,
+                activity_id: activityId,
+                result: result,
+                comments: comments,
+                client_timestamp: new Date().toISOString()
+            })
+        });
+        
+        if (response.ok) {
+            assessedResults[enrollmentId].synced = true;
+            saveCachedResults();
+        }
+    } catch (error) {
+        console.error('Quick save failed:', error);
+    }
+}
+
+// Navigate cards
+function moveToNextCard() {
+    if (currentIndex < cards.length - 1) {
+        cards[currentIndex].classList.add('hidden');
+        currentIndex++;
+        cards[currentIndex].classList.remove('hidden');
+        updateNavigationState();
+    } else {
+        // All done
+        updateNavigationState();
+    }
+}
+
+function previousCard() {
+    if (currentIndex > 0) {
+        cards[currentIndex].classList.add('hidden');
+        currentIndex--;
+        cards[currentIndex].classList.remove('hidden');
+        cards[currentIndex].classList.remove('swiped-left', 'swiped-right');
+        cards[currentIndex].style.transform = '';
+        updateNavigationState();
+    }
+}
+
+function skipLearner() {
+    moveToNextCard();
+}
+
+function updateNavigationState() {
+    prevBtn.disabled = currentIndex === 0;
+    
+    const assessed = Object.keys(assessedResults).length;
+    const percentage = (assessed / totalLearners) * 100;
+    progressBar.style.width = `${percentage}%`;
+    assessedCount.textContent = assessed;
+    cardCounter.textContent = `${currentIndex + 1} / ${totalLearners}`;
+}
+
+// Evidence capture
+function captureEvidence(enrollmentId) {
+    const input = document.getElementById('evidenceInput');
+    input.dataset.enrollmentId = enrollmentId;
+    input.click();
+}
+
+document.getElementById('evidenceInput').addEventListener('change', function(e) {
+    const enrollmentId = this.dataset.enrollmentId;
+    const file = e.target.files[0];
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64 = e.target.result;
+            
+            if (!pendingEvidence[enrollmentId]) {
+                pendingEvidence[enrollmentId] = [];
+            }
+            pendingEvidence[enrollmentId].push(base64);
+            
+            // Show preview
+            const preview = document.getElementById(`evidence-${enrollmentId}`);
+            const img = document.createElement('img');
+            img.src = base64;
+            img.className = 'evidence-thumb';
+            preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Signature functionality
+let signatureCanvas, signatureCtx;
+let isDrawing = false;
+
+function completeSession() {
+    document.getElementById('signatureModal').classList.add('visible');
+    initSignatureCanvas();
+}
+
+function closeSignatureModal() {
+    document.getElementById('signatureModal').classList.remove('visible');
+}
+
+function initSignatureCanvas() {
+    signatureCanvas = document.getElementById('signatureCanvas');
+    signatureCtx = signatureCanvas.getContext('2d');
+    
+    // Set canvas size
+    const rect = signatureCanvas.getBoundingClientRect();
+    signatureCanvas.width = rect.width;
+    signatureCanvas.height = rect.height;
+    
+    // Clear canvas
+    signatureCtx.fillStyle = '#ffffff';
+    signatureCtx.fillRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+    
+    // Setup drawing
+    signatureCanvas.addEventListener('mousedown', startDrawing);
+    signatureCanvas.addEventListener('mousemove', draw);
+    signatureCanvas.addEventListener('mouseup', stopDrawing);
+    signatureCanvas.addEventListener('mouseout', stopDrawing);
+    
+    signatureCanvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = signatureCanvas.getBoundingClientRect();
+        startDrawing({
+            offsetX: touch.clientX - rect.left,
+            offsetY: touch.clientY - rect.top
+        });
+    });
+    
+    signatureCanvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = signatureCanvas.getBoundingClientRect();
+        draw({
+            offsetX: touch.clientX - rect.left,
+            offsetY: touch.clientY - rect.top
+        });
+    });
+    
+    signatureCanvas.addEventListener('touchend', stopDrawing);
+}
+
+function startDrawing(e) {
+    isDrawing = true;
+    signatureCtx.beginPath();
+    signatureCtx.moveTo(e.offsetX, e.offsetY);
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    signatureCtx.lineWidth = 2;
+    signatureCtx.lineCap = 'round';
+    signatureCtx.strokeStyle = '#000000';
+    signatureCtx.lineTo(e.offsetX, e.offsetY);
+    signatureCtx.stroke();
+}
+
+function stopDrawing() {
+    isDrawing = false;
+}
+
+function clearSignature() {
+    signatureCtx.fillStyle = '#ffffff';
+    signatureCtx.fillRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+}
+
+async function submitSignature() {
+    const signature = signatureCanvas.toDataURL('image/png');
+    
+    // Submit all results with signature
+    showSyncIndicator('syncing');
+    
+    try {
+        const results = Object.values(assessedResults).map(r => ({
+            enrollment_id: r.enrollment_id,
+            activity_id: r.activity_id,
+            result: r.result,
+            comments: r.comments,
+            client_timestamp: r.timestamp
+        }));
+        
+        const response = await fetch('{% url "assessments:api_bulk_sign" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                schedule_id: scheduleId,
+                results: results,
+                signature: signature
+            })
+        });
+        
+        if (response.ok) {
+            showSyncIndicator('success');
+            clearCachedResults();
+            closeSignatureModal();
+            showToast('Assessment session completed!', 'success');
+            
+            // Redirect after brief delay
+            setTimeout(() => {
+                window.location.href = '{% url "portals:facilitator_today_assessments" %}';
+            }, 1500);
+        } else {
+            throw new Error('Failed to submit');
+        }
+    } catch (error) {
+        showSyncIndicator('error');
+        showToast('Failed to submit. Results saved offline.', 'error');
+    }
+}
+
+// Local storage functions
+function saveCachedResults() {
+    localStorage.setItem(`assess_${scheduleId}`, JSON.stringify(assessedResults));
+}
+
+function loadCachedResults() {
+    const cached = localStorage.getItem(`assess_${scheduleId}`);
+    if (cached) {
+        assessedResults = JSON.parse(cached);
+        updateNavigationState();
+    }
+}
+
+function clearCachedResults() {
+    localStorage.removeItem(`assess_${scheduleId}`);
+    assessedResults = {};
+}
+
+// Sync pending results when back online
+async function syncPendingResults() {
+    const unsynced = Object.values(assessedResults).filter(r => !r.synced);
+    if (unsynced.length === 0) return;
+    
+    showSyncIndicator('syncing');
+    
+    try {
+        const response = await fetch('{% url "assessments:api_bulk_sync" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                schedule_id: scheduleId,
+                results: unsynced
+            })
+        });
+        
+        if (response.ok) {
+            unsynced.forEach(r => {
+                assessedResults[r.enrollment_id].synced = true;
+            });
+            saveCachedResults();
+            showSyncIndicator('success');
+        }
+    } catch (error) {
+        showSyncIndicator('error');
+    }
+}
+
+// UI Helpers
+function showSyncIndicator(status) {
+    syncIndicator.style.display = 'flex';
+    syncIndicator.className = `sync-indicator ${status}`;
+    
+    if (status === 'success') {
+        syncIndicator.innerHTML = '<i class="fas fa-check"></i><span>Synced</span>';
+        setTimeout(() => {
+            syncIndicator.style.display = 'none';
+        }, 2000);
+    } else if (status === 'error') {
+        syncIndicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>Sync failed</span>';
+    } else {
+        syncIndicator.innerHTML = '<i class="fas fa-sync"></i><span>Syncing...</span>';
+    }
+}
+
+function showToast(message, type = '') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation' : 'info'}-circle"></i>${message}`;
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('{% static "js/sw.js" %}')
+        .then(reg => console.log('Service Worker registered'))
+        .catch(err => console.log('Service Worker registration failed:', err));
+}
+</script>
+{% endblock %}

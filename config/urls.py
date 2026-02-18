@@ -71,6 +71,9 @@ urlpatterns = [
     # LMS Integration - Moodle sync and assessment mapping
     path('lms/', include('lms_sync.urls', namespace='lms_sync')),
     
+    # Assessments - Assessment capture, scheduling, and sync APIs
+    path('assessments/', include('assessments.urls', namespace='assessments')),
+    
     # Integration Hub - External service integrations
     path('integrations/', include('integrations.urls', namespace='integrations')),
     

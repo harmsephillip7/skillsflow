@@ -1,0 +1,20 @@
+Schedule Change for {{ learner.first_name }} {{ learner.last_name }}
+================================================================================
+
+Dear {{ guardian.first_name }},
+
+An assessment has been rescheduled for {{ learner.first_name }}:
+
+Assessment: {{ activity.title }}
+Module: {{ activity.module.name }}
+
+Schedule Change:
+- Original Date: {{ old_date|date:"d F Y" }}
+- New Date: {{ new_date|date:"d F Y" }}
+{% if schedule.venue %}- Venue: {{ schedule.venue.name }}{% endif %}
+{% if schedule.scheduled_time_start %}- Time: {{ schedule.scheduled_time_start|time:"H:i" }}{% if schedule.scheduled_time_end %} - {{ schedule.scheduled_time_end|time:"H:i" }}{% endif %}{% endif %}
+
+Please ensure {{ learner.first_name }} is prepared for the new date.
+
+---
+This email was sent by SkillsFlow on behalf of your training provider.

@@ -1,0 +1,37 @@
+{% extends "portals/base_portal.html" %}
+
+{% block portal_title %}Mentor Portal{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-user-tie fa-4x text-muted"></i>
+                    </div>
+                    <h3 class="mb-3">No Mentor Profile Found</h3>
+                    <p class="text-muted mb-4">{{ message }}</p>
+                    
+                    {% if is_superuser %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Admin Note:</strong> To access this portal, you need at least one active HostMentor record in the system.
+                    </div>
+                    <a href="/admin/corporate/hostmentor/add/" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create Mentor
+                    </a>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <a href="/dashboard/" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

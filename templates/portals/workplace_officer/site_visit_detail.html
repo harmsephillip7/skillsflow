@@ -1,0 +1,322 @@
+{% extends 'portals/workplace_officer/base.html' %}
+{% load static %}
+
+{% block title %}{{ host.company_name }} - Site Visit Details{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{% url 'portals:officer_site_visits' %}" class="text-decoration-none text-muted mb-2 d-inline-block">
+            <i class="bi bi-arrow-left me-1"></i>Back to Site Visits
+        </a>
+        <h2><i class="bi bi-building me-2"></i>{{ host.company_name }}</h2>
+    </div>
+    {% if google_maps_url %}
+    <a href="{{ google_maps_url }}" target="_blank" class="btn btn-success">
+        <i class="bi bi-map me-1"></i>Get Directions
+    </a>
+    {% endif %}
+</div>
+
+<div class="row">
+    <!-- Company Details -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-building me-2"></i>Company Information
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th width="30%">Company Name</th>
+                        <td>{{ host.company_name }}</td>
+                    </tr>
+                    {% if host.trading_as %}
+                    <tr>
+                        <th>Trading As</th>
+                        <td>{{ host.trading_as }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>Address</th>
+                        <td>
+                            {% if host.physical_address %}
+                                {{ host.physical_address }}
+                                {% if google_maps_url %}
+                                <br>
+                                <a href="{{ google_maps_url }}" target="_blank" class="small">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>Open in Google Maps
+                                </a>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-warning">No address recorded</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if host.gps_latitude and host.gps_longitude %}
+                    <tr>
+                        <th>GPS Coordinates</th>
+                        <td>
+                            {{ host.gps_latitude }}, {{ host.gps_longitude }}
+                        </td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+        
+        <!-- Contact Details -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-person-lines-fill me-2"></i>Primary Contact
+            </div>
+            <div class="card-body">
+                {% if host.contact_person %}
+                <div class="d-flex align-items-start">
+                    <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 50px; height: 50px;">
+                        <i class="bi bi-person fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-1">{{ host.contact_person }}</h5>
+                        <p class="mb-2">
+                            {% if host.contact_phone %}
+                            <a href="tel:{{ host.contact_phone }}" class="text-decoration-none me-3">
+                                <i class="bi bi-telephone me-1"></i>{{ host.contact_phone }}
+                            </a>
+                            {% endif %}
+                        </p>
+                        {% if host.contact_email %}
+                        <a href="mailto:{{ host.contact_email }}" class="text-decoration-none">
+                            <i class="bi bi-envelope me-1"></i>{{ host.contact_email }}
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No primary contact recorded</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mentors -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-people me-2"></i>Host Mentors</span>
+                <span class="badge bg-primary">{{ mentors|length }}</span>
+            </div>
+            <div class="card-body p-0">
+                {% if mentors %}
+                <div class="list-group list-group-flush">
+                    {% for mentor in mentors %}
+                    <div class="list-group-item">
+                        <div class="d-flex align-items-start">
+                            <div class="bg-success text-white rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 45px; height: 45px;">
+                                <i class="bi bi-person-badge"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ mentor.get_full_name }}</h6>
+                                <small class="text-muted d-block">{{ mentor.designation|default:"Mentor" }}</small>
+                                <div class="mt-2">
+                                    {% if mentor.phone %}
+                                    <a href="tel:{{ mentor.phone }}" class="btn btn-sm btn-outline-primary me-2">
+                                        <i class="bi bi-telephone me-1"></i>Call
+                                    </a>
+                                    {% endif %}
+                                    {% if mentor.email %}
+                                    <a href="mailto:{{ mentor.email }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-envelope me-1"></i>Email
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted mb-0">No mentors assigned</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Visit Statistics -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-graph-up me-2"></i>Visit Statistics
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="stat-value text-primary">{{ total_visits }}</div>
+                        <div class="stat-label">Total Visits</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-value text-success">{{ visits_this_year }}</div>
+                        <div class="stat-label">This Year</div>
+                    </div>
+                    <div class="col-4">
+                        {% if last_visit %}
+                        <div class="stat-value {% if days_since_visit > 60 %}text-danger{% elif days_since_visit > 30 %}text-warning{% else %}text-success{% endif %}">
+                            {{ days_since_visit }}
+                        </div>
+                        <div class="stat-label">Days Since Visit</div>
+                        {% else %}
+                        <div class="stat-value text-danger">-</div>
+                        <div class="stat-label">Never Visited</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Learner Placements -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-mortarboard me-2"></i>Learner Placements</span>
+        <span class="badge bg-primary">{{ placements|length }}</span>
+    </div>
+    <div class="card-body p-0">
+        {% if placements %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Learner</th>
+                        <th>Programme</th>
+                        <th>Status</th>
+                        <th>Mentor</th>
+                        <th>Last Visit</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for placement in placements %}
+                    <tr>
+                        <td>
+                            <strong>{{ placement.learner.get_full_name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ placement.learner.id_number }}</small>
+                        </td>
+                        <td>
+                            {% if placement.cohort %}
+                                {{ placement.cohort.qualification.code|default:"" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ placement.status|default:'secondary' }}">
+                                {{ placement.get_status_display|default:"Active" }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if placement.mentor %}
+                                {{ placement.mentor.get_full_name }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% with placement.placementvisit_set.last as visit %}
+                            {% if visit %}
+                                {{ visit.visit_date|date:"d M Y" }}
+                            {% else %}
+                                <span class="text-danger">Never</span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            <a href="{% url 'portals:officer_site_visit_schedule' placement.id %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-calendar-plus me-1"></i>Schedule Visit
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <p class="text-muted mb-0">No active placements at this location</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Visit History -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history me-2"></i>Visit History</span>
+    </div>
+    <div class="card-body p-0">
+        {% if visits %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Learner</th>
+                        <th>Type</th>
+                        <th>Outcome</th>
+                        <th>Officer</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for visit in visits %}
+                    <tr>
+                        <td>{{ visit.visit_date|date:"d M Y" }}</td>
+                        <td>{{ visit.placement.learner.get_full_name }}</td>
+                        <td>{{ visit.get_visit_type_display|default:visit.visit_type }}</td>
+                        <td>
+                            {% if visit.outcome == 'satisfactory' or visit.outcome == 'Satisfactory' %}
+                                <span class="badge bg-success">Satisfactory</span>
+                            {% elif visit.outcome == 'concerns' or visit.outcome == 'Concerns' %}
+                                <span class="badge bg-warning text-dark">Concerns</span>
+                            {% elif visit.outcome == 'unsatisfactory' or visit.outcome == 'Unsatisfactory' %}
+                                <span class="badge bg-danger">Unsatisfactory</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ visit.outcome|default:"-" }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ visit.visitor.get_full_name|default:visit.visitor }}</td>
+                        <td>
+                            {% if visit.findings %}
+                                <span data-bs-toggle="tooltip" title="{{ visit.findings }}">
+                                    {{ visit.findings|truncatechars:30 }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-calendar-x text-muted" style="font-size: 2rem;"></i>
+            <p class="text-muted mt-2 mb-0">No visits recorded yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialize tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+</script>
+{% endblock %}

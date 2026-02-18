@@ -1,0 +1,213 @@
+{% extends 'portals/workplace_officer/base.html' %}
+{% load static %}
+
+{% block title %}Site Visits - Workplace Officer Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-geo-alt me-2"></i>Site Visits</h2>
+    <span class="text-muted">{{ today|date:"l, d F Y" }}</span>
+</div>
+
+<!-- Stats Summary -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="stat-value text-primary">{{ locations|length }}</div>
+            <div class="stat-label">Total Host Sites</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="stat-value text-success">{{ hosts_with_visits }}</div>
+            <div class="stat-label">Visited Recently</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="stat-value text-warning">{{ visits_due }}</div>
+            <div class="stat-label">Visits Due</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="stat-value text-danger">{{ overdue_visits }}</div>
+            <div class="stat-label">Overdue Visits</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Controls -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="search" placeholder="Search company name..." value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="status">
+                    <option value="">All Statuses</option>
+                    <option value="overdue" {% if request.GET.status == 'overdue' %}selected{% endif %}>Overdue</option>
+                    <option value="due" {% if request.GET.status == 'due' %}selected{% endif %}>Due Soon</option>
+                    <option value="recent" {% if request.GET.status == 'recent' %}selected{% endif %}>Recently Visited</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="sort">
+                    <option value="priority" {% if request.GET.sort == 'priority' %}selected{% endif %}>Sort by Priority</option>
+                    <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>Sort by Name</option>
+                    <option value="last_visit" {% if request.GET.sort == 'last_visit' %}selected{% endif %}>Sort by Last Visit</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Host Employers List -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-building me-2"></i>Host Employer Sites
+    </div>
+    <div class="card-body p-0">
+        {% if locations %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Company</th>
+                        <th>Contact Person</th>
+                        <th>Learners</th>
+                        <th>Last Visit</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for loc in locations %}
+                    <tr class="{% if loc.needs_visit and loc.days_since_visit > 60 %}table-danger{% elif loc.needs_visit %}table-warning{% endif %}">
+                        <td>
+                            <strong>{{ loc.host.company_name }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                {% if loc.host.physical_address %}
+                                    <i class="bi bi-geo me-1"></i>{{ loc.host.physical_address|truncatechars:50 }}
+                                {% else %}
+                                    <span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>No address</span>
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            {% if loc.host.contact_person %}
+                                <strong>{{ loc.host.contact_person }}</strong><br>
+                                <small>
+                                    {% if loc.host.contact_phone %}
+                                        <a href="tel:{{ loc.host.contact_phone }}" class="text-decoration-none">
+                                            <i class="bi bi-telephone me-1"></i>{{ loc.host.contact_phone }}
+                                        </a>
+                                    {% endif %}
+                                </small>
+                            {% elif loc.primary_mentor %}
+                                <strong>{{ loc.primary_mentor.get_full_name }}</strong><br>
+                                <small>
+                                    {% if loc.primary_mentor.phone %}
+                                        <a href="tel:{{ loc.primary_mentor.phone }}" class="text-decoration-none">
+                                            <i class="bi bi-telephone me-1"></i>{{ loc.primary_mentor.phone }}
+                                        </a>
+                                    {% endif %}
+                                </small>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">{{ loc.learner_count }} learner{{ loc.learner_count|pluralize }}</span>
+                        </td>
+                        <td>
+                            {% if loc.last_visit %}
+                                {{ loc.last_visit.visit_date|date:"d M Y" }}
+                                <br>
+                                <small class="text-muted">{{ loc.days_since_visit }} days ago</small>
+                            {% else %}
+                                <span class="text-danger"><i class="bi bi-exclamation-circle me-1"></i>Never visited</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if loc.days_since_visit and loc.days_since_visit > 60 %}
+                                <span class="badge bg-danger"><i class="bi bi-exclamation-triangle me-1"></i>Overdue</span>
+                            {% elif loc.needs_visit %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Due</span>
+                            {% else %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>OK</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'portals:officer_site_visit_detail' loc.host.id %}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if loc.google_maps_url %}
+                                <a href="{{ loc.google_maps_url }}" target="_blank" class="btn btn-sm btn-outline-success" title="Open in Google Maps">
+                                    <i class="bi bi-map"></i>
+                                </a>
+                                {% endif %}
+                                {% if loc.host.contact_phone %}
+                                <a href="tel:{{ loc.host.contact_phone }}" class="btn btn-sm btn-outline-info" title="Call Contact">
+                                    <i class="bi bi-telephone"></i>
+                                </a>
+                                {% elif loc.primary_mentor.phone %}
+                                <a href="tel:{{ loc.primary_mentor.phone }}" class="btn btn-sm btn-outline-info" title="Call Mentor">
+                                    <i class="bi bi-telephone"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-geo-alt text-muted" style="font-size: 3rem;"></i>
+            <p class="text-muted mt-3">No host employers assigned to your placements.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Map Overview (if any hosts have coordinates) -->
+{% if locations %}
+<div class="card mt-4">
+    <div class="card-header">
+        <i class="bi bi-map me-2"></i>Quick Navigation
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for loc in locations %}
+            {% if loc.google_maps_url %}
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ loc.host.company_name }}</h6>
+                        <p class="card-text small text-muted mb-2">
+                            {% if loc.host.physical_address %}
+                                {{ loc.host.physical_address|truncatechars:60 }}
+                            {% endif %}
+                        </p>
+                        <a href="{{ loc.google_maps_url }}" target="_blank" class="btn btn-success btn-sm w-100">
+                            <i class="bi bi-map me-1"></i>Get Directions
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

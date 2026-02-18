@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Progress Report</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .progress-circle {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+        .progress-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 10px;
+            flex: 1;
+            margin: 0 5px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+        .stat-box.success .stat-value { color: #10b981; }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 25px 0 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .result-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .result-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 16px;
+        }
+        .result-icon.c { background: #d1fae5; color: #059669; }
+        .result-icon.nyc { background: #fee2e2; color: #dc2626; }
+        .result-details { flex: 1; }
+        .result-name { font-weight: 500; }
+        .result-date { font-size: 12px; color: #64748b; }
+        .schedule-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .schedule-date {
+            background: #2563eb;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-align: center;
+            margin-right: 12px;
+            min-width: 50px;
+        }
+        .schedule-day { font-size: 20px; font-weight: bold; }
+        .schedule-month { font-size: 11px; text-transform: uppercase; }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>📊 Weekly Progress Report</h1>
+                <p>{{ learner.first_name }} {{ learner.last_name }}</p>
+            </div>
+            
+            <div class="content">
+                <p>Dear {{ guardian.first_name }},</p>
+                
+                <p>Here's {{ learner.first_name }}'s progress this week:</p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <div style="font-size: 48px; font-weight: bold; color: {% if progress_percentage >= 50 %}#10b981{% else %}#f59e0b{% endif %};">
+                        {{ progress_percentage }}%
+                    </div>
+                    <div style="color: #64748b;">Overall Progress</div>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stat-box success">
+                        <div class="stat-value">{{ competent_count }}</div>
+                        <div class="stat-label">Competent</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">{{ total_count }}</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                </div>
+                
+                {% if recent_results %}
+                <div class="section-title">📝 This Week's Results</div>
+                {% for result in recent_results %}
+                <div class="result-item">
+                    <div class="result-icon {% if result.result == 'C' %}c{% else %}nyc{% endif %}">
+                        {% if result.result == 'C' %}✓{% else %}↻{% endif %}
+                    </div>
+                    <div class="result-details">
+                        <div class="result-name">{{ result.activity.title }}</div>
+                        <div class="result-date">{{ result.assessment_date|date:"d M Y" }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% endif %}
+                
+                {% if upcoming_assessments %}
+                <div class="section-title">📅 Upcoming Assessments</div>
+                {% for schedule in upcoming_assessments %}
+                <div class="schedule-item">
+                    <div class="schedule-date">
+                        <div class="schedule-day">{{ schedule.scheduled_date|date:"d" }}</div>
+                        <div class="schedule-month">{{ schedule.scheduled_date|date:"M" }}</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: 500;">{{ schedule.activity.title }}</div>
+                        <div style="font-size: 12px; color: #64748b;">{{ schedule.activity.module.name }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="footer">
+                <p>This email was sent by SkillsFlow on behalf of your training provider.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

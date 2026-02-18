@@ -259,6 +259,32 @@ class FacilitatorDashboardView(LoginRequiredMixin, TemplateView):
         context['outstanding_assessments'] = outstanding_assessments[:20]
         context['outstanding_count'] = len(outstanding_assessments)
         
+        # Add aliases for template compatibility
+        context['my_cohorts'] = cohorts  # Template expects my_cohorts
+        context['pending_assessments_count'] = pending_to_mark  # Template expects this name
+        
+        # Collect at-risk learners list (learners with 2+ NYC results)
+        at_risk_learners = []
+        for data in cohort_data:
+            cohort = data['cohort']
+            enrollments = Enrollment.objects.filter(cohort=cohort, status__in=['ACTIVE', 'ENROLLED'])
+            at_risk_enrollments = AssessmentResult.objects.filter(
+                enrollment__in=enrollments,
+                result='NYC'
+            ).values('enrollment').annotate(
+                nyc_count=Count('id')
+            ).filter(nyc_count__gte=2).values_list('enrollment', flat=True)
+            
+            for enrollment_id in at_risk_enrollments:
+                enrollment = enrollments.filter(id=enrollment_id).select_related('learner', 'cohort').first()
+                if enrollment:
+                    at_risk_learners.append({
+                        'learner': enrollment.learner,
+                        'enrollment': enrollment,
+                        'cohort': cohort
+                    })
+        context['at_risk_learners'] = at_risk_learners
+        
         # Quick stats
         context['stats'] = {
             'total_cohorts': cohorts.count(),

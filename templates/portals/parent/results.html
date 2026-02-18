@@ -1,0 +1,251 @@
+{% extends "portals/parent/base.html" %}
+
+{% block title %}Assessment Results{% endblock %}
+
+{% block extra_head %}
+<style>
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stat-box {
+        background: white;
+        padding: 1.25rem;
+        border-radius: 1rem;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .stat-box .value {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+    
+    .stat-box .label {
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+    
+    .stat-box.success .value {
+        color: #10b981;
+    }
+    
+    .stat-box.danger .value {
+        color: #ef4444;
+    }
+    
+    .stat-box.warning .value {
+        color: #f59e0b;
+    }
+    
+    .module-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .module-header {
+        background: #f8fafc;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem 0.5rem 0 0;
+        border: 1px solid #e2e8f0;
+        border-bottom: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .module-name {
+        font-weight: 600;
+        color: #1e293b;
+    }
+    
+    .module-progress {
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+    
+    .result-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .result-card:last-child {
+        border-radius: 0 0 0.5rem 0.5rem;
+    }
+    
+    .result-card:not(:last-child) {
+        border-bottom: none;
+    }
+    
+    .result-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+    
+    .result-icon.c {
+        background: #d1fae5;
+        color: #059669;
+    }
+    
+    .result-icon.nyc {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+    
+    .result-icon.pending {
+        background: #fef3c7;
+        color: #d97706;
+    }
+    
+    .result-details {
+        flex: 1;
+    }
+    
+    .result-activity {
+        font-weight: 500;
+        color: #1e293b;
+    }
+    
+    .result-meta {
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+    
+    .result-badge {
+        padding: 0.375rem 0.875rem;
+        border-radius: 2rem;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+    
+    .badge-c {
+        background: #d1fae5;
+        color: #059669;
+    }
+    
+    .badge-nyc {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+    
+    .badge-pending {
+        background: #fef3c7;
+        color: #d97706;
+    }
+    
+    .attempt-tag {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h4 class="mb-4">
+    <i class="fas fa-chart-line text-primary me-2"></i>
+    Assessment Results
+</h4>
+
+<!-- Stats Summary -->
+<div class="stats-row">
+    <div class="stat-box success">
+        <div class="value">{{ stats.competent|default:0 }}</div>
+        <div class="label">Competent</div>
+    </div>
+    <div class="stat-box danger">
+        <div class="value">{{ stats.nyc|default:0 }}</div>
+        <div class="label">Not Yet Competent</div>
+    </div>
+    <div class="stat-box warning">
+        <div class="value">{{ stats.pending|default:0 }}</div>
+        <div class="label">Pending</div>
+    </div>
+</div>
+
+{% if results %}
+<!-- Results grouped by module -->
+{% regroup results by activity.module as module_list %}
+{% for module in module_list %}
+<div class="module-group">
+    <div class="module-header">
+        <span class="module-name">
+            <i class="fas fa-book-open me-2"></i>
+            {{ module.grouper.name|default:"Uncategorized" }}
+        </span>
+        <span class="module-progress">
+            {{ module.list|length }} assessment{% if module.list|length != 1 %}s{% endif %}
+        </span>
+    </div>
+    {% for result in module.list %}
+    <div class="result-card">
+        <div class="result-icon {% if result.result == 'C' %}c{% elif result.result == 'NYC' %}nyc{% else %}pending{% endif %}">
+            <i class="fas fa-{% if result.result == 'C' %}check{% elif result.result == 'NYC' %}times{% else %}clock{% endif %}"></i>
+        </div>
+        <div class="result-details">
+            <div class="result-activity">{{ result.activity.name }}</div>
+            <div class="result-meta">
+                <i class="fas fa-calendar me-1"></i>{{ result.assessment_date|date:"d M Y" }}
+                {% if result.assessor %}
+                <span class="mx-2">|</span>
+                <i class="fas fa-user me-1"></i>{{ result.assessor.get_full_name }}
+                {% endif %}
+            </div>
+            {% if result.attempt_number > 1 %}
+            <div class="attempt-tag">
+                <i class="fas fa-redo me-1"></i>Attempt {{ result.attempt_number }}
+            </div>
+            {% endif %}
+        </div>
+        <span class="result-badge {% if result.result == 'C' %}badge-c{% elif result.result == 'NYC' %}badge-nyc{% else %}badge-pending{% endif %}">
+            {% if result.result == 'C' %}
+            Competent
+            {% elif result.result == 'NYC' %}
+            Not Yet Competent
+            {% elif result.status == 'PENDING_MOD' %}
+            Pending Moderation
+            {% else %}
+            {{ result.get_status_display }}
+            {% endif %}
+        </span>
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}
+
+{% else %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <i class="fas fa-clipboard-list"></i>
+            <h5>No Results Yet</h5>
+            <p class="text-muted">Assessment results will appear here once they are recorded.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Info Box -->
+<div class="card bg-light mt-4">
+    <div class="card-body">
+        <h6><i class="fas fa-info-circle me-2"></i>Understanding Results</h6>
+        <ul class="mb-0 small text-muted">
+            <li><strong>Competent (C)</strong> - The learner has demonstrated all required skills and knowledge.</li>
+            <li><strong>Not Yet Competent (NYC)</strong> - Additional practice or reassessment is needed.</li>
+            <li><strong>Pending</strong> - The result is awaiting moderation or final confirmation.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

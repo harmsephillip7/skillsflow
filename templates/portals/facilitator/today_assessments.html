@@ -1,0 +1,296 @@
+{% extends "portals/base_portal.html" %}
+{% load static %}
+
+{% block portal_title %}Today's Assessments{% endblock %}
+
+{% block extra_head %}
+<style>
+    .assessments-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+    
+    .page-header {
+        margin-bottom: 2rem;
+    }
+    
+    .page-header h2 {
+        font-weight: 700;
+        color: #1e293b;
+    }
+    
+    .date-display {
+        color: #64748b;
+        font-size: 1.1rem;
+    }
+    
+    .assessment-card {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 1rem;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .assessment-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .assessment-card a {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        padding: 1.5rem;
+    }
+    
+    .card-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+    
+    .activity-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0;
+    }
+    
+    .module-badge {
+        background: #e0e7ff;
+        color: #4338ca;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .status-scheduled {
+        background: #fef3c7;
+        color: #d97706;
+    }
+    
+    .status-completed {
+        background: #d1fae5;
+        color: #059669;
+    }
+    
+    .card-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+    
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #64748b;
+    }
+    
+    .detail-item i {
+        color: #94a3b8;
+    }
+    
+    .learner-count {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #f1f5f9;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-weight: 500;
+    }
+    
+    .time-slot {
+        font-weight: 500;
+        color: #2563eb;
+    }
+    
+    .start-btn {
+        margin-top: 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .start-btn:hover {
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        color: white;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 1rem;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        color: #cbd5e1;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state h4 {
+        color: #64748b;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state p {
+        color: #94a3b8;
+    }
+    
+    /* Quick stats */
+    .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 1.25rem;
+        border-radius: 1rem;
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+    
+    .stat-label {
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+    
+    .stat-card.primary {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    }
+    
+    .stat-card.primary .stat-value,
+    .stat-card.primary .stat-label {
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="assessments-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2><i class="fas fa-clipboard-check me-2"></i>Today's Assessments</h2>
+        <p class="date-display">
+            <i class="fas fa-calendar me-1"></i>
+            {{ today|date:"l, d F Y" }}
+        </p>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="quick-stats">
+        <div class="stat-card primary">
+            <div class="stat-value">{{ assessments|length }}</div>
+            <div class="stat-label">Scheduled Today</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">
+                {% with total=0 %}
+                {% for item in assessments %}
+                {{ item.learner_count|add:total }}
+                {% endfor %}
+                {{ assessments|length }}
+                {% endwith %}
+            </div>
+            <div class="stat-label">Total Learners</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">0</div>
+            <div class="stat-label">Completed</div>
+        </div>
+    </div>
+    
+    <!-- Assessment Cards -->
+    {% if assessments %}
+        {% for item in assessments %}
+        <div class="assessment-card">
+            <a href="{% url 'portals:batch_assess' item.schedule.id %}">
+                <div class="card-header-row">
+                    <div>
+                        <h3 class="activity-name">{{ item.schedule.activity.name }}</h3>
+                        <span class="module-badge">
+                            <i class="fas fa-book-open me-1"></i>
+                            {{ item.schedule.activity.module.name|default:"Module" }}
+                        </span>
+                    </div>
+                    <span class="status-badge {% if item.schedule.status == 'COMPLETED' %}status-completed{% else %}status-scheduled{% endif %}">
+                        {{ item.schedule.get_status_display|default:"Scheduled" }}
+                    </span>
+                </div>
+                
+                <div class="card-details">
+                    <div class="detail-item">
+                        <i class="fas fa-users"></i>
+                        <span class="learner-count">
+                            <strong>{{ item.learner_count }}</strong> learners
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-graduation-cap"></i>
+                        {{ item.schedule.cohort.name }}
+                    </div>
+                    {% if item.schedule.venue %}
+                    <div class="detail-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        {{ item.schedule.venue.name }}
+                    </div>
+                    {% endif %}
+                    {% if item.schedule.scheduled_time_start %}
+                    <div class="detail-item time-slot">
+                        <i class="fas fa-clock"></i>
+                        {{ item.schedule.scheduled_time_start|time:"H:i" }}
+                        {% if item.schedule.scheduled_time_end %}
+                        - {{ item.schedule.scheduled_time_end|time:"H:i" }}
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="start-btn">
+                    <i class="fas fa-play-circle"></i>
+                    Start Batch Assessment
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-calendar-check"></i>
+            <h4>No Assessments Scheduled</h4>
+            <p>You have no assessments scheduled for today.</p>
+            <a href="{% url 'portals:facilitator_dashboard' %}" class="btn btn-primary mt-3">
+                <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

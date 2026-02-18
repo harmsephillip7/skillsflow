@@ -1147,3 +1147,328 @@ def officer_signature_api(request):
         })
     else:
         return JsonResponse({'success': False, 'error': message}, status=400)
+
+
+# =====================================================
+# SITE VISITS MANAGEMENT
+# =====================================================
+
+@login_required
+def site_visit_list(request):
+    """
+    List all site visits with company locations, contacts, and Google Maps links.
+    Shows upcoming visits, past visits, and allows scheduling new ones.
+    """
+    profile = get_officer_context(request.user)
+    if not profile:
+        return HttpResponseForbidden("You don't have workplace officer access.")
+    
+    from corporate.models import PlacementVisit, HostEmployer
+    
+    today = timezone.now().date()
+    
+    # Filter by status
+    status_filter = request.GET.get('status', 'upcoming')
+    
+    # Get all placements assigned to this officer
+    placements = WorkplacePlacement.objects.filter(
+        workplace_officer=request.user,
+        status='ACTIVE'
+    ).select_related('host', 'learner', 'mentor', 'enrollment__qualification')
+    
+    # Get host employers with active placements
+    host_ids = placements.values_list('host_id', flat=True).distinct()
+    host_employers = HostEmployer.objects.filter(
+        id__in=host_ids
+    ).prefetch_related('mentors', 'placements')
+    
+    # Build location data for each host
+    locations = []
+    for host in host_employers:
+        active_placements = placements.filter(host=host)
+        learner_count = active_placements.count()
+        
+        # Get the primary mentor
+        primary_mentor = host.mentors.filter(is_active=True, status='APPROVED').first()
+        
+        # Get visits for this host's placements
+        host_placement_ids = active_placements.values_list('id', flat=True)
+        upcoming_visits = PlacementVisit.objects.filter(
+            placement_id__in=host_placement_ids,
+            visit_date__gte=today
+        ).order_by('visit_date')
+        
+        past_visits = PlacementVisit.objects.filter(
+            placement_id__in=host_placement_ids,
+            visit_date__lt=today
+        ).order_by('-visit_date')[:3]
+        
+        # Calculate last visit date
+        last_visit = PlacementVisit.objects.filter(
+            placement_id__in=host_placement_ids,
+            visit_date__lt=today
+        ).order_by('-visit_date').first()
+        
+        # Calculate days since last visit
+        days_since_visit = None
+        if last_visit:
+            days_since_visit = (today - last_visit.visit_date).days
+        
+        # Build Google Maps URL
+        google_maps_url = None
+        if host.gps_latitude and host.gps_longitude:
+            google_maps_url = f"https://www.google.com/maps/dir/?api=1&destination={host.gps_latitude},{host.gps_longitude}"
+        elif host.physical_address:
+            import urllib.parse
+            encoded_address = urllib.parse.quote(host.physical_address)
+            google_maps_url = f"https://www.google.com/maps/search/?api=1&query={encoded_address}"
+        
+        locations.append({
+            'host': host,
+            'learner_count': learner_count,
+            'placements': active_placements,
+            'primary_mentor': primary_mentor,
+            'upcoming_visits': upcoming_visits,
+            'past_visits': past_visits,
+            'last_visit': last_visit,
+            'days_since_visit': days_since_visit,
+            'google_maps_url': google_maps_url,
+            'needs_visit': days_since_visit is None or days_since_visit > 30,
+        })
+    
+    # Sort locations - those needing visits first
+    locations.sort(key=lambda x: (not x['needs_visit'], x['days_since_visit'] or 999), reverse=True)
+    
+    # Get all upcoming visits for calendar view
+    all_upcoming_visits = PlacementVisit.objects.filter(
+        placement__workplace_officer=request.user,
+        visit_date__gte=today
+    ).select_related(
+        'placement__host', 'placement__learner'
+    ).order_by('visit_date')[:20]
+    
+    context = {
+        'profile': profile,
+        'locations': locations,
+        'all_upcoming_visits': all_upcoming_visits,
+        'status_filter': status_filter,
+        'today': today,
+    }
+    
+    return render(request, 'portals/workplace_officer/site_visits.html', context)
+
+
+@login_required
+def site_visit_detail(request, host_id):
+    """
+    Detailed view of a host employer location with all learners, contacts, and visit history.
+    """
+    profile = get_officer_context(request.user)
+    if not profile:
+        return HttpResponseForbidden("You don't have workplace officer access.")
+    
+    from corporate.models import PlacementVisit, HostEmployer
+    
+    host = get_object_or_404(HostEmployer, id=host_id)
+    today = timezone.now().date()
+    
+    # Get placements at this host assigned to this officer
+    placements = WorkplacePlacement.objects.filter(
+        workplace_officer=request.user,
+        host=host,
+        status='ACTIVE'
+    ).select_related('learner', 'mentor', 'enrollment__qualification')
+    
+    if not placements.exists():
+        messages.error(request, "You don't have any assigned placements at this location.")
+        return redirect('portals:officer_site_visits')
+    
+    # Get all mentors at this host
+    mentors = host.mentors.filter(is_active=True).order_by('-status', 'last_name')
+    
+    # Get visit history
+    placement_ids = placements.values_list('id', flat=True)
+    visits = PlacementVisit.objects.filter(
+        placement_id__in=placement_ids
+    ).select_related('visitor', 'placement__learner').order_by('-visit_date')
+    
+    upcoming_visits = visits.filter(visit_date__gte=today)
+    past_visits = visits.filter(visit_date__lt=today)
+    
+    # Calculate visit statistics
+    total_visits = visits.count()
+    last_visit = past_visits.first()
+    days_since_visit = None
+    if last_visit:
+        days_since_visit = (today - last_visit.visit_date).days
+    
+    # Visits this year
+    current_year = today.year
+    visits_this_year = visits.filter(visit_date__year=current_year).count()
+    
+    # Build Google Maps URL
+    google_maps_url = None
+    google_maps_embed = None
+    if host.gps_latitude and host.gps_longitude:
+        google_maps_url = f"https://www.google.com/maps/dir/?api=1&destination={host.gps_latitude},{host.gps_longitude}"
+        google_maps_embed = f"https://www.google.com/maps/embed/v1/place?key=&q={host.gps_latitude},{host.gps_longitude}"
+    elif host.physical_address:
+        import urllib.parse
+        encoded_address = urllib.parse.quote(host.physical_address)
+        google_maps_url = f"https://www.google.com/maps/search/?api=1&query={encoded_address}"
+    
+    context = {
+        'profile': profile,
+        'host': host,
+        'host_employer': host,  # Alias for template compatibility
+        'placements': placements,
+        'mentors': mentors,
+        'visits': past_visits,  # For the visit history table
+        'upcoming_visits': upcoming_visits,
+        'past_visits': past_visits,
+        'total_visits': total_visits,
+        'visits_this_year': visits_this_year,
+        'last_visit': last_visit,
+        'days_since_visit': days_since_visit,
+        'google_maps_url': google_maps_url,
+        'today': today,
+    }
+    
+    return render(request, 'portals/workplace_officer/site_visit_detail.html', context)
+
+
+@login_required
+def site_visit_schedule(request, placement_id):
+    """
+    Schedule a new site visit for a placement.
+    """
+    profile = get_officer_context(request.user)
+    if not profile:
+        return HttpResponseForbidden("You don't have workplace officer access.")
+    
+    from corporate.models import PlacementVisit
+    
+    placement = get_object_or_404(
+        WorkplacePlacement.objects.select_related('host', 'learner', 'mentor'),
+        id=placement_id,
+        workplace_officer=request.user
+    )
+    
+    today = timezone.now().date()
+    
+    if request.method == 'POST':
+        visit_type = request.POST.get('visit_type', 'ROUTINE')
+        visit_date_str = request.POST.get('visit_date')
+        notes = request.POST.get('notes', '')
+        
+        if not visit_date_str:
+            messages.error(request, 'Please select a visit date.')
+            return redirect('portals:officer_site_visit_schedule', placement_id=placement_id)
+        
+        try:
+            from datetime import datetime
+            visit_date = datetime.strptime(visit_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, 'Invalid date format.')
+            return redirect('portals:officer_site_visit_schedule', placement_id=placement_id)
+        
+        # Create the visit
+        visit = PlacementVisit.objects.create(
+            placement=placement,
+            visit_type=visit_type,
+            visit_date=visit_date,
+            visitor=request.user,
+            findings=notes,
+            created_by=request.user,
+        )
+        
+        messages.success(request, f'Site visit scheduled for {visit_date.strftime("%d %b %Y")}.')
+        return redirect('portals:officer_site_visit_detail', host_id=placement.host_id)
+    
+    # Build Google Maps URL
+    google_maps_url = None
+    host = placement.host
+    if host.gps_latitude and host.gps_longitude:
+        google_maps_url = f"https://www.google.com/maps/dir/?api=1&destination={host.gps_latitude},{host.gps_longitude}"
+    elif host.physical_address:
+        import urllib.parse
+        encoded_address = urllib.parse.quote(host.physical_address)
+        google_maps_url = f"https://www.google.com/maps/search/?api=1&query={encoded_address}"
+    
+    # Get previous visits for this placement
+    previous_visits = PlacementVisit.objects.filter(
+        placement=placement,
+        visit_date__lt=today
+    ).order_by('-visit_date')[:5]
+    
+    context = {
+        'profile': profile,
+        'placement': placement,
+        'visit_types': PlacementVisit.VISIT_TYPE_CHOICES,
+        'google_maps_url': google_maps_url,
+        'previous_visits': previous_visits,
+        'today': today,
+    }
+    
+    return render(request, 'portals/workplace_officer/site_visit_schedule.html', context)
+
+
+@login_required
+def site_visit_complete(request, visit_id):
+    """
+    Complete/record findings for a site visit.
+    """
+    profile = get_officer_context(request.user)
+    if not profile:
+        return HttpResponseForbidden("You don't have workplace officer access.")
+    
+    from corporate.models import PlacementVisit
+    
+    visit = get_object_or_404(
+        PlacementVisit.objects.select_related('placement__host', 'placement__learner', 'placement__mentor'),
+        id=visit_id,
+        visitor=request.user
+    )
+    
+    if request.method == 'POST':
+        # Update visit with findings
+        visit.met_with_learner = request.POST.get('met_with_learner') == 'on'
+        visit.met_with_mentor = request.POST.get('met_with_mentor') == 'on'
+        visit.met_with_supervisor = request.POST.get('met_with_supervisor') == 'on'
+        
+        # Ratings
+        try:
+            visit.learner_progress_rating = int(request.POST.get('learner_progress_rating', 0)) or None
+            visit.workplace_suitability_rating = int(request.POST.get('workplace_suitability_rating', 0)) or None
+            visit.mentor_support_rating = int(request.POST.get('mentor_support_rating', 0)) or None
+        except (ValueError, TypeError):
+            pass
+        
+        visit.findings = request.POST.get('findings', '')
+        visit.issues_identified = request.POST.get('issues_identified', '')
+        visit.recommendations = request.POST.get('recommendations', '')
+        visit.follow_up_required = request.POST.get('follow_up_required') == 'on'
+        
+        if visit.follow_up_required:
+            follow_up_date_str = request.POST.get('follow_up_date')
+            if follow_up_date_str:
+                try:
+                    from datetime import datetime
+                    visit.follow_up_date = datetime.strptime(follow_up_date_str, '%Y-%m-%d').date()
+                except ValueError:
+                    pass
+        
+        visit.save()
+        
+        messages.success(request, 'Site visit findings recorded successfully.')
+        return redirect('portals:officer_site_visit_detail', host_id=visit.placement.host_id)
+    
+    today = timezone.now().date()
+    
+    context = {
+        'profile': profile,
+        'visit': visit,
+        'today': today,
+    }
+    
+    return render(request, 'portals/workplace_officer/site_visit_complete.html', context)

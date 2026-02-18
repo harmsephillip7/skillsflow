@@ -464,23 +464,25 @@ class CohortImplementationPlan(AuditedModel):
     def generate_schedule_sessions(self, start_date=None):
         """
         Generate ScheduleSession records from the implementation plan phases and module slots.
-        This populates the actual calendar for facilitators.
+        This populates the actual calendar for facilitators and learners.
         
         If the cohort is linked to a NOT (via NOTIntake), it will use allocated resources
         (facilitator, venue) from the NOT's resource requirements.
         """
         from datetime import timedelta
-        from academics.models import LessonPlanTemplate
         
         if not start_date:
             start_date = self.cohort.start_date
         
+        if not start_date:
+            raise ValueError("Cannot generate schedule sessions without a start date")
+        
         current_date = start_date
         sessions_created = []
         
-        # Try to get allocated resources from NOT
+        # Try to get allocated resources from NOT or cohort defaults
         facilitator = self.cohort.facilitator
-        venue_id = 1  # Default fallback
+        venue = None
         
         # Check if cohort is linked to a NOT via NOTIntake
         if hasattr(self.cohort, 'not_intakes') and self.cohort.not_intakes.exists():
@@ -508,55 +510,118 @@ class CohortImplementationPlan(AuditedModel):
                         venue__isnull=False,
                         is_archived=False
                     ).first()
-                    if allocation and allocation.venue_id:
-                        venue_id = allocation.venue_id
+                    if allocation and allocation.venue:
+                        venue = allocation.venue
         
-        for phase in self.phases.filter(phase_type='INSTITUTIONAL').order_by('sequence'):
-            # Update phase dates
-            phase.actual_start = current_date
-            
-            for slot in phase.module_slots.order_by('sequence'):
-                for day_num in range(slot.total_days):
-                    # Skip weekends
-                    while current_date.weekday() >= 5:
+        # Fallback to any available venue if not allocated via NOT
+        if not venue:
+            venue = Venue.objects.filter(is_active=True).first()
+            if not venue:
+                # Create a default venue if none exists
+                campus = self.cohort.campus
+                if not campus:
+                    from core.models import Campus
+                    campus = Campus.objects.first()
+                
+                venue = Venue.objects.create(
+                    campus=campus,
+                    code='DEFAULT-001',
+                    name='Default Training Venue',
+                    venue_type='CLASSROOM',
+                    capacity=30,
+                    is_active=True
+                )
+        
+        # Process all phases
+        for phase in self.phases.order_by('sequence'):
+            if phase.phase_type == 'INSTITUTIONAL':
+                # Update phase dates
+                phase.actual_start = current_date
+                
+                for slot in phase.module_slots.order_by('sequence'):
+                    for day_num in range(slot.total_days):
+                        # Skip weekends
+                        while current_date.weekday() >= 5:
+                            current_date += timedelta(days=1)
+                        
+                        # Create morning classroom session (2 hours)
+                        classroom_session = ScheduleSession.objects.create(
+                            cohort=self.cohort,
+                            module=slot.module,
+                            venue=venue,
+                            facilitator=facilitator,
+                            date=current_date,
+                            start_time='08:00',
+                            end_time='10:00',
+                            session_type='LECTURE',
+                            topic=f"{slot.module.code} - Day {day_num + 1} Theory"
+                        )
+                        sessions_created.append(classroom_session)
+                        
+                        # Create afternoon practical session (4 hours)
+                        practical_session = ScheduleSession.objects.create(
+                            cohort=self.cohort,
+                            module=slot.module,
+                            venue=venue,
+                            facilitator=facilitator,
+                            date=current_date,
+                            start_time='10:30',
+                            end_time='14:30',
+                            session_type='PRACTICAL',
+                            topic=f"{slot.module.code} - Day {day_num + 1} Practical"
+                        )
+                        sessions_created.append(practical_session)
+                        
                         current_date += timedelta(days=1)
-                    
-                    # Create morning classroom session (2 hours)
-                    classroom_session = ScheduleSession.objects.create(
-                        cohort=self.cohort,
-                        module=slot.module,
-                        venue_id=venue_id,
-                        facilitator=facilitator,
-                        date=current_date,
-                        start_time='08:00',
-                        end_time='10:00',
-                        session_type='LECTURE',
-                        topic=f"{slot.module.code} - Day {day_num + 1} Theory"
-                    )
-                    sessions_created.append(classroom_session)
-                    
-                    # Create afternoon practical session (4 hours)
-                    practical_session = ScheduleSession.objects.create(
-                        cohort=self.cohort,
-                        module=slot.module,
-                        venue_id=venue_id,
-                        facilitator=facilitator,
-                        date=current_date,
-                        start_time='10:30',
-                        end_time='14:30',
-                        session_type='PRACTICAL',
-                        topic=f"{slot.module.code} - Day {day_num + 1} Practical"
-                    )
-                    sessions_created.append(practical_session)
-                    
-                    current_date += timedelta(days=1)
-            
-            phase.actual_end = current_date - timedelta(days=1)
-            phase.save()
-            
-            # For workplace stints, just advance the date
-            if phase.phase_type == 'WORKPLACE_STINT':
+                
+                phase.actual_end = current_date - timedelta(days=1)
+                phase.save()
+                
+            elif phase.phase_type in ['WORKPLACE', 'WORKPLACE_STINT']:
+                # For workplace phases, just advance the date (no sessions created)
+                # Workplace tracking is handled separately via WorkplacePlacement
+                phase.actual_start = current_date
                 current_date += timedelta(weeks=phase.duration_weeks)
+                phase.actual_end = current_date - timedelta(days=1)
+                phase.save()
+                
+            elif phase.phase_type == 'INDUCTION':
+                # Create orientation session for induction
+                phase.actual_start = current_date
+                
+                # Skip weekends for induction start
+                while current_date.weekday() >= 5:
+                    current_date += timedelta(days=1)
+                
+                # Get first module or create an orientation session
+                first_module = None
+                first_slot = phase.module_slots.first()
+                if first_slot:
+                    first_module = first_slot.module
+                else:
+                    # Try to get any module from qualification
+                    from academics.models import Module
+                    first_module = Module.objects.filter(
+                        qualification=self.cohort.qualification
+                    ).first()
+                
+                if first_module:
+                    induction_session = ScheduleSession.objects.create(
+                        cohort=self.cohort,
+                        module=first_module,
+                        venue=venue,
+                        facilitator=facilitator,
+                        date=current_date,
+                        start_time='09:00',
+                        end_time='16:00',
+                        session_type='ORIENTATION',
+                        topic='Programme Orientation & Induction'
+                    )
+                    sessions_created.append(induction_session)
+                
+                current_date += timedelta(weeks=phase.duration_weeks) if phase.duration_weeks else timedelta(days=1)
+                phase.actual_end = current_date - timedelta(days=1)
+                phase.save()
         
         return sessions_created
 

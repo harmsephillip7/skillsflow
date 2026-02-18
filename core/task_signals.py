@@ -525,6 +525,20 @@ def auto_create_cohort_implementation_plan(sender, instance, created, **kwargs):
             f"Auto-created implementation plan '{cohort_plan.name}' for "
             f"cohort {instance.cohort.code} from template '{template.name}'"
         )
+        
+        # Auto-generate schedule sessions from the implementation plan
+        try:
+            sessions = cohort_plan.generate_schedule_sessions()
+            logger.info(
+                f"Auto-generated {len(sessions)} schedule sessions for "
+                f"cohort {instance.cohort.code}"
+            )
+        except Exception as schedule_error:
+            logger.error(
+                f"Error generating schedule sessions for cohort "
+                f"{instance.cohort.code}: {schedule_error}"
+            )
+            
     except Exception as e:
         logger.error(
             f"Error auto-creating implementation plan for cohort "

@@ -1,0 +1,324 @@
+{% extends 'portals/workplace_officer/base.html' %}
+{% load static %}
+
+{% block title %}Complete Site Visit - {{ visit.placement.learner.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'portals:officer_site_visit_detail' visit.placement.host.id %}" class="text-decoration-none text-muted mb-2 d-inline-block">
+        <i class="bi bi-arrow-left me-1"></i>Back to {{ visit.placement.host.company_name }}
+    </a>
+    <h2><i class="bi bi-clipboard-check me-2"></i>Complete Site Visit</h2>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-journal-check me-2"></i>Visit Report
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Visit Info (readonly) -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Learner</label>
+                            <input type="text" class="form-control" value="{{ visit.placement.learner.get_full_name }}" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Host Employer</label>
+                            <input type="text" class="form-control" value="{{ visit.placement.host.company_name }}" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Visit Date</label>
+                            <input type="text" class="form-control" value="{{ visit.visit_date|date:'d M Y' }}" readonly>
+                        </div>
+                    </div>
+                    
+                    <!-- Overall Outcome -->
+                    <div class="mb-4">
+                        <label class="form-label">Overall Outcome <span class="text-danger">*</span></label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check form-check-lg">
+                                    <input class="form-check-input" type="radio" name="outcome" value="satisfactory" id="outcome1" required>
+                                    <label class="form-check-label" for="outcome1">
+                                        <span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i>Satisfactory</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-check-lg">
+                                    <input class="form-check-input" type="radio" name="outcome" value="concerns" id="outcome2" required>
+                                    <label class="form-check-label" for="outcome2">
+                                        <span class="badge bg-warning text-dark fs-6"><i class="bi bi-exclamation-triangle me-1"></i>Concerns Noted</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-check-lg">
+                                    <input class="form-check-input" type="radio" name="outcome" value="unsatisfactory" id="outcome3" required>
+                                    <label class="form-check-label" for="outcome3">
+                                        <span class="badge bg-danger fs-6"><i class="bi bi-x-circle me-1"></i>Unsatisfactory</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rating Categories -->
+                    <div class="mb-4">
+                        <label class="form-label">Assessment Ratings</label>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Area</th>
+                                        <th class="text-center" style="width: 80px;">Poor</th>
+                                        <th class="text-center" style="width: 80px;">Fair</th>
+                                        <th class="text-center" style="width: 80px;">Good</th>
+                                        <th class="text-center" style="width: 80px;">Excellent</th>
+                                        <th class="text-center" style="width: 80px;">N/A</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Learner Progress</td>
+                                        {% for val in "1234N" %}
+                                        <td class="text-center">
+                                            <input class="form-check-input" type="radio" name="rating_progress" value="{{ val }}">
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    <tr>
+                                        <td>Workplace Safety</td>
+                                        {% for val in "1234N" %}
+                                        <td class="text-center">
+                                            <input class="form-check-input" type="radio" name="rating_safety" value="{{ val }}">
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    <tr>
+                                        <td>Mentor Support</td>
+                                        {% for val in "1234N" %}
+                                        <td class="text-center">
+                                            <input class="form-check-input" type="radio" name="rating_mentor" value="{{ val }}">
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    <tr>
+                                        <td>Training Plan Adherence</td>
+                                        {% for val in "1234N" %}
+                                        <td class="text-center">
+                                            <input class="form-check-input" type="radio" name="rating_plan" value="{{ val }}">
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    <tr>
+                                        <td>Learner Attitude & Conduct</td>
+                                        {% for val in "1234N" %}
+                                        <td class="text-center">
+                                            <input class="form-check-input" type="radio" name="rating_conduct" value="{{ val }}">
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- People Met -->
+                    <div class="mb-3">
+                        <label for="people_met" class="form-label">People Met During Visit</label>
+                        <input type="text" class="form-control" id="people_met" name="people_met" 
+                               placeholder="e.g., John Smith (Mentor), Jane Doe (HR Manager)">
+                    </div>
+                    
+                    <!-- Findings -->
+                    <div class="mb-3">
+                        <label for="findings" class="form-label">Key Findings & Observations <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="findings" name="findings" rows="4" required
+                                  placeholder="Document your observations during the visit..."></textarea>
+                    </div>
+                    
+                    <!-- Concerns -->
+                    <div class="mb-3" id="concerns_section">
+                        <label for="concerns" class="form-label">Concerns Identified</label>
+                        <textarea class="form-control" id="concerns" name="concerns" rows="3"
+                                  placeholder="List any concerns that need to be addressed..."></textarea>
+                    </div>
+                    
+                    <!-- Action Items -->
+                    <div class="mb-3">
+                        <label for="action_items" class="form-label">Action Items</label>
+                        <textarea class="form-control" id="action_items" name="action_items" rows="3"
+                                  placeholder="List any follow-up actions required..."></textarea>
+                    </div>
+                    
+                    <!-- Follow-up Required -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="follow_up_required" name="follow_up_required">
+                            <label class="form-check-label" for="follow_up_required">
+                                <strong>Follow-up visit required</strong>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Follow-up Date -->
+                    <div class="mb-4" id="follow_up_date_section" style="display: none;">
+                        <label for="follow_up_date" class="form-label">Suggested Follow-up Date</label>
+                        <input type="date" class="form-control" id="follow_up_date" name="follow_up_date"
+                               min="{{ today|date:'Y-m-d' }}">
+                    </div>
+                    
+                    <!-- Signatures -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <i class="bi bi-pen me-2"></i>Officer Signature
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="officer_signature" class="border rounded w-100" style="height: 150px;"></canvas>
+                                    <input type="hidden" name="officer_signature" id="officer_signature_data">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="clearSignature('officer_signature')">
+                                        <i class="bi bi-eraser"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <i class="bi bi-pen me-2"></i>Host Representative Signature
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="host_signature" class="border rounded w-100" style="height: 150px;"></canvas>
+                                    <input type="hidden" name="host_signature" id="host_signature_data">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="clearSignature('host_signature')">
+                                        <i class="bi bi-eraser"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'portals:officer_site_visit_detail' visit.placement.host.id %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i>Cancel
+                        </a>
+                        <div>
+                            <button type="submit" name="action" value="save_draft" class="btn btn-outline-primary me-2">
+                                <i class="bi bi-save me-1"></i>Save Draft
+                            </button>
+                            <button type="submit" name="action" value="complete" class="btn btn-success">
+                                <i class="bi bi-check-lg me-1"></i>Complete Visit
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Visit Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i>Visit Information
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>Visit Type:</strong> {{ visit.get_visit_type_display|default:visit.visit_type }}</p>
+                <p class="mb-2"><strong>Scheduled Date:</strong> {{ visit.visit_date|date:"d M Y" }}</p>
+                {% if visit.purpose %}
+                <p class="mb-0"><strong>Purpose:</strong> {{ visit.purpose }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Learner Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-person me-2"></i>Learner Information
+            </div>
+            <div class="card-body">
+                <p class="mb-1"><strong>{{ visit.placement.learner.get_full_name }}</strong></p>
+                <p class="mb-1 text-muted">ID: {{ visit.placement.learner.id_number }}</p>
+                {% if visit.placement.cohort %}
+                <p class="mb-0 text-muted">{{ visit.placement.cohort.qualification.title|default:"" }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Reference -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-lightbulb me-2"></i>Rating Guide
+            </div>
+            <div class="card-body small">
+                <p class="mb-2"><strong>1 - Poor:</strong> Significant issues, immediate action required</p>
+                <p class="mb-2"><strong>2 - Fair:</strong> Below standard, improvement needed</p>
+                <p class="mb-2"><strong>3 - Good:</strong> Meets expectations</p>
+                <p class="mb-2"><strong>4 - Excellent:</strong> Exceeds expectations</p>
+                <p class="mb-0"><strong>N/A:</strong> Not applicable for this visit</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<script>
+// Initialize signature pads
+let officerPad, hostPad;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const officerCanvas = document.getElementById('officer_signature');
+    const hostCanvas = document.getElementById('host_signature');
+    
+    // Resize canvas
+    function resizeCanvas(canvas) {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+    }
+    
+    resizeCanvas(officerCanvas);
+    resizeCanvas(hostCanvas);
+    
+    officerPad = new SignaturePad(officerCanvas);
+    hostPad = new SignaturePad(hostCanvas);
+    
+    // Update hidden fields before submit
+    document.querySelector('form').addEventListener('submit', function() {
+        if (!officerPad.isEmpty()) {
+            document.getElementById('officer_signature_data').value = officerPad.toDataURL();
+        }
+        if (!hostPad.isEmpty()) {
+            document.getElementById('host_signature_data').value = hostPad.toDataURL();
+        }
+    });
+    
+    // Toggle follow-up date section
+    document.getElementById('follow_up_required').addEventListener('change', function() {
+        document.getElementById('follow_up_date_section').style.display = this.checked ? 'block' : 'none';
+    });
+});
+
+function clearSignature(canvasId) {
+    if (canvasId === 'officer_signature') {
+        officerPad.clear();
+    } else {
+        hostPad.clear();
+    }
+}
+</script>
+{% endblock %}

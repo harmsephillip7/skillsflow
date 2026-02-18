@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Result</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        .result-box {
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .result-box.competent {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+        }
+        .result-box.nyc {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+        }
+        .result-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .result-text {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .result-box.competent .result-text {
+            color: #059669;
+        }
+        .result-box.nyc .result-text {
+            color: #dc2626;
+        }
+        .details {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .details-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .details-row:last-child {
+            border-bottom: none;
+        }
+        .details-label {
+            color: #64748b;
+        }
+        .details-value {
+            font-weight: 500;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            text-decoration: none;
+            padding: 14px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+        }
+        .access-code {
+            background: #f1f5f9;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .access-code-label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .access-code-value {
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            color: #1e293b;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>Assessment Result</h1>
+                <p>{{ learner.first_name }} {{ learner.last_name }}</p>
+            </div>
+            
+            <div class="content">
+                <p class="greeting">Dear {{ guardian.first_name }},</p>
+                
+                <p>An assessment has been completed for <strong>{{ learner.first_name }}</strong>. Here are the details:</p>
+                
+                <div class="result-box {% if is_competent %}competent{% else %}nyc{% endif %}">
+                    <div class="result-icon">
+                        {% if is_competent %}✓{% else %}↻{% endif %}
+                    </div>
+                    <div class="result-text">
+                        {% if is_competent %}Competent{% else %}Not Yet Competent{% endif %}
+                    </div>
+                </div>
+                
+                <div class="details">
+                    <div class="details-row">
+                        <span class="details-label">Assessment</span>
+                        <span class="details-value">{{ activity.title }}</span>
+                    </div>
+                    <div class="details-row">
+                        <span class="details-label">Module</span>
+                        <span class="details-value">{{ activity.module.name }}</span>
+                    </div>
+                    <div class="details-row">
+                        <span class="details-label">Date</span>
+                        <span class="details-value">{{ result.assessment_date|date:"d F Y" }}</span>
+                    </div>
+                    {% if result.assessor %}
+                    <div class="details-row">
+                        <span class="details-label">Assessor</span>
+                        <span class="details-value">{{ result.assessor.get_full_name }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if not is_competent %}
+                <p>
+                    Don't worry – this is a normal part of the learning process. 
+                    {{ learner.first_name }} will have the opportunity to be reassessed once they've had more practice.
+                </p>
+                {% else %}
+                <p>
+                    Congratulations! {{ learner.first_name }} has successfully demonstrated competence in this assessment.
+                </p>
+                {% endif %}
+                
+                <div style="text-align: center;">
+                    <a href="{{ portal_url }}" class="cta-button">
+                        View Full Progress Report
+                    </a>
+                </div>
+                
+                {% if access_code %}
+                <div class="access-code">
+                    <div class="access-code-label">Your Portal Access Code</div>
+                    <div class="access-code-value">{{ access_code }}</div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="footer">
+                <p>
+                    This email was sent by SkillsFlow on behalf of your training provider.<br>
+                    <a href="{{ portal_url }}">Access Parent Portal</a> | 
+                    <a href="#">Manage Notifications</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

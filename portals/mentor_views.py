@@ -54,14 +54,9 @@ def get_mentor_context(user):
         ).filter(is_active=True).first()
         if mentor:
             return mentor
-        # If no mentors exist, create a dummy context dict for superusers
-        return type('SuperuserMentor', (), {
-            'id': 0,
-            'user': user,
-            'host': None,
-            'is_superuser_view': True,
-            '__str__': lambda self: 'Admin View',
-        })()
+        # If no mentors exist, create a dummy mentor in the DB for superuser access
+        # or return None to show appropriate message
+        return None
     
     try:
         mentor = HostMentor.objects.select_related(
@@ -79,6 +74,12 @@ def mentor_dashboard(request):
     """
     mentor = get_mentor_context(request.user)
     if not mentor:
+        # For superusers, show an info message instead of forbidden
+        if request.user.is_superuser:
+            return render(request, 'portals/mentor/no_mentor.html', {
+                'message': 'No active mentors found in the system. Please create a HostMentor record first.',
+                'is_superuser': True,
+            })
         return HttpResponseForbidden("You don't have mentor access.")
     
     # Get today's date for date calculations
@@ -206,13 +207,13 @@ def learner_detail(request, placement_id):
     # Get module completions
     module_completions = WorkplaceModuleCompletion.objects.filter(
         placement=placement
-    ).order_by('-completion_date')
+    ).order_by('-completed_date')
     
     # Get disciplinary records
     disciplinary = DisciplinaryRecord.objects.filter(
         learner=learner,
         placement=placement
-    ).order_by('-date_opened')
+    ).order_by('-opened_date')
     
     context = {
         'mentor': mentor,
@@ -594,11 +595,11 @@ def module_completions(request, placement_id):
             placement=placement,
             module_code=module_code,
             module_name=module_name,
-            completion_date=completion_date,
-            mentor_verified=True,
-            mentor_verified_date=timezone.now(),
-            notes=notes,
-            campus=placement.campus,
+            completed_date=completion_date,
+            mentor_signed=True,
+            mentor_signed_at=timezone.now(),
+            mentor_signed_by=request.user,
+            mentor_comments=notes,
         )
         
         if request.content_type == 'application/json':
@@ -613,7 +614,7 @@ def module_completions(request, placement_id):
     # GET - list completions
     completions = WorkplaceModuleCompletion.objects.filter(
         placement=placement
-    ).order_by('-completion_date')
+    ).order_by('-completed_date')
     
     context = {
         'mentor': mentor,

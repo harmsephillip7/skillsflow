@@ -7,7 +7,8 @@ These provide role-based dashboards and workflow-guided experiences.
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import TemplateView, ListView, DetailView
+from django.views.generic import TemplateView, ListView, DetailView, View
+from django.db import models
 from django.db.models import Count, Q
 from django.utils import timezone
 
@@ -614,5 +615,439 @@ class StaffDashboardView(LoginRequiredMixin, DashboardMixin, TemplateView):
                 'qualified_leads': Lead.objects.filter(status='qualified').count(),
             }
         }]
+
+
+class StaffLeaveView(LoginRequiredMixin, DashboardMixin, TemplateView):
+    """Staff leave management view."""
+    template_name = 'portals/staff/leave.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Get leave requests for the current user
+        from hr.models import LeaveRequest
+        
+        context['leave_requests'] = LeaveRequest.objects.filter(
+            staff_profile__user=user
+        ).order_by('-created_at')[:20]
+        
+        context['leave_balance'] = {
+            'annual': 20,
+            'sick': 30,
+            'family': 3,
+            'study': 0,
+        }
+        
+        return context
+
+
+class StaffDocumentsView(LoginRequiredMixin, DashboardMixin, TemplateView):
+    """Staff documents view - payslips, contracts, etc."""
+    template_name = 'portals/staff/documents.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Get documents for the current user
+        context['documents'] = []  # To be populated from HR documents
+        
+        return context
+
+
+class StaffProfileView(LoginRequiredMixin, DashboardMixin, TemplateView):
+    """Staff profile view."""
+    template_name = 'portals/staff/profile.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        context['user'] = user
+        
+        # Get employee profile if exists
+        from hr.models import Employee
+        context['employee'] = Employee.objects.filter(user=user).first()
+        
+        return context
+
+
+# =====================================================
+# Batch Assessment Capture
+# =====================================================
+
+class BatchAssessView(LoginRequiredMixin, TemplateView):
+    """
+    Mobile-first batch assessment capture.
+    Facilitators can rapidly assess all learners in a cohort for a specific assessment.
+    
+    Features:
+    - Swipeable card interface
+    - Quick C/NYC/ABS buttons
+    - Inline signature capture
+    - Photo evidence capture
+    - Offline support via PWA
+    """
+    template_name = 'portals/facilitator/batch_assess.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from assessments.models import AssessmentSchedule, AssessmentResult
+        from academics.models import Enrollment
+        
+        schedule_id = self.kwargs.get('schedule_id')
+        schedule = get_object_or_404(
+            AssessmentSchedule.objects.select_related('cohort', 'activity', 'activity__module'),
+            pk=schedule_id
+        )
+        
+        context['schedule'] = schedule
+        context['activity'] = schedule.activity
+        context['cohort'] = schedule.cohort
+        
+        # Get all enrollments for the cohort
+        enrollments = Enrollment.objects.filter(
+            cohort=schedule.cohort,
+            status__in=['ENROLLED', 'ACTIVE']
+        ).select_related('learner', 'learner__user').order_by('learner__last_name')
+        
+        learners_data = []
+        for enrollment in enrollments:
+            learner = enrollment.learner
+            
+            # Get existing result
+            existing = AssessmentResult.objects.filter(
+                enrollment=enrollment,
+                activity=schedule.activity
+            ).order_by('-attempt_number').first()
+            
+            learners_data.append({
+                'enrollment': enrollment,
+                'learner': learner,
+                'existing_result': existing,
+                'attempt_count': AssessmentResult.objects.filter(
+                    enrollment=enrollment,
+                    activity=schedule.activity
+                ).count(),
+                'can_assess': True
+            })
+        
+        context['learners'] = learners_data
+        context['total_count'] = len(learners_data)
+        
+        # Count already assessed
+        context['assessed_count'] = sum(1 for l in learners_data if l['existing_result'])
+        
+        return context
+
+
+class FacilitatorTodayAssessmentsView(LoginRequiredMixin, TemplateView):
+    """Today's assessments for the facilitator."""
+    template_name = 'portals/facilitator/today_assessments.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from assessments.models import AssessmentSchedule
+        from academics.models import Enrollment
+        
+        today = timezone.now().date()
+        schedules = AssessmentSchedule.objects.filter(
+            scheduled_date=today,
+            status='SCHEDULED'
+        ).select_related('cohort', 'activity', 'activity__module', 'venue')
+        
+        if not self.request.user.is_superuser:
+            schedules = schedules.filter(cohort__facilitator=self.request.user)
+        
+        assessments_data = []
+        for schedule in schedules:
+            learner_count = Enrollment.objects.filter(
+                cohort=schedule.cohort,
+                status__in=['ENROLLED', 'ACTIVE']
+            ).count()
+            
+            assessments_data.append({
+                'schedule': schedule,
+                'learner_count': learner_count
+            })
+        
+        context['assessments'] = assessments_data
+        context['today'] = today
+        
+        return context
+
+
+# =====================================================
+# Parent/Guardian Portal
+# =====================================================
+
+class ParentLoginView(View):
+    """
+    Parent portal login.
+    Parents login using learner ID + their email OR access code.
+    """
+    template_name = 'portals/parent/login.html'
+    
+    def get(self, request):
+        return render(request, self.template_name)
+    
+    def post(self, request):
+        from learners.models import Learner, Guardian, GuardianPortalAccess
+        
+        learner_number = request.POST.get('learner_number', '').strip()
+        email = request.POST.get('email', '').strip().lower()
+        access_code = request.POST.get('access_code', '').strip()
+        
+        error = None
+        
+        if access_code:
+            # Login via access code
+            try:
+                portal_access = GuardianPortalAccess.objects.select_related(
+                    'guardian', 'guardian__learner'
+                ).get(access_code=access_code, is_active=True)
+                
+                # Check expiry
+                if portal_access.access_code_expires and portal_access.access_code_expires < timezone.now():
+                    error = 'Access code has expired. Please request a new one.'
+                else:
+                    portal_access.record_login()
+                    request.session['parent_guardian_id'] = portal_access.guardian.id
+                    request.session['parent_learner_id'] = portal_access.guardian.learner.id
+                    return redirect('portals:parent_dashboard')
+                    
+            except GuardianPortalAccess.DoesNotExist:
+                error = 'Invalid access code.'
+        
+        elif learner_number and email:
+            # Login via learner number + email
+            try:
+                learner = Learner.objects.get(learner_number=learner_number)
+                guardian = Guardian.objects.filter(
+                    learner=learner,
+                    email__iexact=email
+                ).first()
+                
+                if guardian:
+                    # Ensure portal access exists
+                    portal_access, created = GuardianPortalAccess.objects.get_or_create(
+                        guardian=guardian,
+                        defaults={'is_active': True}
+                    )
+                    if created or not portal_access.access_code:
+                        portal_access.generate_access_code()
+                    
+                    portal_access.record_login()
+                    request.session['parent_guardian_id'] = guardian.id
+                    request.session['parent_learner_id'] = learner.id
+                    return redirect('portals:parent_dashboard')
+                else:
+                    error = 'No guardian found with this email for this learner.'
+                    
+            except Learner.DoesNotExist:
+                error = 'Learner not found.'
+        else:
+            error = 'Please enter learner number and email, or access code.'
+        
+        return render(request, self.template_name, {'error': error})
+
+
+class ParentPortalMixin:
+    """Mixin for parent portal views requiring authentication."""
+    
+    def dispatch(self, request, *args, **kwargs):
+        if 'parent_guardian_id' not in request.session:
+            return redirect('portals:parent_login')
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_guardian(self):
+        from learners.models import Guardian
+        return get_object_or_404(Guardian, pk=self.request.session['parent_guardian_id'])
+    
+    def get_learner(self):
+        from learners.models import Learner
+        return get_object_or_404(Learner, pk=self.request.session['parent_learner_id'])
+
+
+class ParentDashboardView(ParentPortalMixin, TemplateView):
+    """
+    Parent dashboard showing learner overview.
+    """
+    template_name = 'portals/parent/dashboard.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from assessments.models import AssessmentResult, AssessmentSchedule
+        from academics.models import Enrollment
+        
+        guardian = self.get_guardian()
+        learner = self.get_learner()
+        
+        context['guardian'] = guardian
+        context['learner'] = learner
+        
+        # Get active enrollment
+        enrollment = Enrollment.objects.filter(
+            learner=learner,
+            status__in=['ENROLLED', 'ACTIVE']
+        ).select_related('qualification', 'cohort').first()
+        context['enrollment'] = enrollment
+        
+        if enrollment:
+            # Get upcoming assessments
+            upcoming = AssessmentSchedule.objects.filter(
+                cohort=enrollment.cohort,
+                scheduled_date__gte=timezone.now().date(),
+                status='SCHEDULED'
+            ).select_related('activity', 'activity__module').order_by('scheduled_date')[:5]
+            context['upcoming_assessments'] = upcoming
+            
+            # Get recent results
+            recent_results = AssessmentResult.objects.filter(
+                enrollment=enrollment,
+                status='FINALIZED'
+            ).select_related('activity', 'activity__module').order_by('-assessment_date')[:5]
+            context['recent_results'] = recent_results
+            
+            # Calculate progress
+            total_activities = enrollment.qualification.modules.aggregate(
+                total=models.Count('assessment_activities')
+            )['total'] or 0
+            completed = AssessmentResult.objects.filter(
+                enrollment=enrollment,
+                result='C',
+                status='FINALIZED'
+            ).values('activity').distinct().count()
+            
+            context['progress'] = {
+                'completed': completed,
+                'total': total_activities,
+                'percentage': round((completed / total_activities * 100) if total_activities else 0, 1)
+            }
+        
+        return context
+
+
+class ParentAssessmentScheduleView(ParentPortalMixin, TemplateView):
+    """
+    Assessment schedule calendar for parents.
+    Shows all upcoming assessments for their child.
+    """
+    template_name = 'portals/parent/schedule.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from assessments.models import AssessmentSchedule
+        from academics.models import Enrollment
+        
+        learner = self.get_learner()
+        context['learner'] = learner
+        
+        # Get active enrollment
+        enrollment = Enrollment.objects.filter(
+            learner=learner,
+            status__in=['ENROLLED', 'ACTIVE']
+        ).select_related('cohort').first()
+        
+        if enrollment:
+            schedules = AssessmentSchedule.objects.filter(
+                cohort=enrollment.cohort,
+                scheduled_date__gte=timezone.now().date() - timezone.timedelta(days=30)
+            ).select_related('activity', 'activity__module').order_by('scheduled_date')
+            
+            context['schedules'] = schedules
+            context['enrollment'] = enrollment
+        
+        return context
+
+
+class ParentResultsView(ParentPortalMixin, TemplateView):
+    """
+    Assessment results history for parents.
+    Shows all completed assessments with C/NYC status.
+    """
+    template_name = 'portals/parent/results.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from assessments.models import AssessmentResult
+        from academics.models import Enrollment
+        
+        learner = self.get_learner()
+        context['learner'] = learner
+        
+        # Get active enrollment
+        enrollment = Enrollment.objects.filter(
+            learner=learner,
+            status__in=['ENROLLED', 'ACTIVE']
+        ).first()
+        
+        if enrollment:
+            results = AssessmentResult.objects.filter(
+                enrollment=enrollment
+            ).select_related(
+                'activity', 'activity__module', 'assessor'
+            ).order_by('-assessment_date')
+            
+            context['results'] = results
+            context['enrollment'] = enrollment
+            
+            # Summary stats
+            context['stats'] = {
+                'competent': results.filter(result='C', status='FINALIZED').count(),
+                'nyc': results.filter(result='NYC', status='FINALIZED').count(),
+                'pending': results.filter(status__in=['DRAFT', 'PENDING_MOD']).count()
+            }
+        
+        return context
+
+
+class ParentLogoutView(View):
+    """Logout from parent portal."""
+    
+    def get(self, request):
+        if 'parent_guardian_id' in request.session:
+            del request.session['parent_guardian_id']
+        if 'parent_learner_id' in request.session:
+            del request.session['parent_learner_id']
+        return redirect('portals:parent_login')
+
+
+# =====================================================
+# Student Assessment Calendar
+# =====================================================
+
+class StudentAssessmentCalendarView(LoginRequiredMixin, TemplateView):
+    """
+    Assessment calendar for students.
+    Shows upcoming assessments based on their enrollment and cohort schedule.
+    """
+    template_name = 'portals/student/assessment_calendar.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from assessments.models import AssessmentSchedule
+        from academics.models import Enrollment
+        
+        # Get learner's enrollment
+        if hasattr(self.request.user, 'learner_profile'):
+            learner = self.request.user.learner_profile
+            enrollment = Enrollment.objects.filter(
+                learner=learner,
+                status__in=['ENROLLED', 'ACTIVE']
+            ).select_related('cohort').first()
+            
+            if enrollment and enrollment.cohort:
+                schedules = AssessmentSchedule.objects.filter(
+                    cohort=enrollment.cohort,
+                    scheduled_date__gte=timezone.now().date()
+                ).select_related('activity', 'activity__module', 'venue').order_by('scheduled_date')
+                
+                context['schedules'] = schedules
+                context['enrollment'] = enrollment
+        
+        return context
+
 
 # Create your views here.

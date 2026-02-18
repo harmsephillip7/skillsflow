@@ -214,7 +214,7 @@ class Task(TaskAuditModel):
             description=description,
             category=category,
             assigned_to=assigned_to,
-            assigned_role=assigned_role,
+            assigned_role=assigned_role or '',
             priority=priority,
             due_date=due_date,
             action_url=action_url,

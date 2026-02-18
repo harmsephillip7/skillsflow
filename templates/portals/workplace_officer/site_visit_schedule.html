@@ -1,0 +1,241 @@
+{% extends 'portals/workplace_officer/base.html' %}
+{% load static %}
+
+{% block title %}Schedule Site Visit - {{ placement.learner.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'portals:officer_site_visit_detail' placement.host.id %}" class="text-decoration-none text-muted mb-2 d-inline-block">
+        <i class="bi bi-arrow-left me-1"></i>Back to {{ placement.host.company_name }}
+    </a>
+    <h2><i class="bi bi-calendar-plus me-2"></i>Schedule Site Visit</h2>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-calendar-event me-2"></i>Visit Details
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Placement Info (readonly) -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Learner</label>
+                            <input type="text" class="form-control" value="{{ placement.learner.get_full_name }}" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Host Employer</label>
+                            <input type="text" class="form-control" value="{{ placement.host.company_name }}" readonly>
+                        </div>
+                    </div>
+                    
+                    <!-- Visit Date -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="visit_date" class="form-label">Visit Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="visit_date" name="visit_date" required 
+                                   min="{{ today|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="visit_time" class="form-label">Approximate Time</label>
+                            <input type="time" class="form-control" id="visit_time" name="visit_time">
+                        </div>
+                    </div>
+                    
+                    <!-- Visit Type -->
+                    <div class="mb-3">
+                        <label for="visit_type" class="form-label">Visit Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="visit_type" name="visit_type" required>
+                            <option value="">Select visit type...</option>
+                            <option value="scheduled">Scheduled Visit</option>
+                            <option value="monitoring">Monitoring Visit</option>
+                            <option value="support">Support Visit</option>
+                            <option value="assessment">Assessment Visit</option>
+                            <option value="follow_up">Follow-up Visit</option>
+                            <option value="unannounced">Unannounced Visit</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Purpose -->
+                    <div class="mb-3">
+                        <label for="purpose" class="form-label">Purpose of Visit <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="purpose" name="purpose" rows="3" required
+                                  placeholder="Describe the purpose and objectives of this visit..."></textarea>
+                    </div>
+                    
+                    <!-- Areas to Review -->
+                    <div class="mb-3">
+                        <label class="form-label">Areas to Review</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="areas" value="learner_progress" id="area1">
+                                    <label class="form-check-label" for="area1">Learner Progress</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="areas" value="workplace_safety" id="area2">
+                                    <label class="form-check-label" for="area2">Workplace Safety</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="areas" value="mentor_support" id="area3">
+                                    <label class="form-check-label" for="area3">Mentor Support</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="areas" value="training_plan" id="area4">
+                                    <label class="form-check-label" for="area4">Training Plan Adherence</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="areas" value="logbook" id="area5">
+                                    <label class="form-check-label" for="area5">Logbook Review</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="areas" value="attendance" id="area6">
+                                    <label class="form-check-label" for="area6">Attendance Records</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="areas" value="learner_wellbeing" id="area7">
+                                    <label class="form-check-label" for="area7">Learner Wellbeing</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="areas" value="other" id="area8">
+                                    <label class="form-check-label" for="area8">Other</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Notes -->
+                    <div class="mb-4">
+                        <label for="notes" class="form-label">Additional Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2"
+                                  placeholder="Any additional notes or reminders..."></textarea>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'portals:officer_site_visit_detail' placement.host.id %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-calendar-check me-1"></i>Schedule Visit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar with Info -->
+    <div class="col-md-4">
+        <!-- Learner Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-person me-2"></i>Learner Info
+            </div>
+            <div class="card-body">
+                <p class="mb-1"><strong>{{ placement.learner.get_full_name }}</strong></p>
+                <p class="mb-1 text-muted small">{{ placement.learner.id_number }}</p>
+                {% if placement.learner.phone %}
+                <p class="mb-0">
+                    <a href="tel:{{ placement.learner.phone }}" class="text-decoration-none">
+                        <i class="bi bi-telephone me-1"></i>{{ placement.learner.phone }}
+                    </a>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Location Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-geo-alt me-2"></i>Location
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>{{ placement.host.company_name }}</strong></p>
+                {% if placement.host.physical_address %}
+                <p class="mb-2 text-muted small">{{ placement.host.physical_address }}</p>
+                {% endif %}
+                {% if google_maps_url %}
+                <a href="{{ google_maps_url }}" target="_blank" class="btn btn-success btn-sm w-100">
+                    <i class="bi bi-map me-1"></i>Get Directions
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Contact Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-telephone me-2"></i>Contacts
+            </div>
+            <div class="card-body">
+                {% if placement.host.contact_person %}
+                <div class="mb-3">
+                    <p class="mb-0"><strong>{{ placement.host.contact_person }}</strong></p>
+                    <small class="text-muted">Primary Contact</small>
+                    <div class="mt-2">
+                        {% if placement.host.contact_phone %}
+                        <a href="tel:{{ placement.host.contact_phone }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-telephone"></i> Call
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if placement.mentor %}
+                <div>
+                    <p class="mb-0"><strong>{{ placement.mentor.get_full_name }}</strong></p>
+                    <small class="text-muted">Host Mentor</small>
+                    <div class="mt-2">
+                        {% if placement.mentor.phone %}
+                        <a href="tel:{{ placement.mentor.phone }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-telephone"></i> Call
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Previous Visits -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-clock-history me-2"></i>Previous Visits
+            </div>
+            <div class="card-body p-0">
+                {% if previous_visits %}
+                <ul class="list-group list-group-flush">
+                    {% for visit in previous_visits %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <span>{{ visit.visit_date|date:"d M Y" }}</span>
+                            {% if visit.outcome == 'satisfactory' %}
+                                <span class="badge bg-success">OK</span>
+                            {% elif visit.outcome == 'concerns' %}
+                                <span class="badge bg-warning text-dark">Concerns</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ visit.outcome|default:"-" }}</span>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-3">
+                    <small class="text-muted">No previous visits</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

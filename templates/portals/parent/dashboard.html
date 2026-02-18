@@ -1,0 +1,176 @@
+{% extends "portals/parent/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Progress Overview -->
+<div class="card">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <div class="progress-ring-container">
+                    <div class="progress-ring">
+                        <svg viewBox="0 0 140 140">
+                            <circle class="progress-ring-bg" cx="70" cy="70" r="58"></circle>
+                            <circle class="progress-ring-fill" cx="70" cy="70" r="58"
+                                    stroke-dasharray="{{ progress.percentage|default:0|floatformat:0 }}, 100"
+                                    style="stroke-dasharray: calc({{ progress.percentage|default:0 }} * 3.64), 364;"></circle>
+                        </svg>
+                        <div class="progress-ring-text">
+                            <div class="progress-ring-value">{{ progress.percentage|default:0|floatformat:0 }}%</div>
+                            <div class="progress-ring-label">Complete</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <h5 class="mb-3">
+                    <i class="fas fa-chart-pie text-primary me-2"></i>
+                    Learning Progress
+                </h5>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="border rounded p-3 text-center">
+                            <div class="h4 mb-0 text-success">{{ progress.completed|default:0 }}</div>
+                            <small class="text-muted">Competent</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-3 text-center">
+                            <div class="h4 mb-0 text-secondary">{{ progress.total|default:0 }}</div>
+                            <small class="text-muted">Total Assessments</small>
+                        </div>
+                    </div>
+                </div>
+                {% if enrollment %}
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-graduation-cap me-1"></i>
+                        {{ enrollment.qualification.name }}
+                    </small>
+                    <br>
+                    <small class="text-muted">
+                        <i class="fas fa-users me-1"></i>
+                        {{ enrollment.cohort.name }}
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upcoming Assessments -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-calendar-alt me-2"></i>Upcoming Assessments</span>
+        <a href="{% url 'portals:parent_schedule' %}" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <div class="card-body">
+        {% if upcoming_assessments %}
+        {% for schedule in upcoming_assessments %}
+        <div class="assessment-item">
+            <div class="assessment-icon upcoming">
+                <i class="fas fa-clipboard-check"></i>
+            </div>
+            <div class="assessment-details">
+                <div class="assessment-name">{{ schedule.activity.name }}</div>
+                <div class="assessment-meta">
+                    <i class="fas fa-book-open me-1"></i>{{ schedule.activity.module.name|default:"Module" }}
+                </div>
+            </div>
+            <div class="text-end">
+                <div class="fw-semibold text-primary">{{ schedule.scheduled_date|date:"d M" }}</div>
+                <small class="text-muted">
+                    {% if schedule.scheduled_time_start %}
+                    {{ schedule.scheduled_time_start|time:"H:i" }}
+                    {% else %}
+                    TBC
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-calendar-check"></i>
+            <p>No upcoming assessments scheduled</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Results -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-chart-line me-2"></i>Recent Results</span>
+        <a href="{% url 'portals:parent_results' %}" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <div class="card-body">
+        {% if recent_results %}
+        {% for result in recent_results %}
+        <div class="assessment-item">
+            <div class="assessment-icon {% if result.result == 'C' %}competent{% else %}nyc{% endif %}">
+                <i class="fas fa-{% if result.result == 'C' %}check{% else %}times{% endif %}-circle"></i>
+            </div>
+            <div class="assessment-details">
+                <div class="assessment-name">{{ result.activity.name }}</div>
+                <div class="assessment-meta">
+                    <i class="fas fa-calendar me-1"></i>{{ result.assessment_date|date:"d M Y" }}
+                </div>
+            </div>
+            <span class="assessment-result {% if result.result == 'C' %}result-c{% else %}result-nyc{% endif %}">
+                {% if result.result == 'C' %}
+                <i class="fas fa-check me-1"></i>Competent
+                {% else %}
+                <i class="fas fa-redo me-1"></i>NYC
+                {% endif %}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-clipboard-list"></i>
+            <p>No results recorded yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Guardian Info Card -->
+<div class="card bg-light">
+    <div class="card-body">
+        <div class="d-flex align-items-center">
+            <div class="me-3">
+                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                     style="width: 48px; height: 48px;">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+            <div>
+                <div class="fw-semibold">{{ guardian.full_name }}</div>
+                <small class="text-muted">{{ guardian.relationship|title }} • {{ guardian.email }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Animate progress ring on load
+document.addEventListener('DOMContentLoaded', function() {
+    const progressRing = document.querySelector('.progress-ring-fill');
+    const percentage = {{ progress.percentage|default:0 }};
+    const circumference = 2 * Math.PI * 58; // r=58
+    const offset = circumference - (percentage / 100 * circumference);
+    
+    progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
+    progressRing.style.strokeDashoffset = circumference;
+    
+    setTimeout(() => {
+        progressRing.style.strokeDashoffset = offset;
+    }, 100);
+});
+</script>
+{% endblock %}

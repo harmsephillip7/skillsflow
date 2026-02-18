@@ -1509,6 +1509,135 @@ class Guardian(AuditedModel):
         super().save(*args, **kwargs)
 
 
+class GuardianPortalAccess(AuditedModel):
+    """
+    Portal access credentials for guardians/parents.
+    Allows parents to login and view learner progress, schedules, and results.
+    """
+    guardian = models.OneToOneField(
+        Guardian,
+        on_delete=models.CASCADE,
+        related_name='portal_access'
+    )
+    
+    # Login via email + access code (no password needed)
+    access_code = models.CharField(max_length=20, unique=True)
+    access_code_expires = models.DateTimeField(null=True, blank=True)
+    
+    # Portal status
+    is_active = models.BooleanField(default=True)
+    last_login = models.DateTimeField(null=True, blank=True)
+    login_count = models.PositiveIntegerField(default=0)
+    
+    # Terms acceptance
+    terms_accepted = models.BooleanField(default=False)
+    terms_accepted_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'Guardian Portal Access'
+        verbose_name_plural = 'Guardian Portal Accesses'
+    
+    def __str__(self):
+        return f"Portal Access - {self.guardian}"
+    
+    def generate_access_code(self):
+        """Generate a new access code for the guardian"""
+        import secrets
+        from datetime import timedelta
+        from django.utils import timezone
+        
+        self.access_code = secrets.token_urlsafe(12)
+        self.access_code_expires = timezone.now() + timedelta(days=365)
+        self.save()
+        return self.access_code
+    
+    def record_login(self):
+        """Record a login event"""
+        from django.utils import timezone
+        self.last_login = timezone.now()
+        self.login_count += 1
+        self.save(update_fields=['last_login', 'login_count'])
+
+
+class GuardianNotificationPreference(AuditedModel):
+    """
+    Notification preferences for guardians/parents.
+    Controls what automated emails they receive.
+    """
+    guardian = models.OneToOneField(
+        Guardian,
+        on_delete=models.CASCADE,
+        related_name='notification_preferences'
+    )
+    
+    # Assessment notifications
+    notify_assessment_completed = models.BooleanField(
+        default=True,
+        help_text="Email when learner completes an assessment"
+    )
+    notify_assessment_scheduled = models.BooleanField(
+        default=True,
+        help_text="Email when new assessments are scheduled"
+    )
+    notify_schedule_changed = models.BooleanField(
+        default=True,
+        help_text="Email when assessment schedule changes"
+    )
+    
+    # Progress notifications
+    notify_weekly_progress = models.BooleanField(
+        default=False,
+        help_text="Weekly progress summary email"
+    )
+    notify_monthly_report = models.BooleanField(
+        default=True,
+        help_text="Monthly progress report email"
+    )
+    
+    # Attendance notifications
+    notify_absence = models.BooleanField(
+        default=True,
+        help_text="Email when learner is marked absent"
+    )
+    
+    # Result notifications
+    notify_not_yet_competent = models.BooleanField(
+        default=True,
+        help_text="Email when learner receives NYC result"
+    )
+    notify_competent = models.BooleanField(
+        default=True,
+        help_text="Email when learner achieves competence"
+    )
+    notify_module_completed = models.BooleanField(
+        default=True,
+        help_text="Email when learner completes a module"
+    )
+    
+    # Communication preferences
+    preferred_language = models.CharField(max_length=5, default='en')
+    email_frequency = models.CharField(
+        max_length=20,
+        choices=[
+            ('IMMEDIATE', 'Immediate'),
+            ('DAILY_DIGEST', 'Daily Digest'),
+            ('WEEKLY_DIGEST', 'Weekly Digest'),
+        ],
+        default='IMMEDIATE'
+    )
+    
+    # Unsubscribe
+    unsubscribed = models.BooleanField(default=False)
+    unsubscribed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'Guardian Notification Preference'
+        verbose_name_plural = 'Guardian Notification Preferences'
+    
+    def __str__(self):
+        return f"Notification Preferences - {self.guardian}"
+
+
 # ==================== Financial Literacy Models ====================
 
 class FinancialLiteracyModule(AuditedModel):
