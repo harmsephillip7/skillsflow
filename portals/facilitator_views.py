@@ -459,6 +459,28 @@ class FacilitatorScheduleView(LoginRequiredMixin, TemplateView):
                 })
             context['cohort_timeline'] = cohort_timeline
         
+        # Add quick stats for all views (Active Classes and Pending Grades)
+        my_cohorts = Cohort.objects.filter(
+            facilitator=user,
+            status__in=['ACTIVE', 'OPEN']
+        )
+        context['my_cohorts'] = my_cohorts
+        
+        # Count pending assessments to grade
+        pending_assessments_count = AssessmentResult.objects.filter(
+            activity__module__qualification__cohorts__facilitator=user,
+            result__isnull=True
+        ).count()
+        
+        # Also count assessments marked as SUBMITTED but not yet graded
+        if pending_assessments_count == 0:
+            pending_assessments_count = AssessmentResult.objects.filter(
+                activity__module__qualification__cohorts__facilitator=user,
+                status='SUBMITTED'
+            ).count()
+        
+        context['pending_assessments_count'] = pending_assessments_count
+        
         return context
 
 
