@@ -408,11 +408,54 @@ class FacilitatorScheduleView(LoginRequiredMixin, TemplateView):
             
             cohort_timeline = []
             for cohort in cohorts:
+                # Calculate learner count
+                learner_count = Enrollment.objects.filter(
+                    cohort=cohort,
+                    status__in=['ACTIVE', 'ENROLLED']
+                ).count()
+                
+                # Calculate duration and progress
+                start_date_cohort = cohort.start_date
+                end_date_cohort = cohort.end_date
+                
+                if start_date_cohort and end_date_cohort:
+                    # Calculate total duration in months
+                    total_days = (end_date_cohort - start_date_cohort).days
+                    duration_months = max(1, total_days // 30)
+                    
+                    # Calculate elapsed time
+                    if today < start_date_cohort:
+                        # Not started yet
+                        months_elapsed = 0
+                        months_remaining = duration_months
+                        progress_percentage = 0
+                    elif today > end_date_cohort:
+                        # Completed
+                        months_elapsed = duration_months
+                        months_remaining = 0
+                        progress_percentage = 100
+                    else:
+                        # In progress
+                        elapsed_days = (today - start_date_cohort).days
+                        months_elapsed = max(0, elapsed_days // 30)
+                        months_remaining = max(0, duration_months - months_elapsed)
+                        progress_percentage = min(100, int((elapsed_days / total_days) * 100)) if total_days > 0 else 0
+                else:
+                    duration_months = 0
+                    months_elapsed = 0
+                    months_remaining = 0
+                    progress_percentage = 0
+                
                 cohort_timeline.append({
                     'cohort': cohort,
                     'qualification': cohort.qualification,
                     'start_date': cohort.start_date,
-                    'end_date': cohort.end_date
+                    'end_date': cohort.end_date,
+                    'learner_count': learner_count,
+                    'duration_months': duration_months,
+                    'months_elapsed': months_elapsed,
+                    'months_remaining': months_remaining,
+                    'progress_percentage': progress_percentage,
                 })
             context['cohort_timeline'] = cohort_timeline
         
