@@ -479,6 +479,54 @@
             </div>
         </div>
         
+        <!-- Projects Filter Bar -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <form method="get" class="flex flex-wrap items-center gap-4">
+                <input type="hidden" name="view" value="projects">
+                {% if request.GET.campus %}
+                <input type="hidden" name="campus" value="{{ request.GET.campus }}">
+                {% endif %}
+                
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Project Status</label>
+                    <select name="project_status" class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-primary-500 focus:border-primary-500">
+                        <option value="">All Statuses</option>
+                        <option value="ACTIVE" {% if request.GET.project_status == 'ACTIVE' %}selected{% endif %}>Active</option>
+                        <option value="PLANNING" {% if request.GET.project_status == 'PLANNING' %}selected{% endif %}>Planning</option>
+                        <option value="IN_PROGRESS" {% if request.GET.project_status == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
+                        <option value="COMPLETED" {% if request.GET.project_status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                    </select>
+                </div>
+                
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Funder/Client</label>
+                    <select name="funder" class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-primary-500 focus:border-primary-500">
+                        <option value="">All Funders</option>
+                        {% for funder in projects_data.filters.funders %}
+                        <option value="{{ funder.id }}" {% if request.GET.funder == funder.id|stringformat:"s" %}selected{% endif %}>{{ funder.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="flex-1 min-w-[150px]">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Search</label>
+                    <input type="text" name="project_search" value="{{ request.GET.project_search }}" placeholder="Search projects..." class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                
+                <div class="flex items-end space-x-2">
+                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                        </svg>
+                        Filter
+                    </button>
+                    <a href="?view=projects{% if request.GET.campus %}&campus={{ request.GET.campus }}{% endif %}" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 transition">
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+        
         <!-- Projects Table -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div class="flex items-center justify-between mb-6">

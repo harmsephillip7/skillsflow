@@ -71,7 +71,15 @@ class OrganizationalDashboardView(LoginRequiredMixin, UserPassesTestMixin, Campu
             context['capacity'] = self._get_capacity_overview(selected_campus)
         elif view_mode == 'projects':
             # PROJECTS VIEW - All projects running, students on campus/workplace
-            context['projects_data'] = self._get_projects_overview(selected_campus)
+            project_status = self.request.GET.get('project_status')
+            funder = self.request.GET.get('funder')
+            project_search = self.request.GET.get('project_search')
+            context['projects_data'] = self._get_projects_overview(
+                selected_campus,
+                project_status=project_status,
+                funder=funder,
+                project_search=project_search
+            )
         elif view_mode == 'implementation':
             # IMPLEMENTATION VIEW - Kanban for implementation plan phases
             context['implementation_data'] = self._get_implementation_overview(selected_campus)
@@ -368,9 +376,9 @@ class OrganizationalDashboardView(LoginRequiredMixin, UserPassesTestMixin, Campu
             'equipment_capacity': equipment_capacity,
         }
     
-    def _get_projects_overview(self, campus=None):
+    def _get_projects_overview(self, campus=None, project_status=None, funder=None, project_search=None):
         """Get projects running, students on campus vs workplace"""
-        from corporate.models import GrantProject
+        from corporate.models import GrantProject, CorporateClient
         from academics.models import Enrollment
         from logistics.models import Cohort
         from assessments.models import AssessmentResult
@@ -470,11 +478,36 @@ class OrganizationalDashboardView(LoginRequiredMixin, UserPassesTestMixin, Campu
         # Use TrainingNotification as projects since Cohort doesn't have grant_project
         from core.models import TrainingNotification
         
+        # Get all funders for filter dropdown
+        funders_list = list(CorporateClient.objects.filter(
+            trainingnotification__isnull=False
+        ).distinct().values('id', 'name').order_by('name'))
+        
         # Active projects include draft, planning, in progress, approved, or with notifications sent
-        active_statuses = ['DRAFT', 'PLANNING', 'IN_MEETING', 'PENDING_APPROVAL', 'IN_PROGRESS', 'APPROVED', 'NOTIFICATIONS_SENT']
+        # Map filter values to statuses
+        if project_status == 'ACTIVE':
+            active_statuses = ['DRAFT', 'PLANNING', 'IN_MEETING', 'PENDING_APPROVAL', 'IN_PROGRESS', 'APPROVED', 'NOTIFICATIONS_SENT']
+        elif project_status == 'PLANNING':
+            active_statuses = ['DRAFT', 'PLANNING', 'IN_MEETING', 'PENDING_APPROVAL']
+        elif project_status == 'IN_PROGRESS':
+            active_statuses = ['IN_PROGRESS', 'APPROVED', 'NOTIFICATIONS_SENT']
+        elif project_status == 'COMPLETED':
+            active_statuses = ['COMPLETED', 'SIGNED_OFF']
+        else:
+            # Default - show all active statuses
+            active_statuses = ['DRAFT', 'PLANNING', 'IN_MEETING', 'PENDING_APPROVAL', 'IN_PROGRESS', 'APPROVED', 'NOTIFICATIONS_SENT']
+        
         nots = TrainingNotification.objects.filter(status__in=active_statuses)
         if campus:
             nots = nots.filter(delivery_campus=campus)
+        if funder:
+            nots = nots.filter(corporate_client_id=funder)
+        if project_search:
+            nots = nots.filter(
+                Q(title__icontains=project_search) |
+                Q(reference_number__icontains=project_search) |
+                Q(corporate_client__name__icontains=project_search)
+            )
         
         project_list = []
         for not_project in nots.select_related('corporate_client', 'delivery_campus').prefetch_related('intakes__cohort'):
@@ -532,6 +565,9 @@ class OrganizationalDashboardView(LoginRequiredMixin, UserPassesTestMixin, Campu
             'total_students': total_students,
             'by_progress': by_progress,
             'competency_rates': competency_rates,
+            'filters': {
+                'funders': funders_list,
+            },
         }
     
     def _get_implementation_overview(self, campus=None):
