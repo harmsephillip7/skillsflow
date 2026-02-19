@@ -480,7 +480,7 @@ class OrganizationalDashboardView(LoginRequiredMixin, UserPassesTestMixin, Campu
         
         # Get all funders for filter dropdown
         funders_list = list(CorporateClient.objects.filter(
-            trainingnotification__isnull=False
+            training_notifications__isnull=False
         ).distinct().values('id', 'name').order_by('name'))
         
         # Active projects include draft, planning, in progress, approved, or with notifications sent
