@@ -70,8 +70,14 @@ def get_officer_context(user):
         ).get(user=user, is_active=True)
         return profile
     except WorkplaceOfficerProfile.DoesNotExist:
-        # Check if user has workplace officer role
-        if user.role == 'WORKPLACE_OFFICER':
+        # Check if user has workplace officer role via UserRole model
+        from core.models import UserRole
+        has_officer_role = UserRole.objects.filter(
+            user=user,
+            role__name__icontains='workplace_officer',
+            is_active=True
+        ).exists()
+        if has_officer_role:
             # Create profile on-the-fly
             profile, _ = WorkplaceOfficerProfile.objects.get_or_create(
                 user=user,
